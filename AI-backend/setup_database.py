@@ -1,0 +1,63 @@
+import psycopg2
+
+# Database connection parameters
+DB_CONFIG = {
+    'host': 'localhost',
+    'database': 'chatbot_db',
+    'user': 'postgres',
+    'password': 'nala'  
+}
+
+def setup_database():
+    """Create the table and indexes for coaching conversations"""
+    
+    # Connect to database
+    conn = psycopg2.connect(**DB_CONFIG)
+    conn.autocommit = True
+    cur = conn.cursor()
+    
+    print("Creating vector extension...")
+    cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+    
+    print("Creating coaching_conversations table...")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS coaching_conversations (
+            id SERIAL PRIMARY KEY,
+            participant_response TEXT NOT NULL,
+            coach_response TEXT NOT NULL,
+            context_category VARCHAR(50),
+            goal_type VARCHAR(50),
+            confidence_level INTEGER,
+            keywords TEXT,
+            source_file TEXT,
+            participant_embedding vector(1536),
+            coach_embedding vector(1536),
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+    """)
+    
+    print("Creating indexes...")
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS participant_embedding_idx 
+        ON coaching_conversations 
+        USING ivfflat (participant_embedding vector_cosine_ops)
+        WITH (lists = 100);
+    """)
+    
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS context_category_idx 
+        ON coaching_conversations (context_category);
+    """)
+    
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS goal_type_idx 
+        ON coaching_conversations (goal_type);
+    """)
+    
+    print("Database setup complete!")
+    
+    cur.close()
+    conn.close()
+
+if __name__ == "__main__":
+    setup_database()
