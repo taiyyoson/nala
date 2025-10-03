@@ -61,9 +61,25 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Run security scan
-      uses: securecodewarrior/github-action-add-sarif@v1
-      if: false  # Disabled for now, enable when needed
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install security scanning tools
+      run: |
+        pip install bandit safety
+
+    - name: Run Bandit security scan
+      run: |
+        bandit -r backend/ -f json -o bandit-report.json || true
+        bandit -r backend/ -ll
+
+    - name: Check dependencies for vulnerabilities
+      run: |
+        cd backend
+        safety check --json || true
+        safety check
 
   deploy:
     runs-on: ubuntu-latest
