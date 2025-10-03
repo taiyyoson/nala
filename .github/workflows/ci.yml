@@ -53,30 +53,3 @@ jobs:
       run: |
         cd backend
         python -m pytest tests/ -v -k "test_api"
-
-  security:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Run security scan
-      uses: securecodewarrior/github-action-add-sarif@v1
-      if: false  # Disabled for now, enable when needed
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Deploy to staging
-      run: |
-        echo "Deployment step would go here"
-        echo "This could include:"
-        echo "- Building Docker image"
-        echo "- Pushing to container registry"
-        echo "- Deploying to cloud service"
