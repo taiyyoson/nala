@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import uvicorn
+
 from config.settings import settings
 
 if __name__ == "__main__":
@@ -14,5 +15,5 @@ if __name__ == "__main__":
         port=settings.api_port,
         reload=True,
         log_level=settings.log_level.lower(),
-        access_log=True
+        access_log=True,
     )

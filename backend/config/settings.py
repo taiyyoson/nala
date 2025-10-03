@@ -1,6 +1,8 @@
 import os
 from typing import List
+
 from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
@@ -23,6 +25,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+
 
 # Global settings instance
 settings = Settings()
