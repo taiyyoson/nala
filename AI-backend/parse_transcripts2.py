@@ -453,12 +453,12 @@ def process_all_files(folder_path='.'):
     # Find all text files
     transcript_files = list(folder.glob('*.txt'))
     
-    print(f"Found {len(transcript_files)} transcript files")
-    print(f"Looking in folder: {folder.absolute()}")
+    # print(f"Found {len(transcript_files)} transcript files")
+    # print(f"Looking in folder: {folder.absolute()}")
     
     # Debug: show all files in directory
     all_files = list(folder.iterdir())
-    print(f"All files in directory: {[f.name for f in all_files if f.is_file()]}")
+    # print(f"All files in directory: {[f.name for f in all_files if f.is_file()]}")
     
     if not transcript_files:
         print("No .txt files found! Checking current directory...")
@@ -470,10 +470,10 @@ def process_all_files(folder_path='.'):
     all_conversations = []
     
     for file_path in transcript_files:
-        print(f"Processing: {file_path.name}")
+        # print(f"Processing: {file_path.name}")
         conversations = process_single_file(file_path)
         all_conversations.extend(conversations)
-        print(f"  - Extracted {len(conversations)} conversation pairs")
+        # print(f"  - Extracted {len(conversations)} conversation pairs")
     
     if not all_conversations:
         print("No conversation pairs extracted!")
@@ -499,8 +499,8 @@ def process_all_files(folder_path='.'):
                 'source_file': conv['source_file']
             })
     
-    print(f"\n✅ Successfully created {output_file}")
-    print(f"Total conversation pairs: {len(all_conversations)}")
+    # print(f"\n✅ Successfully created {output_file}")
+    # print(f"Total conversation pairs: {len(all_conversations)}")
     
     # Show stats
     goal_counts = {}
@@ -513,8 +513,8 @@ def process_all_files(folder_path='.'):
         goal_counts[goal_type] = goal_counts.get(goal_type, 0) + 1
         context_counts[context] = context_counts.get(context, 0) + 1
     
-    print(f"\nGoal types: {goal_counts}")
-    print(f"Context categories: {context_counts}")
+    # print(f"\nGoal types: {goal_counts}")
+    # print(f"Context categories: {context_counts}")
 
 if __name__ == "__main__":
     process_all_files("transcripts")

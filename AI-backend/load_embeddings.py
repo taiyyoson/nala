@@ -27,7 +27,7 @@ def get_embeddings_batch(texts, batch_size=100):
     
     for i in range(0, total, batch_size):
         batch = texts[i:i+batch_size]
-        print(f"Processing embeddings {i+1}-{min(i+batch_size, total)} of {total}...")
+        # print(f"Processing embeddings {i+1}-{min(i+batch_size, total)} of {total}...")
         
         try:
             response = client.embeddings.create(
@@ -45,25 +45,25 @@ def get_embeddings_batch(texts, batch_size=100):
 def load_csv_to_database(csv_path):
     """Load CSV data, generate embeddings, and store in PostgreSQL"""
     
-    print(f"Loading CSV from {csv_path}...")
+    # print(f"Loading CSV from {csv_path}...")
     df = pd.read_csv(csv_path)
-    print(f"Loaded {len(df)} rows")
+    # print(f"Loaded {len(df)} rows")
     
     # Clean data
     df = df.fillna('')
     
     # Generate embeddings for participant responses
-    print("\nGenerating embeddings for participant responses...")
+    # print("\nGenerating embeddings for participant responses...")
     participant_texts = df['participant_response'].tolist()
     participant_embeddings = get_embeddings_batch(participant_texts)
     
     # Generate embeddings for coach responses
-    print("\nGenerating embeddings for coach responses...")
+    # print("\nGenerating embeddings for coach responses...")
     coach_texts = df['coach_response'].tolist()
     coach_embeddings = get_embeddings_batch(coach_texts)
     
     # Prepare data for insertion
-    print("\nPreparing data for database insertion...")
+    # print("\nPreparing data for database insertion...")
     data_to_insert = []
     for idx, row in df.iterrows():
         data_to_insert.append((
@@ -79,11 +79,11 @@ def load_csv_to_database(csv_path):
         ))
     
     # Insert into database
-    print("\nConnecting to database...")
+    # print("\nConnecting to database...")
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     
-    print("Inserting data into database...")
+    # print("Inserting data into database...")
     execute_values(cur, """
         INSERT INTO coaching_conversations 
         (participant_response, coach_response, context_category, goal_type, 
@@ -96,8 +96,8 @@ def load_csv_to_database(csv_path):
     # Verify insertion
     cur.execute("SELECT COUNT(*) FROM coaching_conversations")
     count = cur.fetchone()[0]
-    print(f"\n✅ Success! Inserted {len(data_to_insert)} records.")
-    print(f"Total records in database: {count}")
+    # print(f"\n✅ Success! Inserted {len(data_to_insert)} records.")
+    # print(f"Total records in database: {count}")
     
     cur.close()
     conn.close()

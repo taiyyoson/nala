@@ -16,10 +16,10 @@ def setup_database():
     conn.autocommit = True
     cur = conn.cursor()
     
-    print("Creating vector extension...")
+    # print("Creating vector extension...")
     cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
     
-    print("Creating coaching_conversations table...")
+    # print("Creating coaching_conversations table...")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS coaching_conversations (
             id SERIAL PRIMARY KEY,
@@ -36,7 +36,7 @@ def setup_database():
         );
     """)
     
-    print("Creating indexes...")
+    # print("Creating indexes...")
     cur.execute("""
         CREATE INDEX IF NOT EXISTS participant_embedding_idx 
         ON coaching_conversations 
@@ -54,7 +54,7 @@ def setup_database():
         ON coaching_conversations (goal_type);
     """)
     
-    print("Database setup complete!")
+    # print("Database setup complete!")
     
     cur.close()
     conn.close()
