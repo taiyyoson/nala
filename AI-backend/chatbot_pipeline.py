@@ -81,6 +81,9 @@ def step1_process_transcripts():
 def step2_setup_database():
     """Step 2: Create database tables and indexes"""
     from setup_database import setup_database
+    from setup_database import reset_database
+    
+    reset_database()
     setup_database()
 
 def step3_load_embeddings():

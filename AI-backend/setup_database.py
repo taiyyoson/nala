@@ -8,6 +8,20 @@ DB_CONFIG = {
     'password': 'nala'  
 }
 
+def reset_database():
+    """Drop and recreate the coaching_conversations table"""
+    conn = psycopg2.connect(**DB_CONFIG)
+    conn.autocommit = True
+    cur = conn.cursor()
+    
+    print("Dropping existing table...")
+    cur.execute("DROP TABLE IF EXISTS coaching_conversations CASCADE;")
+    
+    print("✓ Database reset complete\n")
+    
+    cur.close()
+    conn.close()
+
 def setup_database():
     """Create the table and indexes for coaching conversations"""
     
@@ -60,4 +74,5 @@ def setup_database():
     conn.close()
 
 if __name__ == "__main__":
+    reset_database() 
     setup_database()
