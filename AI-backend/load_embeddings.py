@@ -13,12 +13,18 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Database config
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'chatbot_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD')
-}
+def get_db_connection():
+    database_url = os.getenv('DATABASE_URL')
+    
+    if database_url:
+        return psycopg2.connect(database_url)
+    else:
+        return psycopg2.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            database=os.getenv('DB_NAME', 'chatbot_db'),
+            user=os.getenv('DB_USER', 'postgres'),
+            password=os.getenv('DB_PASSWORD')
+        )
 
 def get_embeddings_batch(texts, batch_size=100):
     """Generate embeddings in batches for efficiency"""
@@ -80,7 +86,7 @@ def load_csv_to_database(csv_path):
     
     # Insert into database
     # print("\nConnecting to database...")
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
     cur = conn.cursor()
     
     # print("Inserting data into database...")

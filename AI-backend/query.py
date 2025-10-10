@@ -11,12 +11,22 @@ class VectorSearch:
     
     def __init__(self):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.db_config = {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'database': os.getenv('DB_NAME', 'chatbot_db'),
-            'user': os.getenv('DB_USER', 'postgres'),
-            'password': os.getenv('DB_PASSWORD')
-        }
+        
+    def get_db_connection(self):
+    
+        database_url = os.getenv('DATABASE_URL')
+    
+        if database_url:
+            # Use DATABASE_URL (Render/production)
+            return psycopg2.connect(database_url)
+        else:
+            # Use individual parameters (local development)
+            return psycopg2.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            database=os.getenv('DB_NAME', 'chatbot_db'),
+            user=os.getenv('DB_USER', 'postgres'),
+            password=os.getenv('DB_PASSWORD', '')
+        )
     
     def search(self, query, limit=3, min_similarity=0.4, category_filter=None):
         """
@@ -40,7 +50,7 @@ class VectorSearch:
         ).data[0].embedding
         
         # Connect to database
-        conn = psycopg2.connect(**self.db_config)
+        conn = self.get_db_connection()
         cur = conn.cursor()
         
         # Build query

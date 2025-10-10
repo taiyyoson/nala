@@ -1,16 +1,28 @@
 import psycopg2
+import os
+from dotenv import load_dotenv
 
-# Database connection parameters
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'chatbot_db',
-    'user': 'postgres',
-    'password': 'nala'  
-}
+load_dotenv()
+
+# Support both DATABASE_URL and individual params
+def get_db_connection():
+    database_url = os.getenv('DATABASE_URL')
+    
+    if database_url:
+        # Use DATABASE_URL (Render style)
+        return psycopg2.connect(database_url)
+    else:
+        # Use individual parameters (local style)
+        return psycopg2.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            database=os.getenv('DB_NAME', 'chatbot_db'),
+            user=os.getenv('DB_USER', 'postgres'),
+            password=os.getenv('DB_PASSWORD', '')
+        )
 
 def reset_database():
     """Drop and recreate the coaching_conversations table"""
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
     conn.autocommit = True
     cur = conn.cursor()
     
@@ -26,14 +38,14 @@ def setup_database():
     """Create the table and indexes for coaching conversations"""
     
     # Connect to database
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
     conn.autocommit = True
     cur = conn.cursor()
     
-    # print("Creating vector extension...")
+    print("Creating vector extension...")
     cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
     
-    # print("Creating coaching_conversations table...")
+    print("Creating coaching_conversations table...")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS coaching_conversations (
             id SERIAL PRIMARY KEY,
@@ -50,7 +62,7 @@ def setup_database():
         );
     """)
     
-    # print("Creating indexes...")
+    print("Creating indexes...")
     cur.execute("""
         CREATE INDEX IF NOT EXISTS participant_embedding_idx 
         ON coaching_conversations 
@@ -68,11 +80,11 @@ def setup_database():
         ON coaching_conversations (goal_type);
     """)
     
-    # print("Database setup complete!")
+    print("Database setup complete!")
     
     cur.close()
     conn.close()
 
 if __name__ == "__main__":
-    reset_database() 
+    reset_database()
     setup_database()
