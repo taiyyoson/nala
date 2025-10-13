@@ -34,9 +34,9 @@ Basic FastAPI backend for the health coaching chatbot mobile app.
 
 The backend currently uses mock responses. To integrate with Claude:
 
-1. Add your Claude API key to `.env`:
+1. Add your Anthropic API key to `.env`:
    ```
-   CLAUDE_API_KEY=your_api_key_here
+   ANTHROPIC_API_KEY=your_api_key_here
    ```
 
 2. Implement Claude service in `services/claude_service.py`
