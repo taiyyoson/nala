@@ -3,11 +3,11 @@ import os
 
 # Database connection parameters
 DB_CONFIG = {
-    'host': 'localhost',
-    'port': '5432',
-    'database': 'chatbot_db',
-    'user': 'postgres',
-    'password': os.getenv('VECTOR_DB_PASSWORD')
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', '5432'),
+    'database': os.getenv('DB_NAME', 'chatbot_db'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD')
 }
 
 def reset_database():
