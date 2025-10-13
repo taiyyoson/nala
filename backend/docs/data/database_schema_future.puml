@@ -1,0 +1,132 @@
+@startuml Database_Schema
+!theme plain
+
+' Entity Definitions
+entity "Users" as users {
+  * user_id : UUID <<PK>>
+  --
+  * email : VARCHAR(255)
+  * password_hash : VARCHAR(255)
+  * first_name : VARCHAR(100)
+  * last_name : VARCHAR(100)
+  * created_at : TIMESTAMP
+  * last_login : TIMESTAMP
+  phone_number : VARCHAR(20)
+}
+
+entity "User_Persona" as persona {
+  * persona_id : UUID <<PK>>
+  * user_id : UUID <<FK>>
+  --
+  personal_details : JSONB
+  has_dog : BOOLEAN
+  preferences : JSONB
+  vector_data : VECTOR
+  updated_at : TIMESTAMP
+}
+
+entity "SMART_Goals" as goals {
+  * goal_id : UUID <<PK>>
+  * user_id : UUID <<FK>>
+  --
+  * goal_type : VARCHAR(50)
+  * specific : TEXT
+  * measurable : TEXT
+  * achievable : TEXT
+  * relevant : TEXT
+  * time_bound : TEXT
+  status : VARCHAR(20)
+  created_at : TIMESTAMP
+  completed_at : TIMESTAMP
+}
+
+entity "Sessions" as sessions {
+  * session_id : UUID <<PK>>
+  * user_id : UUID <<FK>>
+  * goal_id : UUID <<FK>>
+  --
+  * session_number : INTEGER
+  * week_number : INTEGER
+  session_type : VARCHAR(50)
+  scheduled_date : TIMESTAMP
+  completed_date : TIMESTAMP
+  status : VARCHAR(20)
+  summary : TEXT
+}
+
+entity "Transcripts" as transcripts {
+  * transcript_id : UUID <<PK>>
+  * session_id : UUID <<FK>>
+  --
+  * message_order : INTEGER
+  * sender : VARCHAR(20)
+  * message_content : TEXT
+  timestamp : TIMESTAMP
+  metadata : JSONB
+}
+
+entity "Session_Takeaways" as takeaways {
+  * takeaway_id : UUID <<PK>>
+  * session_id : UUID <<FK>>
+  --
+  * key_learnings : TEXT
+  * action_items : TEXT
+  * revised_goal : TEXT
+  created_at : TIMESTAMP
+}
+
+entity "Check_Ins" as checkins {
+  * checkin_id : UUID <<PK>>
+  * user_id : UUID <<FK>>
+  * goal_id : UUID <<FK>>
+  --
+  checkin_date : DATE
+  progress_notes : TEXT
+  mood_rating : INTEGER
+  goal_progress : INTEGER
+  created_at : TIMESTAMP
+}
+
+entity "Engagement_Analytics" as analytics {
+  * analytics_id : UUID <<PK>>
+  * user_id : UUID <<FK>>
+  --
+  total_messages : INTEGER
+  avg_response_time : INTERVAL
+  session_completion_rate : DECIMAL
+  last_activity : TIMESTAMP
+  engagement_score : DECIMAL
+}
+
+' Relationships
+users ||--o{ persona : "has"
+users ||--o{ goals : "sets"
+users ||--o{ sessions : "participates in"
+users ||--o{ checkins : "submits"
+users ||--|| analytics : "tracked by"
+
+goals ||--o{ sessions : "addressed in"
+goals ||--o{ checkins : "tracked by"
+
+sessions ||--o{ transcripts : "contains"
+sessions ||--|| takeaways : "produces"
+
+note right of persona
+  Stores personalization data:
+  - Vector embeddings
+  - Personal context
+  - Updated after each message
+end note
+
+note right of transcripts
+  Complete conversation history
+  for context and analysis
+end note
+
+note bottom of sessions
+  Sessions unlock based on:
+  - Previous completion
+  - Scheduled date
+end note
+
+@enduml
