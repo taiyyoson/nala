@@ -95,14 +95,21 @@ def step4_verify_setup():
     """Step 4: Verify everything is working"""
     import psycopg2
     
-    DB_CONFIG = {
-        'host': os.getenv('DB_HOST'),
-        'database': os.getenv('DB_NAME'),
-        'user': os.getenv('DB_USER'),
-        'password': os.getenv('DB_PASSWORD')
-    }
+    # Support both DATABASE_URL and individual params
+    def get_db_connection():
+        database_url = os.getenv('DATABASE_URL')
+        
+        if database_url:
+            return psycopg2.connect(database_url)
+        else:
+            return psycopg2.connect(
+                host=os.getenv('DB_HOST'),
+                database=os.getenv('DB_NAME'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD')
+            )
     
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = get_db_connection()
     cur = conn.cursor()
     
     # Check record count
