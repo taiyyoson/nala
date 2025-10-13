@@ -63,12 +63,23 @@ class AIBackendConfig:
         Raises:
             ValueError: If required configuration is missing
         """
-        # TODO: Implement validation
         # 1. Check AI-backend path exists
+        ai_backend_path = Path(self.ai_backend_path)
+        if not ai_backend_path.exists():
+            raise ValueError(f"AI-backend path does not exist: {self.ai_backend_path}")
+
         # 2. Check at least one LLM API key is present
+        if not self.openai_api_key and not self.anthropic_api_key:
+            raise ValueError("At least one LLM API key (OpenAI or Anthropic) must be configured")
+
         # 3. Check vector DB credentials
-        # 4. Optionally test connections
-        raise NotImplementedError("Configuration validation not yet implemented")
+        if not self.vector_db_user or not self.vector_db_password:
+            raise ValueError("Vector database credentials (user and password) are required")
+
+        if not self.vector_db_host or not self.vector_db_name:
+            raise ValueError("Vector database host and name are required")
+
+        return True
 
     def to_dict(self) -> dict:
         """
