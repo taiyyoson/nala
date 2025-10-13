@@ -3,9 +3,10 @@ import psycopg2
 # Database connection parameters
 DB_CONFIG = {
     'host': 'localhost',
+    'port': '5432',
     'database': 'chatbot_db',
     'user': 'postgres',
-    'password': 'nala'  
+    'password': 'nala'
 }
 
 def reset_database():

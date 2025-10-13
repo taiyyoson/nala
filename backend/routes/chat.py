@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from services import rag_service
+
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 
 
@@ -49,8 +51,11 @@ async def send_message(request: ChatRequest):
         )
         conversations[conv_id].append(user_message)
 
-        # Mock response for now - replace with Claude API integration
-        bot_response = await generate_mock_response(request.message)
+        # Get conversation history for RAG
+        history = [{"role": msg.role, "content": msg.content} for msg in conversations[conv_id]]
+
+        # Get RAG response
+        bot_response, sources = rag_service.get_rag_response(request.message, history)
 
         assistant_message = ChatMessage(
             role="assistant", content=bot_response, timestamp=datetime.now()

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Claude API settings
-    claude_api_key: str = ""
+    claude_api_key: str =os.getenv("CLAUDE_API_KEY")
     claude_model: str = "claude-3-sonnet-20240229"
 
     # Database
