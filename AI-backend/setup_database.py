@@ -1,4 +1,5 @@
 import psycopg2
+import os
 
 # Database connection parameters
 DB_CONFIG = {
@@ -6,7 +7,7 @@ DB_CONFIG = {
     'port': '5432',
     'database': 'chatbot_db',
     'user': 'postgres',
-    'password': 'nala'
+    'password': os.getenv('VECTOR_DB_PASSWORD')
 }
 
 def reset_database():
