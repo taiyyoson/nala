@@ -1,40 +1,23 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LoadingScreen from '../screens/LoadingScreen';
-import ChatOverviewScreen from '../screens/ChatOverviewScreen';
-import ChatScreen from '../screens/ChatScreen';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import AuthStack from './AuthStack';
+import MainStack from './MainStack';
 
-export type RootStackParamList = {
-  Loading: undefined;
-  ChatOverview: undefined;
-  Chat: undefined;
-};
+function AppContent() {
+  const { loggedInUser, hasCompletedOnboarding } = useAuth();
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+  return (
+    <NavigationContainer>
+      {loggedInUser && hasCompletedOnboarding ? <MainStack /> : <AuthStack />}
+    </NavigationContainer>
+  );
+}
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="Loading"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen 
-          name="Loading" 
-          component={LoadingScreen}
-        />
-        <Stack.Screen 
-          name="ChatOverview" 
-          component={ChatOverviewScreen}
-        />
-        <Stack.Screen 
-          name="Chat" 
-          component={ChatScreen}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

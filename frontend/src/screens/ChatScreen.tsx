@@ -11,10 +11,10 @@ import {
   ActivityIndicator
 } from "react-native";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { MainStackParamList } from '../navigation/MainStack';
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
+  MainStackParamList,
   'Chat'
 >;
 
@@ -29,7 +29,6 @@ type Message = {
   timestamp: Date;
 };
 
-// API service to communicate with FastAPI backend
 const chatAPI = {
   sendMessage: async (message: string): Promise<string> => {
     try {
@@ -153,8 +152,7 @@ export default function ChatScreen({ navigation }: Props) {
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
           <View style={styles.headerTitles}>
-            <Text style={styles.title}>NALA Health Coach</Text>
-            <Text style={styles.subtitle}>Week 1 Session</Text>
+            <Text style={styles.title}>Week 1 Session</Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
@@ -163,12 +161,12 @@ export default function ChatScreen({ navigation }: Props) {
         )}
         {backendConnected === false && (
           <Text style={[styles.statusText, styles.errorText]}>
-            Backend not connected. Run: python dev.py
+            ⚠️ Backend not connected
           </Text>
         )}
         {backendConnected === true && (
           <Text style={[styles.statusText, styles.successText]}>
-            Connected to backend
+            ✓ Connected
           </Text>
         )}
       </View>
@@ -190,12 +188,23 @@ export default function ChatScreen({ navigation }: Props) {
               styles.messageBubble,
               message.sender === 'user' ? styles.userBubble : styles.nalaBubble
             ]}>
-              <Text style={styles.senderName}>
+              <Text style={[
+                styles.senderName,
+                message.sender === 'user' ? styles.userSenderName : styles.nalaSenderName
+              ]}>
                 {message.sender === 'user' ? 'You' : 'NALA'}
               </Text>
-              <Text style={styles.messageText}>{message.text}</Text>
-              <Text style={styles.timestamp}>
-                {message.timestamp.toLocaleTimeString()}
+              <Text style={[
+                styles.messageText,
+                message.sender === 'user' && styles.userMessageText
+              ]}>
+                {message.text}
+              </Text>
+              <Text style={[
+                styles.timestamp,
+                message.sender === 'user' && styles.userTimestamp
+              ]}>
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>
           </View>
@@ -204,7 +213,7 @@ export default function ChatScreen({ navigation }: Props) {
         {isLoading && (
           <View style={[styles.messageWrapper, styles.nalaMessageWrapper]}>
             <View style={[styles.messageBubble, styles.nalaBubble]}>
-              <ActivityIndicator size="small" color="#666" />
+              <ActivityIndicator size="small" color="rgb(72, 147, 95)" />
               <Text style={styles.messageText}>NALA is typing...</Text>
             </View>
           </View>
@@ -216,6 +225,7 @@ export default function ChatScreen({ navigation }: Props) {
         <TextInput
           style={styles.input}
           placeholder="Type your message..."
+          placeholderTextColor="#999"
           value={input}
           onChangeText={setInput}
           onSubmitEditing={sendUserMessage}
@@ -230,17 +240,8 @@ export default function ChatScreen({ navigation }: Props) {
           onPress={sendUserMessage}
           disabled={isLoading || !input.trim() || backendConnected === false}
         >
-          <Text style={styles.sendButtonText}>Send</Text>
+          <Text style={styles.sendButtonText}>→</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Debug Info */}
-      <View style={styles.debugInfo}>
-        <Text style={styles.debugText}>
-          Backend Status: {backendConnected ? '✅ Connected' : '❌ Disconnected'}
-        </Text>
-        <Text style={styles.debugText}>Messages: {messages.length}</Text>
-        <Text style={styles.debugText}>Loading: {isLoading ? 'Yes' : 'No'}</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -249,10 +250,10 @@ export default function ChatScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F9F7',
   },
   header: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: 'rgb(72, 147, 95)',
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
@@ -275,6 +276,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitles: {
+    marginTop: 20,
     flex: 1,
     alignItems: 'center',
   },
@@ -299,10 +301,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    color: '#ff6b6b',
+    color: 'rgb(248, 186, 32)',
   },
   successText: {
-    color: '#51cf66',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   messagesContainer: {
     flex: 1,
@@ -326,53 +328,67 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   userBubble: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#48935F',
   },
   nalaBubble: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    backgroundColor: '#9ACDBF',
+    borderWidth: 2,
+    borderColor: 'rgb(154, 205, 191)',
   },
   senderName: {
     fontWeight: 'bold',
     fontSize: 12,
     marginBottom: 4,
-    color: '#666',
+  },
+  userSenderName: {
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  nalaSenderName: {
+    color: '#48935F',
   },
   messageText: {
     fontSize: 16,
     color: '#333',
     marginBottom: 4,
   },
+  userMessageText: {
+    color: '#fff',
+  },
   timestamp: {
     fontSize: 10,
-    color: '#999',
+    color: '#0B3D00',
     marginTop: 4,
+  },
+  userTimestamp: {
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   inputArea: {
     flexDirection: 'row',
     padding: 12,
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopWidth: 2,
+    borderTopColor: 'rgb(154, 205, 191)',
+    gap: 8,
+    marginBottom: 30,
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderWidth: 2,
+    borderColor: 'rgb(154, 205, 191)',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#F5F9F7',
+    color: '#333',
   },
   sendButton: {
-    marginLeft: 8,
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    backgroundColor: 'rgb(211, 104, 140)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   sendButtonDisabled: {
     backgroundColor: '#ccc',
@@ -380,17 +396,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
-  },
-  debugInfo: {
-    padding: 8,
-    backgroundColor: '#f8f8f8',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
+    fontSize: 20,
   },
 });

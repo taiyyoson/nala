@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { MainStackParamList } from '../navigation/MainStack';
+import { useAuth } from '../contexts/AuthContext';
 
 type ChatOverviewScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
+  MainStackParamList,
   'ChatOverview'
 >;
 
@@ -13,22 +14,32 @@ type Props = {
 };
 
 export default function ChatOverviewScreen({ navigation }: Props) {
+  const { setLoggedInUser } = useAuth();
+
   const weeks = [
-    { id: 1, title: 'Week 1', available: true },
-    { id: 2, title: 'Week 2', available: false },
-    { id: 3, title: 'Week 3', available: false },
-    { id: 4, title: 'Week 4', available: false },
+    { id: 1, title: 'Session 1', available: true },
+    { id: 2, title: 'Session 2', available: false },
+    { id: 3, title: 'Session 3', available: false },
+    { id: 4, title: 'Session 4', available: false },
   ];
 
   const currentWeek = 1;
   const totalWeeks = 4;
   const progress = (currentWeek / totalWeeks) * 100;
 
+  const handleLogout = () => {
+    setLoggedInUser(null);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Coaching Program</Text>
@@ -96,7 +107,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F5F9F7',
   },
   header: {
     flexDirection: 'row',
@@ -105,7 +116,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: 'rgb(72, 147, 95)',
   },
   backButton: {
     width: 40,
@@ -114,12 +125,13 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     fontSize: 24,
-    color: '#000',
+    color: '#FFF',
+    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: '#FFF',
   },
   placeholder: {
     width: 40,
@@ -129,6 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   progressSection: {
+    marginTop: 24,
     marginBottom: 32,
   },
   progressHeader: {
@@ -139,12 +152,12 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#666',
     fontWeight: '500',
   },
   progressPercentage: {
     fontSize: 18,
-    color: '#3B82F6',
+    color: '#48935F',
     fontWeight: '700',
   },
   progressBarContainer: {
@@ -155,7 +168,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#D3688C',
     borderRadius: 4,
   },
   weeksContainer: {
@@ -169,26 +182,29 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 24,
     borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 2,
+    borderColor: 'rgb(154, 205, 191)',
+    shadowColor: 'rgb(72, 147, 95)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   weekCardLocked: {
     backgroundColor: '#F8F9FA',
+    borderColor: '#E0E0E0',
   },
   weekTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: 'rgb(72, 147, 95)',
   },
   weekTitleLocked: {
     color: '#D1D5DB',
   },
   arrowIcon: {
     fontSize: 20,
-    color: '#3B82F6',
+    color: '#F8BA20',
     fontWeight: '600',
   },
   lockIcon: {
@@ -201,7 +217,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: 'rgb(154, 205, 191)',
     gap: 40,
   },
   navButton: {
@@ -209,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navButtonActive: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: 'rgba(154, 205, 191, 0.2)',
     paddingVertical: 8,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -231,7 +247,7 @@ const styles = StyleSheet.create({
   },
   navLabelActive: {
     fontSize: 13,
-    color: '#3B82F6',
+    color: 'rgb(72, 147, 95)',
     fontWeight: '600',
   },
 });
