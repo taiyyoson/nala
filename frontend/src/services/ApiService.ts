@@ -23,7 +23,7 @@ export class ApiService {
 
   static async sendMessage(message: string) {
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/message`, {
+      const response = await fetch(API_BASE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export class ApiService {
 
   static async getConversation(conversationId: string) {
     try {
-      const response = await fetch(`${API_BASE_URL}/chat/conversation/${conversationId}`);
+      const response = await fetch(`${API_BASE_URL.replace('/message', '')}/conversation/${conversationId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -59,7 +59,7 @@ export class ApiService {
 
   static async checkHealth() {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`);
+      const response = await fetch(`${API_BASE_URL.replace('/api/v1/chat/message', '')}/api/v1/health`);
       return await response.json();
     } catch (error) {
       console.error('Health check failed:', error);
