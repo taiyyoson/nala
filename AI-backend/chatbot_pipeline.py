@@ -13,7 +13,6 @@ load_dotenv()
 
 def check_requirements():
     """Check if all requirements are met before starting"""
-    # print("Checking requirements...")
     
     # Check for .env file
     if not os.path.exists('.env'):
@@ -22,14 +21,30 @@ def check_requirements():
         return False
     
     # Check for required env variables
-    required_vars = ['OPENAI_API_KEY', 'DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']
+    # Support both DATABASE_URL (Render) and individual params (local)
+    has_database_url = os.getenv('DATABASE_URL')
+    has_individual_params = all([
+        os.getenv('DB_HOST'),
+        os.getenv('DB_NAME'),
+        os.getenv('DB_USER'),
+        os.getenv('DB_PASSWORD')
+    ])
+    
+    if not (has_database_url or has_individual_params):
+        print("ERROR: Missing database configuration!")
+        print("Please provide either:")
+        print("  - DATABASE_URL (for Render), OR")
+        print("  - DB_HOST, DB_NAME, DB_USER, DB_PASSWORD (for local)")
+        return False
+    
+    # Check for API keys
+    required_vars = ['OPENAI_API_KEY']
     missing = [var for var in required_vars if not os.getenv(var)]
     
     if missing:
         print(f"ERROR: Missing environment variables: {', '.join(missing)}")
         return False
     
-    # print("✓ All requirements met\n")
     return True
 
 def run_step(step_name, function):

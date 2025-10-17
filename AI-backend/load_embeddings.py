@@ -12,6 +12,29 @@ load_dotenv()
 # Initialize OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+def prepare_text_for_embedding(participant_response, coach_response, context_category, goal_type):
+    """
+    Combine multiple fields to create richer embeddings
+    This gives the model more context to understand the conversation
+    """
+    # Clean empty values
+    context = context_category if context_category else "general"
+    goal = goal_type if goal_type else "general"
+    
+    # Combine participant response with metadata for better context
+    enhanced_text = f"Context: {context} | Goal: {goal} | {participant_response}"
+    
+    return enhanced_text
+
+def prepare_coach_context(coach_response, context_category, goal_type):
+    """Add context to coach responses too"""
+    context = context_category if context_category else "general"
+    goal = goal_type if goal_type else "general"
+    
+    enhanced_text = f"Context: {context} | Goal: {goal} | {coach_response}"
+    
+    return enhanced_text
+
 # Database config
 def get_db_connection():
     database_url = os.getenv('DATABASE_URL')
@@ -51,25 +74,45 @@ def get_embeddings_batch(texts, batch_size=100):
 def load_csv_to_database(csv_path):
     """Load CSV data, generate embeddings, and store in PostgreSQL"""
     
-    # print(f"Loading CSV from {csv_path}...")
+    print(f"Loading CSV from {csv_path}...")
     df = pd.read_csv(csv_path)
-    # print(f"Loaded {len(df)} rows")
+    print(f"Loaded {len(df)} rows")
     
     # Clean data
     df = df.fillna('')
     
-    # Generate embeddings for participant responses
-    # print("\nGenerating embeddings for participant responses...")
-    participant_texts = df['participant_response'].tolist()
-    participant_embeddings = get_embeddings_batch(participant_texts)
+    # === NEW: Prepare enhanced texts for better embeddings ===
+    print("\nPreparing enhanced text for embeddings...")
+    participant_enhanced = []
+    coach_enhanced = []
     
-    # Generate embeddings for coach responses
-    # print("\nGenerating embeddings for coach responses...")
-    coach_texts = df['coach_response'].tolist()
-    coach_embeddings = get_embeddings_batch(coach_texts)
+    for _, row in df.iterrows():
+        # Enhance participant text
+        p_text = prepare_text_for_embedding(
+            row['participant_response'],
+            row['coach_response'],
+            row['context_category'],
+            row['goal_type']
+        )
+        participant_enhanced.append(p_text)
+        
+        # Enhance coach text
+        c_text = prepare_coach_context(
+            row['coach_response'],
+            row['context_category'],
+            row['goal_type']
+        )
+        coach_enhanced.append(c_text)
     
-    # Prepare data for insertion
-    # print("\nPreparing data for database insertion...")
+    # === CHANGED: Use enhanced texts instead of raw texts ===
+    print("\nGenerating embeddings for participant responses...")
+    participant_embeddings = get_embeddings_batch(participant_enhanced)
+    
+    print("\nGenerating embeddings for coach responses...")
+    coach_embeddings = get_embeddings_batch(coach_enhanced)
+    
+    # Rest stays the same
+    print("\nPreparing data for database insertion...")
     data_to_insert = []
     for idx, row in df.iterrows():
         data_to_insert.append((
@@ -84,12 +127,10 @@ def load_csv_to_database(csv_path):
             coach_embeddings[idx]
         ))
     
-    # Insert into database
-    # print("\nConnecting to database...")
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # print("Inserting data into database...")
+    print("Inserting data into database...")
     execute_values(cur, """
         INSERT INTO coaching_conversations 
         (participant_response, coach_response, context_category, goal_type, 
@@ -99,11 +140,10 @@ def load_csv_to_database(csv_path):
     
     conn.commit()
     
-    # Verify insertion
     cur.execute("SELECT COUNT(*) FROM coaching_conversations")
     count = cur.fetchone()[0]
-    # print(f"\n✅ Success! Inserted {len(data_to_insert)} records.")
-    # print(f"Total records in database: {count}")
+    print(f"\n✅ Success! Inserted {len(data_to_insert)} records.")
+    print(f"Total records in database: {count}")
     
     cur.close()
     conn.close()

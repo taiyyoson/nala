@@ -3,6 +3,7 @@ from anthropic import Anthropic
 from query import VectorSearch
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -48,7 +49,10 @@ class UnifiedRAGChatbot:
             self.anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     
     def retrieve(self, query, min_similarity=0.4):
-        """Retrieve relevant coaching examples"""
+        """
+        Retrieve relevant coaching examples from vector database
+        """
+        # TEST: Use pure vector search instead of hybrid
         results = self.searcher.search_with_details(
             query, 
             limit=self.top_k,
@@ -57,14 +61,19 @@ class UnifiedRAGChatbot:
         return results
     
     def build_context(self, retrieved_examples):
-        """Build context string from retrieved examples"""
+        """
+        Build context string from retrieved examples
+        """
         if not retrieved_examples:
             return "No relevant examples found in the database."
         
         context = "Here are relevant coaching conversation examples:\n\n"
         
         for i, example in enumerate(retrieved_examples, 1):
-            context += f"Example {i} (similarity: {example['similarity']:.2f}):\n"
+            # Handle both regular search and hybrid search formats
+            similarity = example.get('combined_score') or example.get('similarity') or example.get('vector_similarity', 0)
+            
+            context += f"Example {i} (similarity: {similarity:.2f}):\n"
             context += f"Participant: {example['participant_response']}\n"
             context += f"Coach: {example['coach_response']}\n"
             context += f"Context: {example['category']} | Goal: {example['goal_type']}\n\n"
@@ -80,7 +89,8 @@ class UnifiedRAGChatbot:
 - Acknowledge their feelings and validate their experiences
 - Provide actionable suggestions based on their specific situation
 - Celebrate their wins and progress
-- Keep responses concise and conversational (2-4 sentences typically)
+- Keep responses concise and conversational (2-4 sentences)
+- Ask only 1 question at a time
 
 {context}
 
@@ -100,16 +110,15 @@ Use these examples as guidance for your coaching style and responses. Mirror the
             model=self.model,
             messages=messages,
             temperature=0.7,
-            max_tokens=500
+            max_tokens=400
         )
         
         return response.choices[0].message.content
     
     def generate_with_anthropic(self, user_message, system_prompt):
-        """Generate response using Anthropic Claude"""
+        """Generate response using Anthropic Claude with prompt caching"""
         messages = []
         
-        # Add conversation history
         if self.conversation_history:
             messages.extend(self.conversation_history[-6:])
         
@@ -121,19 +130,53 @@ Use these examples as guidance for your coaching style and responses. Mirror the
             model=model_id,
             max_tokens=500,
             temperature=0.7,
-            system=system_prompt,
+            system=[
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"}  # Cache this!
+                }
+            ],
             messages=messages
         )
         
         return response.content[0].text
     
-    def generate_response(self, user_message, use_history=True):
-        """
-        Generate response using RAG pipeline
+    def generate_with_anthropic_streaming(self, user_message, system_prompt):
+        """Generate streaming response with prompt caching"""
+        messages = []
         
-        Returns:
-            tuple: (response, retrieved_examples, model_used)
-        """
+        if self.conversation_history:
+            messages.extend(self.conversation_history[-6:])
+        
+        messages.append({"role": "user", "content": user_message})
+        
+        model_id = self.model_info.get('model_id', self.model)
+        
+        # Stream with prompt caching
+        full_response = ""
+        with self.anthropic_client.messages.stream(
+            model=model_id,
+            max_tokens=500,
+            temperature=0.7,
+            system=[
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"}  # Cache the system prompt!
+                }
+            ],
+            messages=messages
+        ) as stream:
+            for text in stream.text_stream:
+                print(text, end="", flush=True)
+                full_response += text
+        
+        return full_response
+        
+    def generate_response(self, user_message, use_history=True):
+        """Generate response using RAG pipeline with timing"""
+        
         # Retrieve relevant examples
         retrieved_examples = self.retrieve(user_message)
         
@@ -145,9 +188,7 @@ Use these examples as guidance for your coaching style and responses. Mirror the
         if self.model_info['provider'] == 'openai':
             response = self.generate_with_openai(user_message, system_prompt)
         elif self.model_info['provider'] == 'anthropic':
-            response = self.generate_with_anthropic(user_message, system_prompt)
-        else:
-            raise ValueError(f"Unknown provider: {self.model_info['provider']}")
+            response = self.generate_with_anthropic_streaming(user_message, system_prompt)  # Changed!
         
         # Update conversation history
         if use_history:
@@ -161,6 +202,7 @@ Use these examples as guidance for your coaching style and responses. Mirror the
             })
         
         return response, retrieved_examples, self.model_info['name']
+    
     
     def switch_model(self, new_model):
         """Switch to a different model"""
@@ -237,7 +279,7 @@ def interactive_chat():
     print("\n" + "=" * 80 + "\n")
     
     # Start with default model
-    chatbot = UnifiedRAGChatbot(model='claude-sonnet-4')
+    chatbot = UnifiedRAGChatbot(model='claude-sonnet-4.5')
     print(f"Current model: {chatbot.model_info['name']}\n")
     
     show_sources = False
@@ -245,6 +287,7 @@ def interactive_chat():
     
     while True:
         user_input = input("You: ").strip()
+        
         
         if not user_input:
             continue
@@ -283,9 +326,13 @@ def interactive_chat():
                 print("No previous query to compare. Ask a question first!")
             continue
         
+        start = time.time()
+
         # Generate response
         try:
             last_query = user_input
+            start = time.time()
+            
             response, sources, model_name = chatbot.generate_response(user_input)
             
             if show_sources:
@@ -297,8 +344,13 @@ def interactive_chat():
                     print(f"Coach: {source['coach_response'][:100]}...")
                 print("\n--- Response ---")
             
-            print(f"\nCoach [{model_name}]: {response}\n")
+            # REMOVE OR COMMENT OUT THIS LINE - it's duplicating the streamed output:
+            # print(f"\nCoach [{model_name}]: {response}\n")
             
+            # Instead, just add a newline after streaming and the timing info:
+            print()  # Blank line for spacing
+            
+
         except Exception as e:
             print(f"\nError: {e}\n")
         

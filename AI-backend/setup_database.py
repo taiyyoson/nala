@@ -46,7 +46,6 @@ def reset_database():
 def setup_database():
     """Create the table and indexes for coaching conversations"""
     
-    # Connect to database
     conn = get_db_connection()
     conn.autocommit = True
     cur = conn.cursor()
@@ -72,6 +71,8 @@ def setup_database():
     """)
     
     print("Creating indexes...")
+    
+    # Vector search index
     cur.execute("""
         CREATE INDEX IF NOT EXISTS participant_embedding_idx 
         ON coaching_conversations 
@@ -79,6 +80,7 @@ def setup_database():
         WITH (lists = 100);
     """)
     
+    # Category indexes
     cur.execute("""
         CREATE INDEX IF NOT EXISTS context_category_idx 
         ON coaching_conversations (context_category);
@@ -87,6 +89,21 @@ def setup_database():
     cur.execute("""
         CREATE INDEX IF NOT EXISTS goal_type_idx 
         ON coaching_conversations (goal_type);
+    """)
+    
+    # === NEW: Full-text search indexes ===
+    print("Creating full-text search indexes...")
+    
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS participant_text_idx 
+        ON coaching_conversations 
+        USING gin(to_tsvector('english', participant_response));
+    """)
+    
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS coach_text_idx 
+        ON coaching_conversations 
+        USING gin(to_tsvector('english', coach_response));
     """)
     
     print("Database setup complete!")
