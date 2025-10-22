@@ -9,8 +9,14 @@ class Settings(BaseSettings):
     api_port: int = 8000
     debug: bool = True
 
+<<<<<<< HEAD
     # Conversation Database (SQLite for local dev, PostgreSQL for prod)
     database_url: str = "sqlite:///./nala_conversations.db"
+=======
+    # Claude API settings
+    claude_api_key: str =os.getenv("CLAUDE_API_KEY")
+    claude_model: str = "claude-3-sonnet-20240229"
+>>>>>>> 2eeaf78 (working e2e pipeline, rag connected to frontend via api handler)
 
     # Vector Database (PostgreSQL with pgvector - used by AI-backend)
     vector_db_host: str = "localhost"
