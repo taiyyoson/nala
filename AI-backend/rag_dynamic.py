@@ -22,7 +22,7 @@ class UnifiedRAGChatbot:
         'claude-sonnet-4.5': {'provider': 'anthropic', 'name': 'Claude Sonnet 4.5', 'model_id': 'claude-sonnet-4-5-20250929'},
     }
     
-    def __init__(self, model='gpt-4o-mini', top_k=3):
+    def __init__(self, model='claude-sonnet-4.5', top_k=3):
         """
         Initialize unified RAG system
         
