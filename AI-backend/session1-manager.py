@@ -1,56 +1,32 @@
-from openai import OpenAI
-from anthropic import Anthropic
-from query import VectorSearch
+from rag_dynamic import UnifiedRAGChatbot
+from session1 import Session1Manager, SessionState
 import os
 from dotenv import load_dotenv
-import time
-from session1 import Session1Manager, SessionState
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 load_dotenv()
 
 
-class SessionBasedRAGChatbot:
-    """RAG chatbot with structured session management"""
-    
-    AVAILABLE_MODELS = {
-        'gpt-4o': {'provider': 'openai', 'name': 'GPT-4o'},
-        'gpt-4o-mini': {'provider': 'openai', 'name': 'GPT-4o Mini'},
-        'gpt-4-turbo': {'provider': 'openai', 'name': 'GPT-4 Turbo'},
-        'claude-opus-4': {'provider': 'anthropic', 'name': 'Claude Opus 4', 'model_id': 'claude-opus-4-20250514'},
-        'claude-sonnet-4': {'provider': 'anthropic', 'name': 'Claude Sonnet 4', 'model_id': 'claude-sonnet-4-20250514'},
-        'claude-sonnet-4.5': {'provider': 'anthropic', 'name': 'Claude Sonnet 4.5', 'model_id': 'claude-sonnet-4-5-20250929'},
-    }
+class SessionBasedRAGChatbot(UnifiedRAGChatbot):
+    """
+    Extends UnifiedRAGChatbot with session management for structured coaching flows
+    Inherits all RAG and multi-model capabilities from parent class
+    """
     
     def __init__(self, model='claude-sonnet-4.5', top_k=3, program_info_file='program_info.txt',
-                 recent_messages=6, relevant_history_count=4):
-        if model not in self.AVAILABLE_MODELS:
-            raise ValueError(f"Model '{model}' not supported. Choose from: {list(self.AVAILABLE_MODELS.keys())}")
+                 recent_messages=6, relevant_history_count=4, validate_constraints=True):
+        # Initialize parent RAG chatbot
+        super().__init__(model=model, top_k=top_k)
         
-        self.model = model
-        self.model_info = self.AVAILABLE_MODELS[model]
-        self.top_k = top_k
-        self.searcher = VectorSearch()
-        self.conversation_history = []  # Store ALL messages
+        # Session-specific settings
+        self.program_info_file = program_info_file
+        self.recent_messages = recent_messages
+        self.relevant_history_count = relevant_history_count
+        self.validate_constraints = validate_constraints
         
-        # History management settings
-        self.recent_messages = recent_messages  # Last N messages always included
-        self.relevant_history_count = relevant_history_count  # Additional relevant messages
-        
-        # Initialize clients
-        self.openai_client = None
-        self.anthropic_client = None
-        
-        if self.model_info['provider'] == 'openai':
-            self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        elif self.model_info['provider'] == 'anthropic':
-            self.anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        
-        # Session management (initialize AFTER clients are set up)
+        # Initialize session manager
         self.session_manager = Session1Manager(program_info_file=program_info_file)
         
-        # Create LLM evaluator wrapper for session manager
+        # Set up LLM evaluator for SMART goal checking
         self.session_manager.set_llm_client(self._create_llm_evaluator())
     
     def _create_llm_evaluator(self):
@@ -60,7 +36,7 @@ class SessionBasedRAGChatbot:
                 self.parent = parent
             
             def evaluate_goal(self, prompt):
-                """Quick evaluation call to LLM"""
+                """Quick evaluation call to LLM for SMART goal checking"""
                 try:
                     if self.parent.model_info['provider'] == 'anthropic':
                         model_id = self.parent.model_info.get('model_id', self.parent.model)
@@ -94,24 +70,20 @@ class SessionBasedRAGChatbot:
     
     def _select_relevant_history(self, current_message: str, max_relevant: int = 4):
         """
-        Cherry-pick relevant messages from older history using semantic similarity
+        Cherry-pick relevant messages from older history using keyword matching
         
         Returns:
             List of relevant message pairs from older conversation
         """
         if len(self.conversation_history) <= self.recent_messages:
-            # Not enough history to cherry-pick from
             return []
         
-        # Get older messages (beyond the recent N)
         older_history = self.conversation_history[:-self.recent_messages]
         
         if not older_history:
             return []
         
         try:
-            # Use vector search to find semantically similar past exchanges
-            # Search in the participant responses from history
             relevant_exchanges = []
             
             for i in range(0, len(older_history), 2):
@@ -120,12 +92,11 @@ class SessionBasedRAGChatbot:
                     assistant_msg = older_history[i + 1]
                     
                     if user_msg['role'] == 'user' and assistant_msg['role'] == 'assistant':
-                        # Safely get content and handle None values
+                        # Safely get content
                         user_content = user_msg.get('content', '')
                         if user_content is None:
                             user_content = ''
                         
-                        # Simple keyword matching for now (can be enhanced with embeddings)
                         user_content_lower = user_content.lower()
                         current_lower = current_message.lower()
                         
@@ -139,7 +110,7 @@ class SessionBasedRAGChatbot:
                         
                         overlap = set(user_keywords) & set(current_keywords)
                         
-                        # Also check for name mentions or personal info
+                        # Check for name mentions
                         session_name = self.session_manager.session_data.get('user_name')
                         if session_name:
                             session_name = session_name.lower()
@@ -159,7 +130,7 @@ class SessionBasedRAGChatbot:
             relevant_exchanges.sort(key=lambda x: x['score'], reverse=True)
             selected = relevant_exchanges[:max_relevant]
             
-            # Return messages in chronological order
+            # Return in chronological order
             selected.sort(key=lambda x: x['index'])
             
             result = []
@@ -202,34 +173,8 @@ class SessionBasedRAGChatbot:
         
         return messages
     
-    def retrieve(self, query, min_similarity=0.4):
-        """Retrieve relevant coaching examples from vector database"""
-        results = self.searcher.search_with_details(
-            query, 
-            limit=self.top_k,
-            min_similarity=min_similarity
-        )
-        return results
-    
-    def build_context(self, retrieved_examples):
-        """Build context string from retrieved examples"""
-        if not retrieved_examples:
-            return "No relevant examples found in the database."
-        
-        context = "Here are relevant coaching conversation examples:\n\n"
-        
-        for i, example in enumerate(retrieved_examples, 1):
-            similarity = example.get('combined_score') or example.get('similarity') or example.get('vector_similarity', 0)
-            
-            context += f"Example {i} (similarity: {similarity:.2f}):\n"
-            context += f"Participant: {example['participant_response']}\n"
-            context += f"Coach: {example['coach_response']}\n"
-            context += f"Context: {example['category']} | Goal: {example['goal_type']}\n\n"
-        
-        return context
-    
-    def get_system_prompt(self, rag_context, session_context):
-        """Get complete system prompt with RAG and session context"""
+    def get_system_prompt(self, context):
+        """Override parent to add session-specific context and constraints"""
         base_prompt = """You are Nala, a supportive AI health and wellness coach. Your coaching style should be:
 - Warm, empathetic, and encouraging
 - Ask open-ended questions to promote reflection
@@ -238,74 +183,51 @@ class SessionBasedRAGChatbot:
 - Provide actionable suggestions based on their specific situation
 - Celebrate their wins and progress
 - Keep responses concise and conversational (2-4 sentences)
-- Ask only 1 question at a time"""
+- Ask only 1 question at a time
+
+CRITICAL PROGRAM CONSTRAINTS:
+- This is a 4-session program (Session 1, 2, 3, and 4)
+- Sessions happen ONCE PER WEEK - exactly 1 week apart
+- There are NO check-ins, calls, emails, or contact between sessions
+- You CANNOT promise to "check in", "follow up", "send reminders", or "reach out" between sessions
+- The participant is responsible for their own tracking and accountability between sessions
+- Next contact will be at the next scheduled weekly session
+
+Instead of promising check-ins, encourage:
+- Self-tracking methods (journal, app, calendar reminders)
+- Building their own accountability systems
+- Support from friends/family
+- Looking forward to discussing progress at next week's session"""
         
         # Add RAG context if available
-        if rag_context:
-            base_prompt += f"\n\n{rag_context}\n\nUse these examples as guidance for your coaching style and responses."
+        if context:
+            base_prompt += f"\n\n{context}\n\nUse these examples as guidance for your coaching style and responses."
         
         # Add session-specific context
         state_prompt = self.session_manager.get_system_prompt_addition()
         if state_prompt:
             base_prompt += f"\n\n--- SESSION CONTEXT ---{state_prompt}"
         
-        # Add additional context from session processing
-        if session_context:
-            base_prompt += f"\n\n--- ADDITIONAL CONTEXT ---\n{session_context}"
-        
         return base_prompt
     
-    def generate_with_anthropic_streaming(self, user_message, system_prompt):
-        """Generate streaming response with prompt caching and smart history"""
-        # Build smart context with recent + relevant older messages
-        context_messages = self._build_context_messages(user_message)
-        context_messages.append({"role": "user", "content": user_message})
+    def generate_response(self, user_message, use_history=True, debug_history=False):
+        """
+        Override parent to add session management and smart memory
+        """
+        # PATCH: Get last coach response from history (for detecting coach satisfaction)
+        last_coach_response = None
+        if self.conversation_history:
+            # Get the most recent assistant message
+            for msg in reversed(self.conversation_history):
+                if msg['role'] == 'assistant':
+                    last_coach_response = msg.get('content', '')
+                    break
         
-        model_id = self.model_info.get('model_id', self.model)
-        
-        full_response = ""
-        with self.anthropic_client.messages.stream(
-            model=model_id,
-            max_tokens=500,
-            temperature=0.7,
-            system=[
-                {
-                    "type": "text",
-                    "text": system_prompt,
-                    "cache_control": {"type": "ephemeral"}
-                }
-            ],
-            messages=context_messages
-        ) as stream:
-            for text in stream.text_stream:
-                print(text, end="", flush=True)
-                full_response += text
-        
-        return full_response
-    
-    def generate_with_openai(self, user_message, system_prompt):
-        """Generate response using OpenAI with smart history"""
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        # Build smart context with recent + relevant older messages
-        context_messages = self._build_context_messages(user_message)
-        messages.extend(context_messages)
-        messages.append({"role": "user", "content": user_message})
-        
-        response = self.openai_client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=0.7,
-            max_tokens=400
+        # Process input through session manager WITH coach's last response
+        session_result = self.session_manager.process_user_input(
+            user_message,
+            last_coach_response=last_coach_response  # PATCH: Pass coach response
         )
-        
-        return response.choices[0].message.content
-    
-    def generate_response(self, user_message, debug_history=False):
-        """Generate response using session-aware RAG pipeline with smart memory"""
-        
-        # Process input through session manager
-        session_result = self.session_manager.process_user_input(user_message)
         
         # Update state if needed
         if session_result["next_state"]:
@@ -319,13 +241,14 @@ class SessionBasedRAGChatbot:
             retrieved_examples = self.retrieve(user_message)
             rag_context = self.build_context(retrieved_examples)
         
-        # Build system prompt
-        system_prompt = self.get_system_prompt(
-            rag_context=rag_context,
-            session_context=session_result["context"]
-        )
+        # Build system prompt with RAG + session context
+        system_prompt = self.get_system_prompt(rag_context)
         
-        # Add memory context to system prompt if we have significant history
+        # Add session-specific context from state machine
+        if session_result["context"]:
+            system_prompt += f"\n\n--- ADDITIONAL CONTEXT ---\n{session_result['context']}"
+        
+        # Add memory summary for longer conversations
         if len(self.conversation_history) > self.recent_messages:
             memory_summary = self._get_memory_summary()
             if memory_summary:
@@ -338,23 +261,68 @@ class SessionBasedRAGChatbot:
             print(f"  - Recent messages: {min(len(self.conversation_history), self.recent_messages)}")
             print(f"  - Relevant older: {len(context_msgs) - min(len(self.conversation_history), self.recent_messages)}")
         
-        # Generate based on provider
-        if self.model_info['provider'] == 'openai':
-            response = self.generate_with_openai(user_message, system_prompt)
-        elif self.model_info['provider'] == 'anthropic':
-            response = self.generate_with_anthropic_streaming(user_message, system_prompt)
+        # Prepare messages with smart history selection
+        if self.model_info['provider'] == 'anthropic':
+            context_messages = self._build_context_messages(user_message)
+            context_messages.append({"role": "user", "content": user_message})
+            
+            model_id = self.model_info.get('model_id', self.model)
+            full_response = ""
+            
+            with self.anthropic_client.messages.stream(
+                model=model_id,
+                max_tokens=500,
+                temperature=0.7,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
+                messages=context_messages
+            ) as stream:
+                for text in stream.text_stream:
+                    print(text, end="", flush=True)
+                    full_response += text
+            
+            response = full_response
+            
+        else:  # OpenAI
+            messages = [{"role": "system", "content": system_prompt}]
+            context_messages = self._build_context_messages(user_message)
+            messages.extend(context_messages)
+            messages.append({"role": "user", "content": user_message})
+            
+            openai_response = self.openai_client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=400
+            )
+            response = openai_response.choices[0].message.content
+        
+        # Validate constraints if enabled
+        if self.validate_constraints:
+            response = self._check_and_warn_constraints(response)
         
         # Update conversation history (ALWAYS store everything)
-        self.conversation_history.append({
-            "role": "user",
-            "content": user_message
-        })
-        self.conversation_history.append({
-            "role": "assistant",
-            "content": response
-        })
+        if use_history:
+            self.conversation_history.append({
+                "role": "user",
+                "content": user_message
+            })
+            self.conversation_history.append({
+                "role": "assistant",
+                "content": response
+            })
         
         return response, retrieved_examples, self.model_info['name']
+    
+    def _check_and_warn_constraints(self, response: str) -> str:
+        """Check if response violates program constraints and warn"""
+        # Constraint checking disabled - kept for future use if needed
+        return response
     
     def _get_memory_summary(self):
         """Generate a summary of important information from conversation"""
@@ -402,7 +370,7 @@ class SessionBasedRAGChatbot:
     
     def reset_session(self):
         """Reset session to beginning"""
-        self.session_manager = Session1Manager()
+        self.session_manager = Session1Manager(self.program_info_file)
         self.session_manager.set_llm_client(self._create_llm_evaluator())
         self.conversation_history = []
         print("✓ Session reset to beginning")
@@ -425,6 +393,7 @@ def interactive_session_chat():
     chatbot = SessionBasedRAGChatbot(model='claude-sonnet-4.5')
     
     # Start with greeting
+    print("Nala: Let me start our first session...\n")
     initial_response, _, _ = chatbot.generate_response("Hello")
     print("\n")
     
@@ -491,6 +460,32 @@ def interactive_session_chat():
             print("\nNala: ", end="")
             response, sources, model_name = chatbot.generate_response(user_input)
             print("\n")
+            
+            # Check if session is complete
+            session_state = chatbot.session_manager.get_state()
+            if session_state == SessionState.END_SESSION:
+                print("\n" + "=" * 80)
+                print("SESSION 1 COMPLETE!")
+                print("=" * 80)
+                
+                # Automatically save
+                filename = chatbot.save_session()
+                print(f"\n✓ Session automatically saved to: {filename}")
+                
+                # Show summary
+                info = chatbot.get_session_info()
+                goal_details = info['data']['session_data'].get('goal_details', [])
+                if goal_details:
+                    print(f"\n📊 Session Summary:")
+                    print(f"   Participant: {info['data']['session_data'].get('user_name', 'N/A')}")
+                    print(f"   Goals Set: {len(goal_details)}")
+                    for i, goal_info in enumerate(goal_details, 1):
+                        print(f"   {i}. {goal_info['goal']}")
+                        print(f"      Confidence: {goal_info['confidence']}/10")
+                
+                print(f"\n👋 See you next week at Session 2!")
+                print("=" * 80 + "\n")
+                break  # Exit the chat loop
             
         except Exception as e:
             print(f"\nError: {e}\n")

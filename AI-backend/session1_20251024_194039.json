@@ -1,0 +1,235 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": null,
+    "program_questions_asked": [],
+    "goals": [
+      "support my workouts mainly"
+    ],
+    "goal_details": [
+      {
+        "goal": "support my workouts mainly",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": false,
+              "issue": "Unclear what 'support' means - needs specific action like 'fuel', 'recover from', or 'prepare for'"
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metrics for frequency, duration, or performance indicators"
+            },
+            "achievable": {
+              "met": false,
+              "issue": "Cannot assess without knowing what support is needed or current baseline"
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": false,
+              "issue": "No deadline or timeframe specified"
+            },
+            "suggestions": "Rewrite with specific action and metrics, e.g., 'Complete 3 strength training workouts per week for the next 8 weeks' or 'Consume 20g protein within 30 minutes after each workout for 1 month'"
+          },
+          "suggestions": "Rewrite with specific action and metrics, e.g., 'Complete 3 strength training workouts per week for the next 8 weeks' or 'Consume 20g protein within 30 minutes after each workout for 1 month'",
+          "missing_criteria": [
+            "SPECIFIC",
+            "MEASURABLE",
+            "ACHIEVABLE",
+            "TIMEBOUND"
+          ]
+        },
+        "refinement_attempts": 0
+      }
+    ],
+    "current_goal": "support my workouts mainly",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": false,
+          "issue": "Unclear what 'support' means - needs specific action like 'fuel', 'recover from', or 'prepare for'"
+        },
+        "measurable": {
+          "met": false,
+          "issue": "No metrics for frequency, duration, or performance indicators"
+        },
+        "achievable": {
+          "met": false,
+          "issue": "Cannot assess without knowing what support is needed or current baseline"
+        },
+        "relevant": {
+          "met": true,
+          "issue": ""
+        },
+        "timebound": {
+          "met": false,
+          "issue": "No deadline or timeframe specified"
+        },
+        "suggestions": "Rewrite with specific action and metrics, e.g., 'Complete 3 strength training workouts per week for the next 8 weeks' or 'Consume 20g protein within 30 minutes after each workout for 1 month'"
+      },
+      "suggestions": "Rewrite with specific action and metrics, e.g., 'Complete 3 strength training workouts per week for the next 8 weeks' or 'Consume 20g protein within 30 minutes after each workout for 1 month'",
+      "missing_criteria": [
+        "SPECIFIC",
+        "MEASURABLE",
+        "ACHIEVABLE",
+        "TIMEBOUND"
+      ]
+    },
+    "smart_refinement_attempts": 0,
+    "confidence_level": null,
+    "session_start": "2025-10-24T19:33:31.634020",
+    "turn_count": 18,
+    "last_coach_response": "That's a smart strategy! Setting those phone alarms will give you that helpful nudge at meal times to stick with your 6 oz portions.\n\nI'm excited to hear how this first week goes for you! When we connect again next week, we'll talk about what worked well, any challenges that came up, and how you're feeling with the increased protein supporting your workouts.\n\nIs there anything else you want to clarify or discuss about your goal before we wrap up today's session?"
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "Hello"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi there! Welcome! I'm Nala, and I'm so glad you're here. \ud83c\udf1f\n\nI'm excited to be your health and wellness coach for this 4-week program. We'll meet once a week for four sessions to work on your personal health goals together. Between our weekly sessions, you'll be putting what we discuss into action and tracking your own progress.\n\nBefore we dive in, what name would you like me to call you?"
+    },
+    {
+      "role": "user",
+      "content": "Jade"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Jade! \n\nI'm here to support you on your health and wellness journey over these next four weeks. This is a safe space where we can talk openly about your goals, challenges, and what matters most to you.\n\nTo get us started, what's bringing you here today - what aspect of your health or wellness would you most like to focus on?"
+    },
+    {
+      "role": "user",
+      "content": "I want to work on my weight"
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you for sharing that, Jade. Weight is something many people want to work on, and I'm here to support you with that goal.\n\nTo help me understand what would be most meaningful for you, can you tell me a bit more about what's motivating this - what would changing your weight help you do or feel?"
+    },
+    {
+      "role": "user",
+      "content": "It would make me feel more confident"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes a lot of sense, Jade - feeling confident in your body is so important for overall wellbeing. I really appreciate you sharing that with me.\n\nWhen you think about feeling more confident, what specific situations or moments in your life would feel different for you?"
+    },
+    {
+      "role": "user",
+      "content": "I want to fit in this dress of mine for an event in 4 weeks"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a clear and meaningful goal, Jade - having something specific like an event can be really motivating! Four weeks gives us a good timeframe to work with during our sessions together.\n\nBefore we dive into creating a plan, I'm curious: have you tried working toward weight goals before, and if so, what's worked well for you or what challenges have you faced?"
+    },
+    {
+      "role": "user",
+      "content": "I have tried running 3 times a week"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you've already taken action with running! It shows you're willing to put in the effort.\n\nHow did that go for you - were you able to stick with it, and what made it easier or harder to keep up with?"
+    },
+    {
+      "role": "user",
+      "content": "I'm still doing it but I'm only running half a mile and then needing to walk the rest"
+    },
+    {
+      "role": "assistant",
+      "content": "That's actually fantastic that you're still doing it consistently, Jade! Building the habit of running 3 times a week is a huge accomplishment, and mixing running with walking is a smart approach that many people use.\n\nWhat do you think is causing you to need to walk after half a mile - is it more about your breathing, muscle fatigue, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "I just get winded at that point"
+    },
+    {
+      "role": "assistant",
+      "content": "Getting winded is really common when building up cardiovascular endurance, and the good news is that it improves with consistency - which you're already doing! The run-walk approach you're using is actually a proven method for building stamina.\n\nSince you're already running 3x/week and want to fit into your dress in 4 weeks, what else do you think might help you reach your goal - are you open to looking at nutrition, or would you prefer to focus on adjusting your exercise routine?"
+    },
+    {
+      "role": "user",
+      "content": "Maybe eating more protein would help"
+    },
+    {
+      "role": "assistant",
+      "content": "Great insight! Protein can definitely support your goals by helping you feel fuller longer and maintaining muscle while you're working on weight loss.\n\nHow much protein are you currently eating in a typical day, and what are your go-to protein sources?"
+    },
+    {
+      "role": "user",
+      "content": "I like to eat chicken a lot so mostly that"
+    },
+    {
+      "role": "assistant",
+      "content": "Chicken is an excellent protein source! It sounds like you have a solid foundation there.\n\nHow many times a day are you typically including protein like chicken in your meals - is it mostly at dinner, or are you spreading it throughout the day?"
+    },
+    {
+      "role": "user",
+      "content": "2 times a day normally"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a good start - having protein twice a day! Research suggests spreading protein throughout the day (including breakfast) can help with satiety and muscle maintenance, especially when you're exercising regularly.\n\nWould you be interested in exploring ways to add a protein source to your third meal, or would you like to focus on increasing the portions at your current two meals?"
+    },
+    {
+      "role": "user",
+      "content": "Lets increase the portions in my current two meals"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect - that's a very practical approach! Increasing portions at meals you're already eating makes it easier to stick with.\n\nWhat does a typical portion of chicken look like for you now - about how many ounces or what size would you say (like the size of your palm, a deck of cards)?"
+    },
+    {
+      "role": "user",
+      "content": "about 4 oz"
+    },
+    {
+      "role": "assistant",
+      "content": "Great awareness of your portions! At 4 oz per meal twice a day, you're getting about 8 oz total, which is around 60g of protein from chicken alone - that's a solid foundation.\n\nFor someone exercising 4 times a week, aiming for closer to 100-120g of protein daily could really support your fitness goals. Would bumping each chicken portion up to about 6 oz (roughly the size of two decks of cards) feel doable for you?"
+    },
+    {
+      "role": "user",
+      "content": "seems reasonable"
+    },
+    {
+      "role": "assistant",
+      "content": "Wonderful! So that's a clear, actionable change - going from 4 oz to 6 oz of chicken at each of your two meals. That would bring you to about 90g of protein from chicken alone, which is a great step toward your goal.\n\nSince we're in our first session together, I want to make sure we've captured your main goal clearly: Are you looking to increase your protein primarily to support your workouts and overall fitness, or is there another specific outcome you're hoping for (like weight management, more energy, etc.)?"
+    },
+    {
+      "role": "user",
+      "content": "support my workouts mainly"
+    },
+    {
+      "role": "assistant",
+      "content": "I love your focus on supporting your workouts! To make this goal really clear and trackable, let's get specific about what \"support my workouts\" means in terms of your protein intake.\n\nHow about something like: \"Eat 6 oz of chicken at both lunch and dinner, 5 days per week for the next 4 weeks to support my workout recovery and performance\"?\n\nDoes that capture what you're aiming for, or would you like to adjust the number of days or timeframe?"
+    },
+    {
+      "role": "user",
+      "content": "that sounds great"
+    },
+    {
+      "role": "assistant",
+      "content": "Excellent! You've set a clear, measurable goal: eating 6 oz of chicken at both lunch and dinner, 5 days per week for the next 4 weeks to support your workouts.\n\nBetween now and our next session in one week, you'll be tracking this on your own - maybe keep a simple tally on your phone or calendar each day you hit your protein target. When we meet next week, we'll discuss how it's going and what you're noticing about your energy and workouts!\n\nWhat's one thing you can do this week to set yourself up for success with this goal?"
+    },
+    {
+      "role": "user",
+      "content": "I will set alarms on my phone for it"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a smart strategy! Setting those phone alarms will give you that helpful nudge at meal times to stick with your 6 oz portions.\n\nI'm excited to hear how this first week goes for you! When we connect again next week, we'll talk about what worked well, any challenges that came up, and how you're feeling with the increased protein supporting your workouts.\n\nIs there anything else you want to clarify or discuss about your goal before we wrap up today's session?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! You're all set with a solid plan:\n- Your goal: 6 oz of chicken at lunch and dinner, 5 days per week\n- Your tracking method: Phone alarms to remind you\n- Your confidence: 8/10\n\nI'm really looking forward to hearing about your progress when we meet next week at Session 2. Remember to track how it goes each day, and notice how you feel with this protein boost supporting your workouts. You've got this! \ud83d\udcaa"
+    }
+  ]
+}

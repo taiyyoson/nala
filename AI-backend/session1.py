@@ -20,7 +20,7 @@ class SessionState(Enum):
     CONFIDENCE_CHECK = "confidence_check"
     LOW_CONFIDENCE = "low_confidence"
     HIGH_CONFIDENCE = "high_confidence"
-    ASK_MORE_GOALS = "ask_more_goals"  # NEW: Ask if they want to add more goals
+    ASK_MORE_GOALS = "ask_more_goals"
     REMEMBER_GOAL = "remember_goal"
     END_SESSION = "end_session"
 
@@ -33,13 +33,15 @@ class Session1Manager:
         self.session_data = {
             "user_name": None,
             "program_questions_asked": [],
-            "goals": [],
+            "goals": [],  # List of all goals
+            "goal_details": [],  # List of dicts with goal + confidence + smart_analysis
             "current_goal": None,
             "goal_smart_analysis": None,
             "smart_refinement_attempts": 0,
             "confidence_level": None,
             "session_start": datetime.now().isoformat(),
-            "turn_count": 0
+            "turn_count": 0,
+            "last_coach_response": None  # PATCH: Track last coach message for state detection
         }
         self.program_info_file = program_info_file
         self.program_info = self._load_program_info()
@@ -62,10 +64,6 @@ This is a 12-week health and wellness coaching program designed to help you achi
         except Exception as e:
             print(f"Error loading program info: {e}")
             return "Program information unavailable."
-    
-    def set_llm_client(self, llm_client):
-        """Set the LLM client for SMART goal evaluation"""
-        self.llm_client = llm_client
     
     def set_llm_client(self, llm_client):
         """Set the LLM client for SMART goal evaluation"""
@@ -238,7 +236,17 @@ Help them express their goals clearly.""",
             SessionState.CHECK_SMART: """
 The system has evaluated the participant's goal against SMART criteria.
 DO NOT ask the participant if they think it's SMART - the system has already analyzed it.
-Instead, provide feedback based on the analysis provided in the additional context.""",
+
+If the goal is NOT SMART:
+- Provide feedback based on the analysis in the additional context
+- Be specific about what's missing
+- Guide them to refine the goal
+- Be encouraging and supportive
+
+If the goal IS SMART:
+- Celebrate! The goal is well-formed
+- DO NOT ask for confidence yet - that comes after they acknowledge the goal is good
+- First confirm they're happy with the goal, then move to confidence check""",
             
             SessionState.REFINE_GOAL: """
 The goal needs refinement to be SMART. Work collaboratively with the participant to make their goal:
@@ -250,7 +258,13 @@ The goal needs refinement to be SMART. Work collaboratively with the participant
             
             SessionState.CONFIDENCE_CHECK: """
 Ask the participant to rate their confidence in achieving this goal on a scale of 1-10.
-Be supportive regardless of their answer.""",
+- 1 = Very low confidence (not confident at all)
+- 10 = Very high confidence (extremely confident)
+
+Be supportive and reassuring. Frame it positively:
+"On a scale of 1 to 10, where 1 is not confident at all and 10 is extremely confident, how confident do you feel about achieving this goal?"
+
+Make it clear there's no wrong answer - all confidence levels are valid and helpful for planning.""",
             
             SessionState.LOW_CONFIDENCE: """
 The participant has low confidence (≤7). This is okay!
@@ -271,18 +285,32 @@ Suggest strategies like:
 - Scheduling specific times for goal-related activities""",
             
             SessionState.END_SESSION: """
-Wrap up the session warmly. Summarize what you discussed:
+Wrap up Session 1 warmly. Summarize what you discussed:
 - Their goal(s)
-- Their confidence level
+- Their confidence level(s)
 - Their plan for remembering/tracking
-Thank them and express enthusiasm for the next session."""
+
+IMPORTANT REMINDERS FOR END OF SESSION:
+- Emphasize they are responsible for tracking their own progress this week
+- Remind them the next session will be in exactly 1 week
+- DO NOT promise to check in, follow up, or contact them before next session
+- Encourage them to use their chosen tracking methods
+- Express enthusiasm about hearing their progress at next week's session
+
+Example closing:
+"I'm excited to hear how your first week goes with [goals]. Remember to track your progress using [their chosen method]. I'll see you next week at our Session 2, and we'll discuss how everything went. You've got this!"
+"""
         }
         
         return prompts.get(self.state, "")
     
-    def process_user_input(self, user_input: str) -> Dict[str, Any]:
+    def process_user_input(self, user_input: str, last_coach_response: str = None) -> Dict[str, Any]:
         """
         Process user input and determine state transitions
+        
+        Args:
+            user_input: The user's message
+            last_coach_response: The coach's previous response (for detecting coach satisfaction)
         
         Returns:
             Dict with:
@@ -292,6 +320,10 @@ Thank them and express enthusiasm for the next session."""
         """
         user_lower = user_input.lower().strip()
         self.session_data["turn_count"] += 1
+        
+        # PATCH: Store last coach response for analysis
+        if last_coach_response:
+            self.session_data["last_coach_response"] = last_coach_response
         
         result = {
             "next_state": None,
@@ -344,29 +376,51 @@ Thank them and express enthusiasm for the next session."""
         
         elif self.state == SessionState.GOALS:
             # Store the goal and evaluate it
-            self.session_data["current_goal"] = user_input
-            self.session_data["goals"].append(user_input)
-            self.session_data["smart_refinement_attempts"] = 0
+            # Only store if it looks like a goal statement (not a conversational response)
+            goal_candidate = user_input.strip()
             
-            # Evaluate SMART criteria
-            smart_eval = self.evaluate_smart_goal(user_input)
-            self.session_data["goal_smart_analysis"] = smart_eval
+            # Filter out non-goal responses
+            non_goal_phrases = [
+                'no', 'yes', 'maybe', 'i dont know', "i don't know", 'not sure',
+                'just want to stick', 'thats all', "that's all", 'nothing else',
+                'im good', "i'm good", 'no more', 'nope', 'nah'
+            ]
             
-            if smart_eval["is_smart"]:
-                # Goal is SMART! Move to confidence check
-                result["next_state"] = SessionState.CONFIDENCE_CHECK
-                result["context"] = f"Goal is SMART! Celebrate and move to confidence check.\nGoal: {user_input}"
-            else:
-                # Goal needs work
-                result["next_state"] = SessionState.CHECK_SMART
-                missing = ", ".join(smart_eval["missing_criteria"])
-                result["context"] = f"""SMART Analysis:
-Goal: "{user_input}"
+            goal_lower = goal_candidate.lower()
+            is_likely_goal = (
+                len(goal_candidate.split()) > 3 and  # At least 4 words
+                not any(phrase in goal_lower for phrase in non_goal_phrases) and
+                not goal_lower.startswith(('no ', 'yes ', 'maybe ', 'i dont ', "i don't "))
+            )
+            
+            if is_likely_goal:
+                self.session_data["current_goal"] = goal_candidate
+                self.session_data["goals"].append(goal_candidate)
+                self.session_data["smart_refinement_attempts"] = 0
+                
+                # Evaluate SMART criteria
+                smart_eval = self.evaluate_smart_goal(goal_candidate)
+                self.session_data["goal_smart_analysis"] = smart_eval
+                
+                if smart_eval["is_smart"]:
+                    # Goal is SMART! Store it and move to confidence check
+                    self._store_completed_goal(confidence=None)
+                    result["next_state"] = SessionState.CONFIDENCE_CHECK
+                    result["context"] = f"Goal is SMART! Celebrate and move to confidence check.\nGoal: {goal_candidate}"
+                else:
+                    # Goal needs work
+                    result["next_state"] = SessionState.CHECK_SMART
+                    missing = ", ".join(smart_eval["missing_criteria"])
+                    result["context"] = f"""SMART Analysis:
+Goal: "{goal_candidate}"
 Is SMART: No
 Missing: {missing}
 Suggestions: {smart_eval['suggestions']}
 
 Gently explain what's missing and guide them to refine the goal. Be encouraging!"""
+            else:
+                # Not a goal statement - ask them to state their goal
+                result["context"] = "User didn't state a clear goal. Ask them to describe what they'd like to achieve."
         
         elif self.state == SessionState.CHECK_SMART:
             # User has received feedback, staying in this state to guide them
@@ -376,50 +430,170 @@ Gently explain what's missing and guide them to refine the goal. Be encouraging!
         
         elif self.state == SessionState.REFINE_GOAL:
             # User has provided a refined goal - evaluate it again
-            self.session_data["current_goal"] = user_input
-            self.session_data["smart_refinement_attempts"] += 1
+            goal_candidate = user_input.strip()
             
-            # Re-evaluate SMART criteria
-            smart_eval = self.evaluate_smart_goal(user_input)
-            self.session_data["goal_smart_analysis"] = smart_eval
-            
-            if smart_eval["is_smart"]:
-                # Success! Goal is now SMART
-                result["next_state"] = SessionState.CONFIDENCE_CHECK
-                result["context"] = f"Excellent! The refined goal is now SMART. Celebrate their effort!\nRefined Goal: {user_input}"
-            else:
-                # Still needs work - but be more encouraging
-                missing = ", ".join(smart_eval["missing_criteria"])
-                attempts = self.session_data["smart_refinement_attempts"]
+            # PATCH: Check if coach has already accepted the goal in their last response
+            coach_accepted = False
+            if self.session_data.get("last_coach_response"):
+                coach_response_lower = self.session_data["last_coach_response"].lower()
                 
-                if attempts >= 3:
-                    # After 3 attempts, be more helpful and collaborative
-                    result["context"] = f"""SMART Analysis (Attempt {attempts}):
-Goal: "{user_input}"
+                # Patterns indicating coach satisfaction with goal
+                coach_acceptance_patterns = [
+                    r"you've got a clear.*goal",
+                    r"that's a solid goal",
+                    r"fantastic.*goal",
+                    r"excellent.*goal", 
+                    r"perfect.*goal",
+                    r"great goal",
+                    r"this is going to",
+                    r"you're all set",
+                    r"between now and.*next session",
+                    r"we'll reconnect next week",
+                    r"i'll be eager to hear",
+                    r"see you.*session 2",
+                    r"remember to track",
+                    r"keep track",
+                    r"mark it on",
+                    r"what day.*will you",
+                    r"when will you start",
+                    r"you've got this",
+                ]
+                
+                coach_accepted = any(re.search(pattern, coach_response_lower) for pattern in coach_acceptance_patterns)
+                
+                if coach_accepted:
+                    print(f"\n[DEBUG] Coach has accepted goal in previous response, transitioning out of REFINE_GOAL")
+            
+            # Filter out non-goal responses
+            non_goal_phrases = [
+                'no', 'yes', 'maybe', 'i dont know', "i don't know", 'not sure',
+                'just want to stick', 'thats all', "that's all", 'nothing else',
+                'im good', "i'm good", 'no more', 'nope', 'nah', 'keep it'
+            ]
+            
+            goal_lower = goal_candidate.lower()
+            is_likely_goal = (
+                len(goal_candidate.split()) > 3 and
+                not any(phrase in goal_lower for phrase in non_goal_phrases) and
+                not goal_lower.startswith(('no ', 'yes ', 'maybe ', 'i dont ', "i don't "))
+            )
+            
+            # PATCH: Detect if user is moving forward naturally (tracking mentions, goodbye phrases, goal acceptance)
+            moving_forward_phrases = [
+                'notes', 'calendar', 'reminder', 'app', 'track', 'write down',
+                'thanks', 'thank you', 'sounds good', 'perfect', 'great',
+                'see you', 'bye', 'goodbye', 'appreciate', 'feels right',
+                'feels good', 'happy with', 'ready to', 'lets do it', "let's do it",
+                'tomorrow', 'next week', 'when do i', 'anything else',
+                'all set', 'good to go', 'excited', 'looking forward'
+            ]
+            is_moving_forward = any(phrase in goal_lower for phrase in moving_forward_phrases)
+            
+            # PATCH: Also detect if conversation has naturally progressed (coach gave tracking advice, ending remarks)
+            # If we're deep in conversation (>10 turns) and current goal exists, likely moved past refinement
+            deep_conversation = self.session_data["turn_count"] > 10 and self.session_data["current_goal"]
+            
+            # COMBINED DETECTION: User moving forward OR coach already accepted
+            if ((is_moving_forward or deep_conversation or coach_accepted) and self.session_data["current_goal"]):
+                # User has naturally moved to tracking/ending - accept current goal and progress
+                print(f"\n[DEBUG] User moving forward naturally (turn {self.session_data['turn_count']}), accepting current goal")
+                
+                # Determine if we should skip confidence check or go to it
+                # If they mentioned tracking/starting, skip to REMEMBER_GOAL
+                # If they said goal "feels right/good", go to CONFIDENCE_CHECK first
+                acceptance_phrases = ['feels right', 'feels good', 'happy with', 'ready', "let's do it", 'lets do it']
+                explicitly_accepted = any(phrase in goal_lower for phrase in acceptance_phrases)
+                
+                if explicitly_accepted and not is_moving_forward:
+                    # They accepted the goal, ask for confidence
+                    self._store_completed_goal(confidence=None)
+                    result["next_state"] = SessionState.CONFIDENCE_CHECK
+                    result["context"] = f"""User accepted the goal: "{self.session_data['current_goal']}"
+Now ask for their confidence level (1-10 scale)."""
+                else:
+                    # They're talking about implementation/tracking - assume medium-high confidence and wrap up
+                    self._store_completed_goal(confidence=8)  # Default medium-high confidence
+                    result["next_state"] = SessionState.REMEMBER_GOAL
+                    result["context"] = f"""User is naturally moving to implementation phase.
+Accept current goal: "{self.session_data['current_goal']}"
+Acknowledge their tracking plan and wrap up positively."""
+            elif is_likely_goal:
+                # Update with refined goal
+                self.session_data["current_goal"] = goal_candidate
+                self.session_data["smart_refinement_attempts"] += 1
+                
+                # Re-evaluate SMART criteria
+                smart_eval = self.evaluate_smart_goal(goal_candidate)
+                self.session_data["goal_smart_analysis"] = smart_eval
+                
+                if smart_eval["is_smart"]:
+                    # Success! Goal is now SMART
+                    # Update the goals list with refined version
+                    if self.session_data["goals"] and self.session_data["goals"][-1] != goal_candidate:
+                        self.session_data["goals"][-1] = goal_candidate
+                    
+                    # PATCH: Store completed goal before transitioning
+                    self._store_completed_goal(confidence=None)
+                    result["next_state"] = SessionState.CONFIDENCE_CHECK
+                    result["context"] = f"Excellent! The refined goal is now SMART. Celebrate their effort!\nRefined Goal: {goal_candidate}"
+                else:
+                    # Still needs work
+                    missing = ", ".join(smart_eval["missing_criteria"])
+                    attempts = self.session_data["smart_refinement_attempts"]
+                    
+                    # PATCH: After 4 attempts, accept "good enough" and move on
+                    if attempts >= 4:
+                        print(f"\n[DEBUG] Goal refinement attempts ({attempts}) exceeded, accepting goal as-is")
+                        # Accept the goal and move forward
+                        if self.session_data["goals"] and self.session_data["goals"][-1] != goal_candidate:
+                            self.session_data["goals"][-1] = goal_candidate
+                        
+                        self._store_completed_goal(confidence=None)
+                        result["next_state"] = SessionState.CONFIDENCE_CHECK
+                        result["context"] = f"""After {attempts} refinement attempts, let's move forward with: "{goal_candidate}"
+We can always adjust it as you work on it. For now, let's check your confidence level in achieving this goal."""
+                    elif attempts >= 3:
+                        # After 3 attempts, be more helpful and collaborative
+                        result["context"] = f"""SMART Analysis (Attempt {attempts}):
+Goal: "{goal_candidate}"
 Still missing: {missing}
 
 After {attempts} attempts, offer to work WITH them more directly. 
 Suggest a specific SMART version they could use or adapt. Make it collaborative and supportive."""
-                else:
-                    result["context"] = f"""SMART Analysis (Attempt {attempts}):
-Goal: "{user_input}"
+                        result["next_state"] = SessionState.REFINE_GOAL
+                    else:
+                        result["context"] = f"""SMART Analysis (Attempt {attempts}):
+Goal: "{goal_candidate}"
 Still missing: {missing}
 Suggestions: {smart_eval['suggestions']}
 
 Provide specific, actionable feedback. What exact changes would make this SMART?"""
-                
-                # Stay in REFINE_GOAL state to keep looping
-                result["next_state"] = SessionState.REFINE_GOAL
+                        result["next_state"] = SessionState.REFINE_GOAL
+            else:
+                # Not a goal refinement - they might be saying they want to keep current goal
+                if any(phrase in goal_lower for phrase in ['stick with', 'keep', 'thats all', "that's all", 'no more']):
+                    # PATCH: Accept current goal if they want to keep it
+                    if self.session_data["current_goal"]:
+                        self._store_completed_goal(confidence=None)
+                        result["next_state"] = SessionState.CONFIDENCE_CHECK
+                        result["context"] = f"User wants to keep: '{self.session_data['current_goal']}'. Move to confidence check."
+                    else:
+                        result["context"] = "Encourage them to state a goal before moving forward."
+                else:
+                    result["context"] = "Ask user to refine their goal with specific changes."
         
         elif self.state == SessionState.CONFIDENCE_CHECK:
             # Extract confidence level
             try:
                 # Look for numbers in input
-                import re
                 numbers = re.findall(r'\d+', user_input)
                 if numbers:
                     confidence = int(numbers[0])
                     self.session_data["confidence_level"] = confidence
+                    
+                    # PATCH: Update the stored goal with confidence level
+                    if self.session_data["goal_details"]:
+                        self.session_data["goal_details"][-1]["confidence"] = confidence
                     
                     if confidence <= 7:
                         result["next_state"] = SessionState.LOW_CONFIDENCE
@@ -447,6 +621,21 @@ Provide specific, actionable feedback. What exact changes would make this SMART?
             result["context"] = "Session is complete. Thank the user."
         
         return result
+    
+    def _store_completed_goal(self, confidence: int = None):
+        """Store a completed goal with its details"""
+        if self.session_data["current_goal"]:
+            # Check if this goal is already stored (avoid duplicates)
+            existing_goals = [g["goal"] for g in self.session_data["goal_details"]]
+            if self.session_data["current_goal"] not in existing_goals:
+                goal_entry = {
+                    "goal": self.session_data["current_goal"],
+                    "confidence": confidence,  # Can be None initially, updated later
+                    "smart_analysis": self.session_data.get("goal_smart_analysis"),
+                    "refinement_attempts": self.session_data.get("smart_refinement_attempts", 0)
+                }
+                self.session_data["goal_details"].append(goal_entry)
+                print(f"\n[DEBUG] Stored goal: {self.session_data['current_goal']}")
     
     def get_session_summary(self) -> Dict[str, Any]:
         """Get summary of session data"""
