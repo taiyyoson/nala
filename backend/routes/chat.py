@@ -3,13 +3,23 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
-from services import rag_service
+from backend.config.database import get_db
+from backend.services import AIService, ConversationService, DatabaseService
+from backend.adapters import RequestAdapter, ResponseAdapter
+from backend.config.settings import settings
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
+
+# Initialize AI service (singleton for the application)
+ai_service = AIService(
+    model=settings.default_llm_model,
+    top_k=settings.top_k_sources
+)
 
 
 class ChatMessage(BaseModel):
@@ -29,99 +39,188 @@ class ChatResponse(BaseModel):
     conversation_id: str
     message_id: str
     timestamp: datetime
-
-
-# In-memory storage for development (replace with database later)
-conversations = {}
+    metadata: Optional[dict] = None
 
 
 @chat_router.post("/message", response_model=ChatResponse)
-async def send_message(request: ChatRequest):
+async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
     """Send a message to the health coaching chatbot"""
     try:
-        # Generate conversation ID if not provided
-        conv_id = request.conversation_id or f"conv_{datetime.now().isoformat()}"
+        # Initialize services
+        db_service = DatabaseService(db)
+        conv_service = ConversationService(db_service)
 
-        # Store user message
-        if conv_id not in conversations:
-            conversations[conv_id] = []
-
-        user_message = ChatMessage(
-            role="user", content=request.message, timestamp=datetime.now()
+        # Get or create conversation
+        conv_id = await conv_service.get_or_create_conversation(
+            conversation_id=request.conversation_id,
+            user_id=request.user_id
         )
-        conversations[conv_id].append(user_message)
 
-        # Get conversation history for RAG
-        history = [{"role": msg.role, "content": msg.content} for msg in conversations[conv_id]]
-
-        # Get RAG response
-        bot_response, sources = rag_service.get_rag_response(request.message, history)
-
-        assistant_message = ChatMessage(
-            role="assistant", content=bot_response, timestamp=datetime.now()
-        )
-        conversations[conv_id].append(assistant_message)
-
-        return ChatResponse(
-            response=bot_response,
+        # Get conversation history
+        history = await conv_service.get_conversation_history(
             conversation_id=conv_id,
-            message_id=f"msg_{datetime.now().isoformat()}",
-            timestamp=datetime.now(),
+            limit=10  # Last 10 messages for context
         )
 
+        # Generate AI response using RAG system
+        response, sources, model_name = await ai_service.generate_response(
+            message=request.message,
+            conversation_history=history,
+            user_id=request.user_id
+        )
+
+        # Save user message to database
+        await conv_service.add_message(
+            conversation_id=conv_id,
+            role="user",
+            content=request.message
+        )
+
+        # Save assistant response to database
+        msg_data = await conv_service.add_message(
+            conversation_id=conv_id,
+            role="assistant",
+            content=response,
+            metadata={
+                "model": model_name,
+                "sources": ResponseAdapter.format_sources(sources)
+            }
+        )
+
+        # Format response using adapter
+        formatted_response = ResponseAdapter.ai_response_to_chat_response(
+            rag_output=(response, sources, model_name),
+            conversation_id=conv_id,
+            message_id=msg_data["message_id"]
+        )
+
+        return ChatResponse(**formatted_response)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        print(f"Error in send_message: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @chat_router.post("/stream")
-async def stream_message(request: ChatRequest):
+async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
     """Stream chatbot response for real-time chat experience"""
 
     async def generate_stream():
         try:
-            # Mock streaming response - replace with actual Claude streaming
-            mock_response = await generate_mock_response(request.message)
-            words = mock_response.split()
+            # Initialize services
+            db_service = DatabaseService(db)
+            conv_service = ConversationService(db_service)
 
-            for i, word in enumerate(words):
-                chunk = {"content": word + " ", "done": i == len(words) - 1}
-                yield f"data: {json.dumps(chunk)}\n\n"
-                await asyncio.sleep(0.1)  # Simulate streaming delay
+            # Get or create conversation
+            conv_id = await conv_service.get_or_create_conversation(
+                conversation_id=request.conversation_id,
+                user_id=request.user_id
+            )
+
+            # Get conversation history
+            history = await conv_service.get_conversation_history(conv_id, limit=10)
+
+            # Stream response from AI service
+            full_response = ""
+            async for chunk in ai_service.stream_response(request.message, history, request.user_id):
+                full_response += chunk
+                yield ResponseAdapter.streaming_chunk_to_sse(chunk, done=False)
+
+            # Final chunk
+            yield ResponseAdapter.streaming_chunk_to_sse("", done=True)
+
+            # Save messages to database after streaming completes
+            await conv_service.add_message(conv_id, "user", request.message)
+            await conv_service.add_message(conv_id, "assistant", full_response.strip())
 
         except Exception as e:
-            error_chunk = {"error": str(e), "done": True}
+            error_chunk = ResponseAdapter.error_to_api_response(e, 500)
             yield f"data: {json.dumps(error_chunk)}\n\n"
 
     return StreamingResponse(
         generate_stream(),
-        media_type="text/plain",
-        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        },
     )
 
 
 @chat_router.get("/conversation/{conversation_id}")
-async def get_conversation(conversation_id: str):
+async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
     """Retrieve conversation history"""
-    if conversation_id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    try:
+        db_service = DatabaseService(db)
+        conv_service = ConversationService(db_service)
 
-    return {
-        "conversation_id": conversation_id,
-        "messages": conversations[conversation_id],
-    }
+        conversation = await conv_service.get_conversation(conversation_id)
+
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        return ResponseAdapter.conversation_to_api_format(
+            conversation_data=conversation,
+            messages=conversation.get("messages")
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error retrieving conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-async def generate_mock_response(user_message: str) -> str:
-    """Mock response generator - replace with Claude API integration"""
-    responses = {
-        "hello": "Hi there! I'm your health coach. How can I help you today?",
-        "help": "I'm here to support you on your health journey. You can ask me about nutrition, exercise, stress management, or any health goals you'd like to work on.",
-        "default": "I understand you're looking for guidance. Can you tell me more about what specific area of your health you'd like to focus on today?",
-    }
+@chat_router.get("/conversations")
+async def list_conversations(
+    user_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """List all conversations for a user"""
+    try:
+        db_service = DatabaseService(db)
+        conv_service = ConversationService(db_service)
 
-    message_lower = user_message.lower()
-    for key, response in responses.items():
-        if key in message_lower:
-            return response
+        conversations = await conv_service.list_conversations(user_id, limit, offset)
 
-    return responses["default"]
+        return {
+            "conversations": [
+                ResponseAdapter.format_conversation_summary(conv)
+                for conv in conversations
+            ],
+            "total": len(conversations),
+            "limit": limit,
+            "offset": offset
+        }
+
+    except Exception as e:
+        print(f"Error listing conversations: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@chat_router.delete("/conversation/{conversation_id}")
+async def delete_conversation(conversation_id: str, db: Session = Depends(get_db)):
+    """Delete a conversation and all its messages"""
+    try:
+        db_service = DatabaseService(db)
+        conv_service = ConversationService(db_service)
+
+        success = await conv_service.delete_conversation(conversation_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        return {"success": True, "message": "Conversation deleted"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

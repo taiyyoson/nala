@@ -1,0 +1,196 @@
+@startuml System_Architecture_v2
+!theme plain
+skinparam linetype ortho
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title Nala Health Coaching Platform - System Architecture
+
+' ==================== LEGEND ====================
+legend top right
+  |= Line Style |= Status |
+  | ━━━━ Solid | **Implemented** |
+  | ┄┄┄┄ Dashed | **Planned/TODO** |
+endlegend
+
+' ==================== FRONTEND ====================
+package "Frontend - React Native (Expo)" as Frontend {
+  rectangle "Auth Flow" as FrontAuth {
+    [WelcomeScreen] as Welcome
+    [LoginScreen] as Login
+    [SignUpScreen] as SignUp
+  }
+  
+  rectangle "Onboarding" as Onboard {
+    [OnboardingScreen] as OnboardingUI
+  }
+  
+  rectangle "Main App" as MainApp {
+    [ChatOverviewScreen\n(Session Manager)] as ChatOverview
+    [ChatScreen\n(Real-time Chat)] as ChatUI
+  }
+  
+  component [AuthContext\n(Global State)] as AuthCtx #LightBlue
+  component [ApiService\n(HTTP Client)] as ApiSvc #LightGreen
+  component [StorageService\n(Local Persistence)] as Storage #LightGreen
+}
+
+' ==================== BACKEND ====================
+package "Backend - FastAPI (Port 8000)" as Backend {
+  rectangle "API Layer" as Routes {
+    [/api/v1/health] as HealthRoute #LightGray
+    [/api/v1/chat/message] as ChatRoute
+    [/api/v1/chat/stream] as StreamRoute #Wheat
+    [/api/v1/conversation/:id] as ConvRoute #Wheat
+  }
+  
+  component [CORS Middleware\n(allow origins: *)] as CORS #LightCoral
+  
+  rectangle "Service Layer (Planned)" as Services #Wheat {
+    [ConversationService] as ConvSvc
+    [AIService] as AISvc
+    [DatabaseService] as DBSvc
+  }
+  
+  rectangle "Current Integration" as CurrentSvc {
+    [rag_service.py\n(Direct RAG Access)] as RAGSvc #LightGreen
+  }
+  
+  component [settings.py\n(Config)] as Config #LightCoral
+}
+
+' ==================== AI BACKEND ====================
+package "AI-Backend - RAG System" as AIBackend {
+  rectangle "RAG Core" as RAGCore {
+    component [UnifiedRAGChatbot\n(Multi-Model)] as RAGBot #Lavender
+    component [VectorSearch\n(pgvector)] as VectorSearch #Lavender
+  }
+  
+  rectangle "Data Pipeline (Offline)" as DataPipeline #LightGray {
+    [parse_transcripts2.py] as Parser
+    [load_embeddings.py] as Embedder
+    [setup_database.py] as DBSetup
+  }
+  
+  rectangle "LLM Providers" as LLMs {
+    cloud "Claude API\n(Sonnet 4, Opus 4)" as Claude
+    cloud "OpenAI API\n(GPT-4o, GPT-4o-mini)" as OpenAI
+  }
+}
+
+' ==================== DATABASES ====================
+package "Data Layer" as DataLayer {
+  database "Conversation DB\n(SQLite - dev)\n(PostgreSQL - prod)" as ConvDB #Wheat {
+    storage "conversations\n(TODO)" as ConvTable
+    storage "messages\n(TODO)" as MsgTable
+  }
+  
+  database "Vector DB\n(PostgreSQL + pgvector)" as VectorDB #LightGreen {
+    storage "coaching_conversations\n(embeddings)" as EmbedTable
+  }
+  
+  folder "Raw Data" as RawData #LightGray {
+    file "transcripts/\n(58 sessions)" as Transcripts
+    file "coach_responses.csv" as CSV
+  }
+  
+  cloud "Firebase Auth" as Firebase #LightPink
+}
+
+' ==================== FRONTEND CONNECTIONS ====================
+Welcome --> Login
+Login --> Firebase : authenticate()
+SignUp --> Firebase : createUser()
+
+Firebase --> AuthCtx : user { uid, email }
+AuthCtx --> OnboardingUI : if !hasCompletedOnboarding
+AuthCtx --> ChatOverview : if completed
+
+ChatOverview --> Storage : load session progress
+ChatOverview --> ChatUI : navigate to session
+ChatUI --> Storage : cache messages
+ChatUI --> ApiSvc : sendMessage(text)
+
+' ==================== BACKEND CONNECTIONS ====================
+ApiSvc --> CORS : HTTP POST
+CORS --> HealthRoute : GET /health
+CORS --> ChatRoute : POST /chat/message
+CORS --> StreamRoute : POST /chat/stream (TODO)
+CORS --> ConvRoute : GET /conversation/:id (TODO)
+
+ChatRoute --> RAGSvc : get_rag_response() **[current]**
+ChatRoute ..> ConvSvc : add_message() **[planned]**
+
+ConvSvc ..> DBSvc : CRUD operations
+ConvSvc ..> AISvc : generate_response()
+
+DBSvc ..> ConvDB : SQLAlchemy ORM
+
+' ==================== AI BACKEND CONNECTIONS ====================
+RAGSvc --> RAGBot : generate_response()
+AISvc ..> RAGBot : (future integration)
+
+RAGBot --> VectorSearch : retrieve(query, top_k=3)
+VectorSearch --> VectorDB : cosine similarity search\n1 - (embedding <=> query)
+
+VectorSearch --> RAGBot : [coach_responses]
+RAGBot --> Claude : generate with context
+RAGBot --> OpenAI : generate with context
+
+' ==================== DATA PIPELINE (OFFLINE) ====================
+Transcripts --> Parser : extract conversations
+CSV --> Parser : parse coach responses
+Parser --> Embedder : text data
+Embedder --> OpenAI : text-embedding-3-small
+Embedder --> DBSetup : embeddings
+DBSetup --> VectorDB : bulk insert
+
+' ==================== RESPONSE FLOW ====================
+Claude --> RAGBot : response text
+RAGBot --> RAGSvc : (response, sources, model)
+RAGSvc --> ChatRoute : save to memory dict
+ChatRoute --> ApiSvc : ChatResponse JSON
+ApiSvc --> ChatUI : display message
+
+' ==================== NOTES ====================
+note right of VectorDB
+  **Embeddings Storage**
+  - 1000+ coach-participant exchanges
+  - vector(1536) using OpenAI embeddings
+  - Categories: nutrition, exercise, stress
+  - Enables semantic search
+end note
+
+note left of ConvDB
+  **Conversation Persistence (TODO)**
+  Schema:
+  - conversations (id, user_id, title, 
+                    message_count, created_at)
+  - messages (id, conv_id, role, 
+              content, metadata)
+  
+  Current: In-memory dict (lost on restart)
+end note
+
+note bottom of RAGBot
+  **RAG Flow:**
+  1. Retrieve top-3 similar coach responses
+  2. Build context from examples
+  3. Inject into system prompt
+  4. Generate response using Claude/GPT
+end note
+
+note top of ChatOverview
+  **Session Management (TODO)**
+  - 4-week coaching program
+  - Progressive unlock
+  - Track completion status
+end note
+
+note right of DataPipeline
+  **Runs Offline (One-time)**
+  Processes health coaching
+  transcripts into embeddings
+end note
+
+@enduml
