@@ -3,15 +3,14 @@ import json
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from adapters import RequestAdapter, ResponseAdapter
+from config.database import get_db
+from config.settings import settings
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from services import AIService, ConversationService, DatabaseService
 from sqlalchemy.orm import Session
-
-from backend.adapters import RequestAdapter, ResponseAdapter
-from backend.config.database import get_db
-from backend.config.settings import settings
-from backend.services import AIService, ConversationService, DatabaseService
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 

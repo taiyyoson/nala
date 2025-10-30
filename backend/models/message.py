@@ -21,7 +21,7 @@ class Message(Base, TimestampMixin):
         conversation_id: Foreign key to Conversation
         role: Message role (user, assistant, system)
         content: Message text content
-        metadata: JSON field for additional data (model used, sources, etc.)
+        extra_data: JSON field for additional data (model used, sources, etc.)
         conversation: Relationship to Conversation model
         created_at: Timestamp of creation
         updated_at: Timestamp of last update
@@ -40,7 +40,7 @@ class Message(Base, TimestampMixin):
     )
     role = Column(String(20), nullable=False)  # "user", "assistant", "system"
     content = Column(Text, nullable=False)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column("metadata", JSON, default=dict)  # DB column is 'metadata'
 
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
@@ -55,7 +55,7 @@ class Message(Base, TimestampMixin):
             "conversation_id": self.conversation_id,
             "role": self.role,
             "content": self.content,
-            "metadata": self.metadata or {},
+            "metadata": self.extra_data or {},
             "timestamp": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -69,6 +69,6 @@ class Message(Base, TimestampMixin):
 
     def extract_sources(self):
         """Get sources from metadata if available."""
-        if self.metadata and "sources" in self.metadata:
-            return self.metadata["sources"]
+        if self.extra_data and "sources" in self.extra_data:
+            return self.extra_data["sources"]
         return []

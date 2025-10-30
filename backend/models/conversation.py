@@ -21,7 +21,7 @@ class Conversation(Base, TimestampMixin):
         user_id: ID of user who owns this conversation
         title: Conversation title (auto-generated or user-provided)
         message_count: Cached count of messages
-        metadata: JSON field for additional data (model preferences, tags, etc.)
+        extra_data: JSON field for additional data (model preferences, tags, etc.)
         messages: Relationship to Message model
         created_at: Timestamp of creation
         updated_at: Timestamp of last update
@@ -35,7 +35,7 @@ class Conversation(Base, TimestampMixin):
     user_id = Column(String(36), index=True, nullable=True)  # Firebase UID
     title = Column(String(255), nullable=True)
     message_count = Column(Integer, default=0)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column("metadata", JSON, default=dict)  # DB column is 'metadata'
 
     # Relationships
     messages = relationship(
@@ -55,7 +55,7 @@ class Conversation(Base, TimestampMixin):
             "user_id": self.user_id,
             "title": self.title or "Untitled Conversation",
             "message_count": self.message_count,
-            "metadata": self.metadata or {},
+            "metadata": self.extra_data or {},
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from backend.services.database_service import DatabaseService
+from services.database_service import DatabaseService
 
 
 class ConversationService:

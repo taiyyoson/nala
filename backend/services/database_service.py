@@ -9,9 +9,8 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from models import Conversation, Message
 from sqlalchemy.orm import Session
-
-from backend.models import Conversation, Message
 
 
 class DatabaseService:
@@ -58,7 +57,7 @@ class DatabaseService:
             user_id=conversation_data.get("user_id"),
             title=conversation_data.get("title"),
             message_count=0,
-            metadata=conversation_data.get("metadata", {}),
+            extra_data=conversation_data.get("metadata", {}),
         )
 
         self.session.add(conversation)
@@ -205,7 +204,7 @@ class DatabaseService:
             conversation_id=message_data["conversation_id"],
             role=message_data["role"],
             content=message_data["content"],
-            metadata=message_data.get("metadata", {}),
+            extra_data=message_data.get("metadata", {}),
         )
 
         self.session.add(message)
