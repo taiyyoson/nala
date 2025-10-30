@@ -9,24 +9,18 @@ load_dotenv()
 class SessionBasedRAGChatbot(UnifiedRAGChatbot):
     """
     Extends UnifiedRAGChatbot with session management for structured coaching flows
-    Inherits all RAG and multi-model capabilities from parent class
     """
     
     def __init__(self, model='claude-sonnet-4.5', top_k=3, program_info_file='program_info.txt',
                  recent_messages=6, relevant_history_count=4, validate_constraints=True):
-        # Initialize parent RAG chatbot
         super().__init__(model=model, top_k=top_k)
         
-        # Session-specific settings
         self.program_info_file = program_info_file
         self.recent_messages = recent_messages
         self.relevant_history_count = relevant_history_count
         self.validate_constraints = validate_constraints
         
-        # Initialize session manager
         self.session_manager = Session1Manager(program_info_file=program_info_file)
-        
-        # Set up LLM evaluator for SMART goal checking
         self.session_manager.set_llm_client(self._create_llm_evaluator())
     
     def _create_llm_evaluator(self):
@@ -43,7 +37,7 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                         response = self.parent.anthropic_client.messages.create(
                             model=model_id,
                             max_tokens=1000,
-                            temperature=0.1,  # Very low temp for consistent JSON
+                            temperature=0.1,
                             messages=[{
                                 "role": "user",
                                 "content": prompt
@@ -59,22 +53,16 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                             ],
                             temperature=0.1,
                             max_tokens=1000,
-                            response_format={"type": "json_object"}  # Force JSON for OpenAI
+                            response_format={"type": "json_object"}
                         )
                         return response.choices[0].message.content
                 except Exception as e:
-                    print(f"LLM evaluation error: {e}")
                     raise
         
         return LLMEvaluator(self)
     
     def _select_relevant_history(self, current_message: str, max_relevant: int = 4):
-        """
-        Cherry-pick relevant messages from older history using keyword matching
-        
-        Returns:
-            List of relevant message pairs from older conversation
-        """
+        """Cherry-pick relevant messages from older history"""
         if len(self.conversation_history) <= self.recent_messages:
             return []
         
@@ -92,7 +80,6 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                     assistant_msg = older_history[i + 1]
                     
                     if user_msg['role'] == 'user' and assistant_msg['role'] == 'assistant':
-                        # Safely get content
                         user_content = user_msg.get('content', '')
                         if user_content is None:
                             user_content = ''
@@ -100,7 +87,6 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                         user_content_lower = user_content.lower()
                         current_lower = current_message.lower()
                         
-                        # Check for topic overlap
                         keywords = ['goal', 'exercise', 'eat', 'sleep', 'weight', 'health', 
                                   'walk', 'run', 'diet', 'nutrition', 'water', 'stress',
                                   'event', 'wear', 'fit', 'clothes', 'dress', 'outfit']
@@ -110,7 +96,6 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                         
                         overlap = set(user_keywords) & set(current_keywords)
                         
-                        # Check for name mentions
                         session_name = self.session_manager.session_data.get('user_name')
                         if session_name:
                             session_name = session_name.lower()
@@ -126,11 +111,9 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                                 'index': i
                             })
             
-            # Sort by relevance and take top N
             relevant_exchanges.sort(key=lambda x: x['score'], reverse=True)
             selected = relevant_exchanges[:max_relevant]
             
-            # Return in chronological order
             selected.sort(key=lambda x: x['index'])
             
             result = []
@@ -140,22 +123,15 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
             return result
             
         except Exception as e:
-            print(f"Warning: Could not select relevant history: {e}")
             return []
     
     def _build_context_messages(self, current_message: str):
-        """
-        Build context messages for LLM:
-        - Last N recent messages (always included)
-        - M most relevant older messages (cherry-picked)
-        """
+        """Build context messages for LLM"""
         messages = []
         
-        # Get relevant older messages
         relevant_old = self._select_relevant_history(current_message, self.relevant_history_count)
         
         if relevant_old:
-            # Add a system marker to show these are from earlier
             messages.append({
                 "role": "user",
                 "content": "[Earlier conversation context - relevant to current topic]"
@@ -166,7 +142,6 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                 "content": "[End of earlier context - returning to recent conversation]"
             })
         
-        # Add recent messages
         if self.conversation_history:
             recent = self.conversation_history[-self.recent_messages:]
             messages.extend(recent)
@@ -185,6 +160,23 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
 - Keep responses concise and conversational (2-4 sentences)
 - Ask only 1 question at a time
 
+CRITICAL ACCURACY RULES:
+- NEVER assume, infer, or fill in details the user didn't explicitly state
+- If you're unsure about something they said, ASK for clarification
+- Repeat back what you heard to confirm accuracy: "So you said X, is that right?"
+- Don't do math or count things unless the user gave you exact numbers
+- If they say "MW and the weekend", that's 2-3 days, NOT "three times a week"
+- Always verify your understanding before moving forward
+
+CRITICAL WRITING STYLE:
+- Write like a human having a natural conversation
+- NO markdown formatting (no #, **, *, _, etc.)
+- NO emojis (no 😊, 👋, 🌟, etc.)
+- NO special characters for emphasis
+- Use plain text only
+- Sound natural, warm, and conversational
+- Write in complete sentences with normal punctuation
+
 CRITICAL PROGRAM CONSTRAINTS:
 - This is a 4-session program (Session 1, 2, 3, and 4)
 - Sessions happen ONCE PER WEEK - exactly 1 week apart
@@ -199,11 +191,9 @@ Instead of promising check-ins, encourage:
 - Support from friends/family
 - Looking forward to discussing progress at next week's session"""
         
-        # Add RAG context if available
         if context:
             base_prompt += f"\n\n{context}\n\nUse these examples as guidance for your coaching style and responses."
         
-        # Add session-specific context
         state_prompt = self.session_manager.get_system_prompt_addition()
         if state_prompt:
             base_prompt += f"\n\n--- SESSION CONTEXT ---{state_prompt}"
@@ -211,29 +201,32 @@ Instead of promising check-ins, encourage:
         return base_prompt
     
     def generate_response(self, user_message, use_history=True, debug_history=False):
-        """
-        Override parent to add session management and smart memory
-        """
-        # PATCH: Get last coach response from history (for detecting coach satisfaction)
+        """Override parent to add session management and smart memory"""
+        # Get last coach response for state detection
         last_coach_response = None
         if self.conversation_history:
-            # Get the most recent assistant message
             for msg in reversed(self.conversation_history):
                 if msg['role'] == 'assistant':
                     last_coach_response = msg.get('content', '')
                     break
         
-        # Process input through session manager WITH coach's last response
+        # Process through session manager
         session_result = self.session_manager.process_user_input(
             user_message,
-            last_coach_response=last_coach_response  # PATCH: Pass coach response
+            last_coach_response=last_coach_response
         )
         
-        # Update state if needed
+        # Update state BEFORE generating response
         if session_result["next_state"]:
+            old_state = self.session_manager.get_state().value
+            new_state = session_result["next_state"].value
             self.session_manager.set_state(session_result["next_state"])
+            
+            # Only log significant state changes (not staying in same state)
+            if old_state != new_state:
+                print(f"\n[State: {old_state} → {new_state}]", flush=True)
         
-        # Retrieve examples only if RAG is needed for this state
+        # Retrieve examples only if RAG needed
         retrieved_examples = []
         rag_context = ""
         
@@ -244,22 +237,13 @@ Instead of promising check-ins, encourage:
         # Build system prompt with RAG + session context
         system_prompt = self.get_system_prompt(rag_context)
         
-        # Add session-specific context from state machine
         if session_result["context"]:
             system_prompt += f"\n\n--- ADDITIONAL CONTEXT ---\n{session_result['context']}"
         
-        # Add memory summary for longer conversations
-        if len(self.conversation_history) > self.recent_messages:
-            memory_summary = self._get_memory_summary()
-            if memory_summary:
-                system_prompt += f"\n\n--- PERSISTENT MEMORY ---\n{memory_summary}"
-        
-        # Debug: Show what history is being used
-        if debug_history:
-            context_msgs = self._build_context_messages(user_message)
-            print(f"\n[DEBUG] Sending {len(context_msgs)} context messages to LLM:")
-            print(f"  - Recent messages: {min(len(self.conversation_history), self.recent_messages)}")
-            print(f"  - Relevant older: {len(context_msgs) - min(len(self.conversation_history), self.recent_messages)}")
+        # ALWAYS add memory summary (not just for longer conversations)
+        memory_summary = self._get_memory_summary()
+        if memory_summary:
+            system_prompt += f"\n\n--- PERSISTENT MEMORY ---\n{memory_summary}"
         
         # Prepare messages with smart history selection
         if self.model_info['provider'] == 'anthropic':
@@ -306,7 +290,7 @@ Instead of promising check-ins, encourage:
         if self.validate_constraints:
             response = self._check_and_warn_constraints(response)
         
-        # Update conversation history (ALWAYS store everything)
+        # Update conversation history
         if use_history:
             self.conversation_history.append({
                 "role": "user",
@@ -320,18 +304,35 @@ Instead of promising check-ins, encourage:
         return response, retrieved_examples, self.model_info['name']
     
     def _check_and_warn_constraints(self, response: str) -> str:
-        """Check if response violates program constraints and warn"""
-        # Constraint checking disabled - kept for future use if needed
+        """Check if response violates program constraints"""
         return response
     
     def _get_memory_summary(self):
         """Generate a summary of important information from conversation"""
         summary_parts = []
         
-        # Add user name if known
         user_name = self.session_manager.session_data.get('user_name')
         if user_name:
             summary_parts.append(f"Participant name: {user_name}")
+        
+        # Add discovery information if available
+        discovery = self.session_manager.session_data.get('discovery', {})
+        if discovery:
+            discovery_items = []
+            if discovery.get('general_about'):
+                discovery_items.append(f"  - Background: {discovery['general_about']}")
+            if discovery.get('current_exercise'):
+                discovery_items.append(f"  - Current exercise: {discovery['current_exercise']}")
+            if discovery.get('current_sleep'):
+                discovery_items.append(f"  - Sleep habits: {discovery['current_sleep']}")
+            if discovery.get('current_eating'):
+                discovery_items.append(f"  - Eating habits: {discovery['current_eating']}")
+            if discovery.get('free_time_activities'):
+                discovery_items.append(f"  - Free time activities: {discovery['free_time_activities']}")
+            
+            if discovery_items:
+                summary_parts.append("\nDiscovery information:")
+                summary_parts.extend(discovery_items)
         
         # Add all goals with details
         goal_details = self.session_manager.session_data.get('goal_details', [])
@@ -389,12 +390,10 @@ def interactive_session_chat():
     print("  'quit' - Exit")
     print("\n" + "=" * 80 + "\n")
     
-    # Initialize chatbot
     chatbot = SessionBasedRAGChatbot(model='claude-sonnet-4.5')
     
-    # Start with greeting
-    print("Nala: Let me start our first session...\n")
-    initial_response, _, _ = chatbot.generate_response("Hello")
+    print("Nala: ", end="")
+    initial_response, _, _ = chatbot.generate_response("[START_SESSION]")
     print("\n")
     
     while True:
@@ -403,9 +402,7 @@ def interactive_session_chat():
         if not user_input:
             continue
         
-        # Handle commands
         if user_input.lower() in ['quit', 'exit', 'q']:
-            # Offer to save before exiting
             save = input("\nWould you like to save this session? (yes/no): ").strip().lower()
             if save in ['yes', 'y']:
                 filename = chatbot.save_session()
@@ -421,7 +418,12 @@ def interactive_session_chat():
             print(f"Total Messages: {info['total_messages']}")
             print(f"User Name: {info['data']['session_data'].get('user_name', 'Not set')}")
             
-            # Display all goals with details
+            discovery = info['data']['session_data'].get('discovery', {})
+            questions_asked = discovery.get('questions_asked', [])
+            if questions_asked:
+                print(f"\nDiscovery Questions Asked: {len(questions_asked)}")
+                print(f"Topics covered: {', '.join(questions_asked)}")
+            
             goal_details = info['data']['session_data'].get('goal_details', [])
             if goal_details:
                 print(f"\nGoals ({len(goal_details)} total):")
@@ -431,7 +433,6 @@ def interactive_session_chat():
             else:
                 print(f"Goals: No completed goals yet")
             
-            # Show current goal being worked on
             current_goal = info['data']['session_data'].get('current_goal')
             if current_goal:
                 print(f"\nCurrent goal in progress: {current_goal}")
@@ -455,24 +456,20 @@ def interactive_session_chat():
                 print("\n")
             continue
         
-        # Generate response
         try:
             print("\nNala: ", end="")
             response, sources, model_name = chatbot.generate_response(user_input)
             print("\n")
             
-            # Check if session is complete
             session_state = chatbot.session_manager.get_state()
             if session_state == SessionState.END_SESSION:
                 print("\n" + "=" * 80)
                 print("SESSION 1 COMPLETE!")
                 print("=" * 80)
                 
-                # Automatically save
                 filename = chatbot.save_session()
                 print(f"\n✓ Session automatically saved to: {filename}")
                 
-                # Show summary
                 info = chatbot.get_session_info()
                 goal_details = info['data']['session_data'].get('goal_details', [])
                 if goal_details:
@@ -485,12 +482,11 @@ def interactive_session_chat():
                 
                 print(f"\n👋 See you next week at Session 2!")
                 print("=" * 80 + "\n")
-                break  # Exit the chat loop
+                break
             
         except Exception as e:
             print(f"\nError: {e}\n")
     
-    # Final save
     final_save = input("\nSave final session? (yes/no): ").strip().lower()
     if final_save in ['yes', 'y']:
         filename = chatbot.save_session()
