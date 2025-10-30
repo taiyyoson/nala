@@ -1,0 +1,276 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "jade",
+    "program_questions_asked": [],
+    "goals": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goal_details": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "current_goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": true,
+          "issue": ""
+        },
+        "measurable": {
+          "met": false,
+          "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+        },
+        "achievable": {
+          "met": true,
+          "issue": ""
+        },
+        "relevant": {
+          "met": true,
+          "issue": ""
+        },
+        "timebound": {
+          "met": true,
+          "issue": ""
+        },
+        "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+      },
+      "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+      "missing_criteria": [
+        "MEASURABLE"
+      ]
+    },
+    "smart_refinement_attempts": 1,
+    "confidence_level": 8,
+    "session_start": "2025-10-30T16:31:00.499348",
+    "turn_count": 22,
+    "last_coach_response": "That makes a lot of sense, Jade. Focusing on one goal at a time can really help you give it your full attention and build that habit successfully. So let me make sure I have your plan right: you're going to turn off your electronics an hour before you want to go to sleep, and you'll set an alarm to remind yourself to do it. Is there anything else you'd like to talk about before we wrap up today?",
+    "tracking_method_discussed": false,
+    "discovery": {
+      "free_time_activities": null,
+      "general_about": "7 hours and not super great",
+      "current_exercise": "3 meals",
+      "current_sleep": "i normally get all the food groups and i definitely snack",
+      "current_eating": "i like to play video games",
+      "questions_asked": [
+        "intro",
+        "general_about",
+        "current_exercise",
+        "current_sleep",
+        "current_eating"
+      ]
+    }
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach. I'm really glad you're here and excited to work with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Jade! Let me tell you a bit about how our program works. We'll have four coaching sessions together, meeting once a week over the next month. Each week, we'll work together to set personalized goals, track your progress, and use proven strategies to help you build healthier habits. Between our weekly sessions, you'll be working on your goals independently, and when we meet each week, we'll discuss how things went and adjust as needed. Does that sound good to you? Do you have any questions about how the program works?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Great! Before we dive into goal setting, I'd love to get to know you better. Tell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "im a college student and i work"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Jade. Being a college student and working at the same time is a lot to juggle! What does your current exercise routine look like?"
+    },
+    {
+      "role": "user",
+      "content": "no exercise"
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate you being honest about that. What are your sleep habits like - how many hours are you typically getting per night, and how would you say the quality is?"
+    },
+    {
+      "role": "user",
+      "content": "7 hours and not super great"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that. Seven hours is a decent amount, but I hear the quality isn't where you'd like it to be. What are your current eating habits like - what does a typical day of meals look like for you?"
+    },
+    {
+      "role": "user",
+      "content": "3 meals"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, you're eating three meals a day. Can you tell me a bit more about what those meals typically include, and do you snack between meals at all?"
+    },
+    {
+      "role": "user",
+      "content": "i normally get all the food groups and i definitely snack"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're getting variety in your meals with all the food groups. What do you like to do in your free time when you're not working or taking care of daily responsibilities?"
+    },
+    {
+      "role": "user",
+      "content": "i like to play video games"
+    },
+    {
+      "role": "assistant",
+      "content": "That's awesome, video games can be a great way to unwind. Now that I have a better sense of your current routine, I'm curious - what brought you to this coaching program? What are you hoping to work on or achieve over the next four weeks?"
+    },
+    {
+      "role": "user",
+      "content": "i want to work on sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a great area to focus on, Jade. Sleep is so important for everything else we do. You mentioned earlier that you get about seven hours and it's not super great. Can you tell me more about what \"not super great\" means for you - what specifically makes your sleep less than ideal?"
+    },
+    {
+      "role": "user",
+      "content": "i just dont get enough it"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you - seven hours might not be enough for you to feel your best. How much sleep do you think you need to feel rested and energized during the day?"
+    },
+    {
+      "role": "user",
+      "content": "8"
+    },
+    {
+      "role": "assistant",
+      "content": "So you're looking to add about an hour more sleep to feel fully rested. That's a clear and achievable goal to work toward. What do you think is the main thing keeping you from getting that extra hour right now?"
+    },
+    {
+      "role": "user",
+      "content": "i think i just take forever to fall asleep"
+    },
+    {
+      "role": "assistant",
+      "content": "I can see how taking a long time to fall asleep would make it hard to get those eight hours you need. Right now, your goal of wanting to fall asleep faster is a great starting point, but it needs some more detail to make it actionable. A stronger goal would include specifics like how quickly you want to fall asleep, what steps you'll take to get there, and a timeframe to work within. For example, you might aim to reduce your time to fall asleep to under 20 minutes within the next few weeks by creating a consistent bedtime routine or cutting out screens before bed. What specific action do you think would help you fall asleep faster?"
+    },
+    {
+      "role": "user",
+      "content": "i think if i turn off my electronics quicker"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really practical strategy - screens can definitely interfere with falling asleep. Let me help you turn this into a specific, measurable goal. How much time before bed do you think you could realistically turn off your electronics, and what timeframe do you want to work on this for?"
+    },
+    {
+      "role": "user",
+      "content": "i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, so you want to turn off electronics an hour before bed for the next four weeks. That's specific, achievable, and time-bound. Now let's make it measurable so you can track your success. How many nights per week do you want to aim for this - would you like to try it every night, or start with a certain number of nights per week?"
+    },
+    {
+      "role": "user",
+      "content": "every night"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! So your goal is to turn off all electronics one hour before bed every night for the next four weeks. That's a really solid SMART goal - it's specific, measurable, achievable, relevant to helping you fall asleep faster, and has a clear four-week timeframe. Does this goal feel realistic and doable for you, or would you like to adjust anything about it?"
+    },
+    {
+      "role": "user",
+      "content": "it seems doable"
+    },
+    {
+      "role": "assistant",
+      "content": "Excellent! On a scale of 1 to 10, how confident do you feel about achieving this goal of turning off electronics one hour before bed every night for the next four weeks?"
+    },
+    {
+      "role": "user",
+      "content": "8"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really strong confidence level, Jade! An 8 out of 10 shows you're feeling good about making this happen. Since you're already pretty confident, let me ask you this: what do you think might be the biggest challenge or obstacle that could get in the way of turning off your electronics an hour before bed?"
+    },
+    {
+      "role": "user",
+      "content": "i think just actually doing it might be hard"
+    },
+    {
+      "role": "assistant",
+      "content": "I totally get that - the actual follow-through can be the trickiest part, even when we know what we want to do. What do you think would help you remember to actually turn them off at that hour before bedtime? Maybe setting an alarm, putting your devices in another room, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "ill set an alarm"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a solid plan, Jade! Setting an alarm is a great way to give yourself that reminder. Now, you've set a really good goal around sleep and screen time. Would you like to set one more goal to work on this week, or would you prefer to focus just on this one?"
+    },
+    {
+      "role": "user",
+      "content": "lets focus on just this one"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes a lot of sense, Jade. Focusing on one goal at a time can really help you give it your full attention and build that habit successfully. So let me make sure I have your plan right: you're going to turn off your electronics an hour before you want to go to sleep, and you'll set an alarm to remind yourself to do it. Is there anything else you'd like to talk about before we wrap up today?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, Jade. So to recap, your goal is to turn off your electronics an hour before you want to go to sleep, and you'll be using an alarm as your reminder. You rated your confidence at 8 out of 10, which is really strong. Over this next week, track how it goes each night so we can talk about your progress when we meet again. I'm excited to hear how your first week goes at Session 2 next week!"
+    }
+  ]
+}

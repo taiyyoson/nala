@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional, Tuple
 import json
 import os
 from datetime import datetime
-import re  # Move to top level
+import re
 
 
 class SessionState(Enum):
@@ -34,8 +34,8 @@ class Session1Manager:
         self.session_data = {
             "user_name": None,
             "program_questions_asked": [],
-            "goals": [],  # List of all goals
-            "goal_details": [],  # List of dicts with goal + confidence + smart_analysis
+            "goals": [],
+            "goal_details": [],
             "current_goal": None,
             "goal_smart_analysis": None,
             "smart_refinement_attempts": 0,
@@ -43,7 +43,7 @@ class Session1Manager:
             "session_start": datetime.now().isoformat(),
             "turn_count": 0,
             "last_coach_response": None,
-            # Discovery questions tracking
+            "tracking_method_discussed": False,
             "discovery": {
                 "free_time_activities": None,
                 "general_about": None,
@@ -65,7 +65,7 @@ class Session1Manager:
                     return f.read()
             else:
                 return """Default Program Information:
-This is a 12-week health and wellness coaching program designed to help you achieve your personal health goals.
+This is a 4-week health and wellness coaching program designed to help you achieve your personal health goals.
 - Weekly 1-on-1 coaching sessions
 - Personalized goal setting and tracking
 - Evidence-based behavior change strategies
@@ -222,11 +222,11 @@ IMPORTANT:
 
 Say something like: "Before we dive into goal setting, I'd love to get to know you better."
 
-Then ask: "Tell me a bit about yourself - what's important to you right now?" """,
+Then ask: "Tell me a bit about yourself?" """,
             
             SessionState.GETTING_TO_KNOW_YOU: """
 Ask discovery questions ONE AT A TIME in this SPECIFIC ORDER:
-1. Tell me about yourself - what's important to you right now? (general context)
+1. Tell me about yourself? (general context)
 2. What does your current exercise routine look like? (frequency, types, duration)
 3. How are your sleep habits? (hours per night, quality)
 4. What are your current eating habits like? (meal patterns, typical foods)
@@ -318,6 +318,8 @@ Suggest strategies:
 - Telling someone
 - Scheduling specific times
 
+After they describe their tracking method, ask: "Is there anything else you'd like to talk about before we wrap up today?"
+
 NO markdown or emojis.""",
             
             SessionState.END_SESSION: """
@@ -326,11 +328,14 @@ Wrap up Session 1 warmly. Summarize:
 - Their confidence level(s)
 - Their tracking plan
 
+If they are missing any of the summary just continue without it. The session will be ending right after this so do not ask questions.
+
 IMPORTANT:
 - Emphasize THEY track their own progress
 - Next session is in 1 week
 - DO NOT promise to check in before then
 - Express enthusiasm about next week
+- Do not ask questions at this point. Only statements.
 - NO markdown or emojis
 
 Example: "I'm excited to hear how your first week goes. Remember to track your progress using [method]. See you next week at Session 2!"
@@ -339,8 +344,18 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
         
         return prompts.get(self.state, "")
     
-    def process_user_input(self, user_input: str, last_coach_response: str = None) -> Dict[str, Any]:
-        """Process user input and determine state transitions"""
+    def process_user_input(self, user_input: str, last_coach_response: str = None, conversation_history: list = None) -> Dict[str, Any]:
+        """
+        Process user input and determine state transitions
+        
+        Args:
+            user_input: The user's message
+            last_coach_response: The coach's previous response (for detecting coach satisfaction)
+            conversation_history: Full conversation history (optional, for checking if topics were discussed)
+        
+        Returns:
+            Dict with next_state, context, and trigger_rag
+        """
         user_lower = user_input.lower().strip()
         self.session_data["turn_count"] += 1
         
@@ -352,31 +367,6 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
             "context": "",
             "trigger_rag": True
         }
-        
-        # EMERGENCY OVERRIDE: Only trigger if BOTH user and coach are in wrap-up mode
-        # AND we have at least one completed goal
-        has_completed_goal = len(self.session_data.get("goal_details", [])) > 0
-        
-        user_wrap_up = (
-            ('next session' in user_lower and 'same time' in user_lower) or
-            ('see you next' in user_lower and 'week' in user_lower) or
-            ('until next' in user_lower)
-        )
-        
-        coach_wrap_up = False
-        if last_coach_response:
-            coach_lower = last_coach_response.lower()
-            coach_wrap_up = (
-                ('looking forward to hearing' in coach_lower and 'next week' in coach_lower) or
-                ('see you next week' in coach_lower) or
-                ('good luck' in coach_lower and 'next' in coach_lower)
-            )
-        
-        # Only force END_SESSION if we have a goal AND both parties are wrapping up
-        if has_completed_goal and user_wrap_up and coach_wrap_up and self.state not in [SessionState.END_SESSION]:
-            result["next_state"] = SessionState.END_SESSION
-            result["context"] = "Both parties confirming next session. Wrap up warmly and summarize."
-            return result
         
         # State machine logic
         if self.state == SessionState.GREETINGS:
@@ -421,26 +411,74 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
                 result["context"] = "Ask if they have questions about the program."
         
         elif self.state == SessionState.QUESTIONS_ABOUT_PROGRAM:
-            result["next_state"] = SessionState.AWAITING_YES_NO
-            result["trigger_rag"] = False
-            result["context"] = "Ask if they have questions."
-        
-        elif self.state == SessionState.AWAITING_YES_NO:
-            if any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "i do", "i have"]):
+            is_asking = '?' in user_input or len(user_input.split()) > 3
+            no_more = any(word in user_lower for word in ["no", "nope", "ready", "let's start", "im good", "i'm good", "that's all", "thats all", "no questions", "none"])
+            
+            if no_more:
+                result["next_state"] = SessionState.PROMPT_TALK_ABOUT_SELF
+                result["context"] = "User has no more questions. Transition to discovery phase."
+            elif is_asking:
                 result["next_state"] = SessionState.ANSWERING_QUESTION
                 result["trigger_rag"] = False
-                result["context"] = f"Program Info:\n{self.program_info}\n\nAnswer their question."
+                result["context"] = f"Program Info:\n{self.program_info}\n\nAnswer their question about the program."
                 self.session_data["program_questions_asked"].append(user_input)
+            else:
+                result["context"] = "Ask if they have any questions about the program."
+        
+        elif self.state == SessionState.AWAITING_YES_NO:
+            coach_asking_about_questions = False
+            if self.session_data.get("last_coach_response"):
+                coach_lower = self.session_data["last_coach_response"].lower()
+                question_prompts = [
+                    'do you have any questions',
+                    'any questions',
+                    'does that help clarify',
+                    'does that answer your question',
+                    'anything else you',
+                    'is there anything'
+                ]
+                coach_asking_about_questions = any(prompt in coach_lower for prompt in question_prompts)
+            
+            if any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "i do"]):
+                if coach_asking_about_questions and any(word in self.session_data.get("last_coach_response", "").lower() for word in ["does that help", "clarify", "answer your question"]):
+                    result["next_state"] = SessionState.PROMPT_TALK_ABOUT_SELF
+                    result["context"] = "User's question was answered. Transition to discovery phase."
+                elif len(user_input.split()) > 1 or '?' in user_input:
+                    result["next_state"] = SessionState.ANSWERING_QUESTION
+                    result["trigger_rag"] = False
+                    result["context"] = f"Program Info:\n{self.program_info}\n\nAnswer their question."
+                    self.session_data["program_questions_asked"].append(user_input)
+                else:
+                    result["next_state"] = SessionState.QUESTIONS_ABOUT_PROGRAM
+                    result["trigger_rag"] = False
+                    result["context"] = "User has questions. Ask what they'd like to know."
+                    
             elif any(word in user_lower for word in ["no", "nope", "nah", "don't", "dont", "no questions"]):
                 result["next_state"] = SessionState.PROMPT_TALK_ABOUT_SELF
-                result["context"] = "No questions. Transition to discovery."
+                result["context"] = "User has no questions. Transition to discovery phase."
             else:
-                result["context"] = "Ask user to clarify: do they have questions? (yes/no)"
+                if '?' in user_input or len(user_input.split()) <= 3:
+                    result["next_state"] = SessionState.ANSWERING_QUESTION
+                    result["trigger_rag"] = False
+                    result["context"] = f"Program Info:\n{self.program_info}\n\nAnswer their question about: {user_input}"
+                    self.session_data["program_questions_asked"].append(user_input)
+                else:
+                    result["context"] = "Ask user to clarify: do they have questions about the program? (yes/no)"
         
         elif self.state == SessionState.ANSWERING_QUESTION:
-            result["next_state"] = SessionState.QUESTIONS_ABOUT_PROGRAM
-            result["trigger_rag"] = False
-            result["context"] = f"Program Info:\n{self.program_info}"
+            has_more = any(word in user_lower for word in ["yes", "yeah", "another", "one more", "what about", "how about"])
+            no_more = any(word in user_lower for word in ["no", "nope", "ready", "let's start", "im good", "i'm good", "that's all", "thats all"])
+            
+            if has_more:
+                result["next_state"] = SessionState.QUESTIONS_ABOUT_PROGRAM
+                result["trigger_rag"] = False
+                result["context"] = f"Program Info:\n{self.program_info}\n\nUser has another question. Ask what they'd like to know."
+            elif no_more:
+                result["next_state"] = SessionState.PROMPT_TALK_ABOUT_SELF
+                result["context"] = "User ready to start. Transition to discovery phase."
+            else:
+                result["next_state"] = SessionState.AWAITING_YES_NO
+                result["context"] = "Ask if they have any other questions about the program before starting."
         
         elif self.state == SessionState.PROMPT_TALK_ABOUT_SELF:
             result["next_state"] = SessionState.GETTING_TO_KNOW_YOU
@@ -452,14 +490,11 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
             
             user_response = user_input.strip()
             
-            # Check if user is stating a goal - but ONLY if we have enough discovery info
             goal_keywords = ["want to", "goal is", "goal:", "would like to", "hoping to", "trying to", "plan to", "i want", "my goal"]
             user_stating_goal = any(phrase in user_lower for phrase in goal_keywords)
             
-            # Require at least 3 discovery questions before allowing goal transition
             min_discovery_complete = len(asked) >= 3
             
-            # If user is clearly stating a goal AND we have minimum discovery, transition
             if user_stating_goal and len(user_input.split()) > 4 and min_discovery_complete:
                 result["next_state"] = SessionState.GOALS
                 result["context"] = f"""User stated a goal after discovery!
@@ -475,35 +510,26 @@ User's goal statement: "{user_input}"
 IMPORTANT: Acknowledge their goal and help them make it SMART."""
                 return result
             
-            # Track responses based on what question we're on (NOT keywords)
-            # This ensures proper sequential storage
             current_question_index = len(asked)
             
             if current_question_index == 0:
-                # First response after intro
                 discovery["questions_asked"].append("intro")
             elif current_question_index == 1:
-                # Response to "Tell me about yourself"
                 discovery["general_about"] = user_response
                 discovery["questions_asked"].append("general_about")
             elif current_question_index == 2:
-                # Response to "What's your current exercise routine?"
                 discovery["current_exercise"] = user_response
                 discovery["questions_asked"].append("current_exercise")
             elif current_question_index == 3:
-                # Response to "How are your sleep habits?"
                 discovery["current_sleep"] = user_response
                 discovery["questions_asked"].append("current_sleep")
             elif current_question_index == 4:
-                # Response to "What are your eating habits?"
                 discovery["current_eating"] = user_response
                 discovery["questions_asked"].append("current_eating")
             elif current_question_index == 5:
-                # Response to "What do you do in your free time?"
                 discovery["free_time_activities"] = user_response
                 discovery["questions_asked"].append("free_time")
             
-            # Check what questions remain (FIXED ORDER)
             next_questions = []
             if "general_about" not in asked:
                 next_questions.append("general_about")
@@ -516,7 +542,6 @@ IMPORTANT: Acknowledge their goal and help them make it SMART."""
             if "free_time" not in asked:
                 next_questions.append("free_time")
             
-            # If all 5 core questions covered, move to GOALS
             if not next_questions:
                 result["next_state"] = SessionState.GOALS
                 result["context"] = f"""Discovery complete!
@@ -531,7 +556,6 @@ Now transition to goal setting. Ask: "What specific health or wellness goal woul
             else:
                 next_topic = next_questions[0]
                 
-                # Provide clear prompts for each question
                 question_prompts = {
                     "general_about": "Ask: 'Tell me a bit about yourself - what's important to you right now?'",
                     "current_exercise": "Ask: 'What does your current exercise routine look like?'",
@@ -550,14 +574,12 @@ Acknowledge their response warmly, then ask:
         elif self.state == SessionState.GOALS:
             goal_candidate = user_input.strip()
             
-            # Better goal detection - look for action-oriented statements
             non_goal_phrases = [
                 'no', 'yes', 'maybe', 'i dont know', "i don't know", 'not sure',
                 'just want to stick', 'thats all', "that's all", 'nothing else',
                 'im good', "i'm good", 'no more', 'nope', 'nah'
             ]
             
-            # Check if it's describing a situation vs stating a goal
             situation_phrases = ['i have', 'i am', "i'm", 'my life', 'my schedule']
             is_situation = any(phrase in user_lower for phrase in situation_phrases)
             
@@ -595,19 +617,14 @@ Explain what's missing and guide refinement."""
                 result["context"] = "Not a clear goal. Ask them to describe what they'd like to achieve."
         
         elif self.state == SessionState.CHECK_SMART:
-            # The system has evaluated the goal - now guide refinement or move forward
-            
-            # Check current goal's SMART status
             smart_analysis = self.session_data.get("goal_smart_analysis", {})
             is_smart = smart_analysis.get("is_smart", False)
             
             if is_smart:
-                # Goal is SMART! Move to confidence check
                 self._store_completed_goal(confidence=None)
                 result["next_state"] = SessionState.CONFIDENCE_CHECK
                 result["context"] = f"Goal is SMART! Celebrate and ask for confidence level."
             else:
-                # Goal needs refinement
                 result["next_state"] = SessionState.REFINE_GOAL
                 missing = ", ".join(smart_analysis.get("missing_criteria", []))
                 suggestions = smart_analysis.get("suggestions", "")
@@ -620,13 +637,11 @@ Guide them to make it more SMART. Be specific about what's missing."""
         elif self.state == SessionState.REFINE_GOAL:
             goal_candidate = user_input.strip()
             
-            # Check if coach is refining/specifying the goal in their last response
-            # If coach asked specific questions (which days? how many hours?), extract refined goal from context
+            # Check if coach is refining/specifying the goal
             if self.session_data.get("last_coach_response"):
                 coach_response = self.session_data["last_coach_response"]
                 coach_lower = coach_response.lower()
                 
-                # Check if coach is summarizing a refined goal
                 refined_goal_indicators = [
                     "so you're thinking",
                     "okay, so",
@@ -640,35 +655,26 @@ Guide them to make it more SMART. Be specific about what's missing."""
                 is_coach_summarizing = any(indicator in coach_lower for indicator in refined_goal_indicators)
                 
                 if is_coach_summarizing:
-                    # Coach is likely summarizing - extract from their statement
-                    
-                    # Extract hours mentioned
                     hours_match = re.search(r'(\d+)\s*hours?', coach_lower)
                     hours = hours_match.group(1) if hours_match else None
                     
-                    # Extract frequency
                     freq_match = re.search(r'(\d+)\s*(times?|days?|nights?)\s*(per |a |this |each )?week', coach_lower)
                     frequency = freq_match.group(1) if freq_match else None
                     
-                    # Extract specific days from user's CURRENT response (they just listed days)
                     days_mentioned = []
                     day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
                     
-                    # Check user's current input for days
                     for day in day_names:
                         if day in user_lower:
                             days_mentioned.append(day.capitalize())
                     
-                    # If no days in current input, check coach's confirmation
                     if not days_mentioned:
                         for day in day_names:
                             if day in coach_lower:
                                 days_mentioned.append(day.capitalize())
                     
-                    # Build refined goal if we have enough details
                     if hours and (frequency or days_mentioned):
                         if days_mentioned and len(days_mentioned) >= 2:
-                            # Format days nicely
                             if len(days_mentioned) == 2:
                                 days_str = f"{days_mentioned[0]} and {days_mentioned[1]}"
                             else:
@@ -679,29 +685,22 @@ Guide them to make it more SMART. Be specific about what's missing."""
                         else:
                             refined_goal = None
                         
-                        # Update current goal with refined version
                         if refined_goal:
                             self.session_data["current_goal"] = refined_goal
                             self.session_data["smart_refinement_attempts"] += 1
                             
-                            # Also update the goals list
                             if self.session_data["goals"]:
                                 self.session_data["goals"][-1] = refined_goal
                             
-                            # Re-evaluate SMART criteria with new goal
                             smart_eval = self.evaluate_smart_goal(refined_goal)
                             self.session_data["goal_smart_analysis"] = smart_eval
                             
-                            # If now SMART, store and move to next step
                             if smart_eval["is_smart"]:
                                 self._store_completed_goal(confidence=None)
-                                
-                                # Coach might ask about tracking next, so move to REMEMBER_GOAL
-                                result["next_state"] = SessionState.REMEMBER_GOAL
-                                result["context"] = f"Refined goal is SMART: '{refined_goal}'\nAsk how they'll track/remember it."
+                                result["next_state"] = SessionState.CONFIDENCE_CHECK
+                                result["context"] = f"Refined goal is SMART: '{refined_goal}'\nAsk for confidence level (1-10 scale)."
                                 return result
                             else:
-                                # Still not SMART, continue refining
                                 result["context"] = f"Goal refined to: '{refined_goal}' but still needs work.\nContinue helping them make it more specific."
                                 return result
             
@@ -723,7 +722,7 @@ Guide them to make it more SMART. Be specific about what's missing."""
                     r"how will you remind",
                     r"how will you track",
                     r"what.*remind yourself",
-                    r"on a scale.*confident"  # Asking for confidence = goal accepted
+                    r"on a scale.*confident"
                 ]
                 
                 coach_accepted = any(re.search(pattern, coach_response_lower) for pattern in coach_acceptance_patterns)
@@ -749,134 +748,67 @@ Guide them to make it more SMART. Be specific about what's missing."""
             is_moving_forward = any(phrase in goal_lower for phrase in moving_forward_phrases)
             
             if ((is_moving_forward or coach_accepted) and self.session_data["current_goal"]):
-                # Store goal if not already stored
                 if not self.session_data["goal_details"]:
                     self._store_completed_goal(confidence=8)
                 
-                # Determine next state based on context
                 if is_moving_forward and any(phrase in goal_lower for phrase in ['todo', 'calendar', 'reminder', 'track', 'note']):
-                    # They're talking about tracking - move to wrap up
                     result["next_state"] = SessionState.REMEMBER_GOAL
                     result["context"] = f"""User described tracking method: "{user_input}"
 Goal: "{self.session_data['current_goal']}"
-Acknowledge their tracking plan and transition to wrap-up."""
+Acknowledge their tracking plan and ask if there's anything else before wrapping up."""
                 else:
-                    # Ask for confidence
                     result["next_state"] = SessionState.CONFIDENCE_CHECK
                     result["context"] = f"""Goal accepted: "{self.session_data['current_goal']}"
 Ask for confidence level (1-10 scale)."""
-            # Regular goal refinement - user provided more details
-            non_goal_phrases = [
-                'no', 'yes', 'maybe', 'i dont know', "i don't know", 'not sure',
-                'just want to stick', 'thats all', "that's all", 'nothing else',
-                'im good', "i'm good", 'no more', 'nope', 'nah', 'keep it'
-            ]
             
-            goal_lower = goal_candidate.lower()
-            is_likely_refinement = (
-                len(goal_candidate.split()) > 2 and
-                not any(phrase in goal_lower for phrase in non_goal_phrases) and
-                not goal_lower.startswith(('no ', 'yes ', 'maybe '))
-            )
-            
-            if is_likely_refinement:
-                # Filter out questions/negotiations
+            elif is_likely_goal:
                 is_question = any(indicator in goal_candidate.lower() for indicator in ['?', 'how about', 'what if', 'maybe', 'would', 'could']) or goal_candidate.endswith('?')
                 
                 if is_question:
                     result["context"] = "User asking a question. Answer and help them finalize the goal statement."
                     return result
                 
-                # Try to incorporate this refinement into the current goal
                 current_goal = self.session_data.get("current_goal", "")
                 
-                # Check if this is adding timeframe, frequency, or specificity
                 time_indicators = ['week', 'month', 'day', 'by', 'within', 'in']
                 number_indicators = re.findall(r'\d+', goal_candidate)
                 
                 if any(ind in goal_lower for ind in time_indicators) or number_indicators:
-                    # This looks like adding missing details - append to current goal
                     if current_goal:
-                        # Build enhanced goal
                         enhanced_goal = f"{current_goal} {goal_candidate}"
                         self.session_data["current_goal"] = enhanced_goal
                     else:
                         self.session_data["current_goal"] = goal_candidate
                 else:
-                    # Replace entire goal
                     self.session_data["current_goal"] = goal_candidate
                 
                 self.session_data["smart_refinement_attempts"] += 1
                 
-                # Update goals list
                 if self.session_data["goals"]:
                     self.session_data["goals"][-1] = self.session_data["current_goal"]
                 
-                # Re-evaluate SMART criteria with refined goal
                 smart_eval = self.evaluate_smart_goal(self.session_data["current_goal"])
                 self.session_data["goal_smart_analysis"] = smart_eval
                 
                 if smart_eval["is_smart"]:
-                    # Success! Goal is now SMART
                     self._store_completed_goal(confidence=None)
                     result["next_state"] = SessionState.CONFIDENCE_CHECK
                     result["context"] = f"Refined goal is SMART: '{self.session_data['current_goal']}'\nAsk for confidence level."
                 else:
-                    # Still needs work
                     missing = ", ".join(smart_eval["missing_criteria"])
                     attempts = self.session_data["smart_refinement_attempts"]
                     
                     if attempts >= 4:
-                        # After 4 attempts, accept and move forward
                         self._store_completed_goal(confidence=None)
                         result["next_state"] = SessionState.CONFIDENCE_CHECK
                         result["context"] = f"After {attempts} attempts, move forward with: '{self.session_data['current_goal']}'\nAsk for confidence."
                     else:
-                        # Continue refining - stay in REFINE_GOAL
                         result["next_state"] = SessionState.REFINE_GOAL
                         result["context"] = f"""Refinement attempt {attempts}.
 Goal: "{self.session_data['current_goal']}"
 Still missing: {missing}
 
 Ask specific question to get the missing piece. What exactly do they need to add?"""
-                
-                smart_eval = self.evaluate_smart_goal(goal_candidate)
-                self.session_data["goal_smart_analysis"] = smart_eval
-                
-                if smart_eval["is_smart"]:
-                    if self.session_data["goals"] and self.session_data["goals"][-1] != goal_candidate:
-                        self.session_data["goals"][-1] = goal_candidate
-                    
-                    self._store_completed_goal(confidence=None)
-                    result["next_state"] = SessionState.CONFIDENCE_CHECK
-                    result["context"] = f"Refined goal is SMART! Celebrate.\nGoal: {goal_candidate}"
-                else:
-                    missing = ", ".join(smart_eval["missing_criteria"])
-                    attempts = self.session_data["smart_refinement_attempts"]
-                    
-                    if attempts >= 4:
-                        if self.session_data["goals"] and self.session_data["goals"][-1] != goal_candidate:
-                            self.session_data["goals"][-1] = goal_candidate
-                        
-                        self._store_completed_goal(confidence=None)
-                        result["next_state"] = SessionState.CONFIDENCE_CHECK
-                        result["context"] = f"""After {attempts} attempts, move forward with: "{goal_candidate}"
-Check confidence level."""
-                    elif attempts >= 3:
-                        result["context"] = f"""SMART Analysis (Attempt {attempts}):
-Goal: "{goal_candidate}"
-Missing: {missing}
-
-After {attempts} attempts, work WITH them. Suggest a specific SMART version."""
-                        result["next_state"] = SessionState.REFINE_GOAL
-                    else:
-                        result["context"] = f"""SMART Analysis (Attempt {attempts}):
-Goal: "{goal_candidate}"
-Missing: {missing}
-Suggestions: {smart_eval['suggestions']}
-
-Provide specific, actionable feedback."""
-                        result["next_state"] = SessionState.REFINE_GOAL
             else:
                 if any(phrase in goal_lower for phrase in ['stick with', 'keep', 'thats all', "that's all"]):
                     if self.session_data["current_goal"]:
@@ -917,35 +849,68 @@ Provide specific, actionable feedback."""
             result["next_state"] = SessionState.ASK_MORE_GOALS
         
         elif self.state == SessionState.ASK_MORE_GOALS:
-            # Check if they want another goal
-            if any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "another", "one more", "i'd like"]):
+            wants_more = any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "another", "one more", "i'd like", "i want"])
+            no_more = any(word in user_lower for word in ["no", "nope", "just", "only", "focus on", "stick with", "that's all", "thats all"])
+            
+            coach_wrapped_up = False
+            if self.session_data.get("last_coach_response"):
+                coach_lower = self.session_data["last_coach_response"].lower()
+                wrapping_phrases = [
+                    'good luck', 'have a great week',
+                    "i'm really looking forward", 'looking forward to hearing',
+                    'see you next', "i'll see you",
+                    'have a wonderful'
+                ]
+                coach_wrapped_up = any(phrase in coach_lower for phrase in wrapping_phrases)
+            
+            user_confirming_end = user_lower in ['are we done', 'is that it', 'are we finished', 'ok', 'thanks', 'thank you']
+            
+            if wants_more:
                 result["next_state"] = SessionState.GOALS
                 result["context"] = "Great! Ask about their next goal."
+            elif coach_wrapped_up and (no_more or user_confirming_end):
+                result["next_state"] = SessionState.END_SESSION
+                result["context"] = "Session complete. Confirm and close warmly."
+            elif no_more:
+                tracking_discussed = self.session_data.get("tracking_method_discussed", False)
+                
+                if conversation_history:
+                    for msg in conversation_history[-10:]:
+                        if msg.get('role') == 'assistant':
+                            content = msg.get('content', '').lower()
+                            if any(phrase in content for phrase in ['how will you remember', 'how will you track', 'remind yourself', 'system or reminder']):
+                                tracking_discussed = True
+                                self.session_data["tracking_method_discussed"] = True
+                                break
+                
+                if tracking_discussed or coach_wrapped_up:
+                    result["next_state"] = SessionState.END_SESSION
+                    result["context"] = "No more goals and tracking discussed. Wrap up session."
+                else:
+                    result["next_state"] = SessionState.REMEMBER_GOAL
+                    result["context"] = "No more goals. Ask how they'll track/remember their goal."
             else:
-                # No more goals - move to tracking plan
-                result["next_state"] = SessionState.REMEMBER_GOAL
-                result["context"] = "No more goals. Discuss tracking plan."
+                result["context"] = "Ask user to clarify: would they like to set another goal or focus on this one?"
         
         elif self.state == SessionState.REMEMBER_GOAL:
-            # User should be describing their tracking plan
-            
-            # Check if they've described a tracking method
             tracking_methods = ['calendar', 'reminder', 'app', 'note', 'journal', 'planner', 'todo', 'phone', 'alarm', 'schedule', 'write', 'set']
             described_tracking = any(method in user_lower for method in tracking_methods)
             
-            # Check if coach already asked for confidence (this means we skipped confidence check somehow)
-            coach_asking_confidence = False
+            if described_tracking:
+                self.session_data["tracking_method_discussed"] = True
+            
+            # Check if coach asked a wrap-up question
+            coach_asking_wrap_up = False
             if self.session_data.get("last_coach_response"):
                 coach_lower = self.session_data["last_coach_response"].lower()
-                coach_asking_confidence = 'on a scale' in coach_lower and 'confident' in coach_lower
+                wrap_up_questions = [
+                    'anything else', 'is there anything else',
+                    'before we wrap', 'before we finish',
+                    'ready to wrap', 'all set'
+                ]
+                coach_asking_wrap_up = any(phrase in coach_lower for phrase in wrap_up_questions)
             
-            # If coach is asking for confidence NOW, we're still in remember_goal
-            # Don't transition yet - wait for the confidence answer
-            if coach_asking_confidence:
-                result["context"] = "Coach asked for confidence. Wait for user's response before ending session."
-                return result
-            
-            # Also check if coach has already wished them well / said goodbye
+            # Check if coach has said goodbye
             coach_said_goodbye = False
             if self.session_data.get("last_coach_response"):
                 coach_lower = self.session_data["last_coach_response"].lower()
@@ -954,57 +919,38 @@ Provide specific, actionable feedback."""
                     'see you at our next session', 'see you next week', 
                     'talk to you next', 'until next session',
                     "i'll see you", "see you in one week",
-                    'excited for you to try'
+                    'excited for you to try', 'take care',
+                    'looking forward to hearing'
                 ]
                 coach_said_goodbye = any(phrase in coach_lower for phrase in goodbye_phrases)
             
-            # Check if user is asking about next session or confirming end
-            user_asking_end = any(phrase in user_lower for phrase in ['next session', 'when do we', 'is this the end', 'are we done', 'thats all', "that's all"])
+            # Check if user is ready to end
+            user_ready_to_end = any(phrase in user_lower for phrase in [
+                'no', 'nope', 'nah', "that's all", "thats all",
+                'nothing else', 'im good', "i'm good", 'all set',
+                'ready', 'see you', 'bye', 'thanks'
+            ])
             
-            # Also check if user gave a confidence number (means coach asked for it)
-            confidence_given = bool(re.search(r'\b([1-9]|10)\b', user_input))
-            
-            # If user just gave confidence, store it and then end
-            if confidence_given and coach_asking_confidence:
-                try:
-                    confidence = int(re.search(r'\b([1-9]|10)\b', user_input).group(1))
-                    self.session_data["confidence_level"] = confidence
-                    
-                    # Update stored goal with confidence
-                    if self.session_data["goal_details"]:
-                        self.session_data["goal_details"][-1]["confidence"] = confidence
-                except:
-                    pass
-                
-                # Now transition to end
-                result["next_state"] = SessionState.END_SESSION
-                result["context"] = f"""User provided confidence: {confidence}/10
-Goal(s): {', '.join([g['goal'] for g in self.session_data.get('goal_details', [])])}
-
-Thank them and wrap up warmly with session summary."""
-                return result
-            
-            # Transition to END_SESSION if:
-            # 1. User described tracking AND coach said goodbye, OR
-            # 2. User asking about/confirming end
-            if (described_tracking and coach_said_goodbye) or user_asking_end:
+            # End conditions: coach said goodbye OR (coach asked wrap-up AND user said no)
+            if coach_said_goodbye or (coach_asking_wrap_up and user_ready_to_end):
                 result["next_state"] = SessionState.END_SESSION
                 result["context"] = f"""Session wrapping up naturally.
 Goal(s): {', '.join([g['goal'] for g in self.session_data.get('goal_details', [])])}
 
-Confirm next session is in 1 week and provide warm closing summary."""
+Provide warm closing with brief summary. Confirm next session is in 1 week."""
+            # If tracking described but no wrap-up yet, ask about anything else
+            elif described_tracking and not coach_asking_wrap_up:
+                result["context"] = "Acknowledge tracking plan and ask: 'Is there anything else you'd like to talk about before we wrap up today?'"
+            # If no tracking mentioned yet, ask about it
+            elif not described_tracking:
+                result["context"] = "Ask about their tracking plan. How will they remember their goal?"
             else:
-                # Still in REMEMBER_GOAL - ask about tracking if not mentioned yet
-                if not described_tracking:
-                    result["context"] = "Ask about their tracking plan. How will they remember their goal?"
-                else:
-                    result["context"] = "Acknowledge tracking plan and wrap up session."
+                result["context"] = "Acknowledge and prepare to wrap up session."
         
         elif self.state == SessionState.END_SESSION:
-            # Session is complete - no more transitions
-            result["context"] = "Session complete. Thank them and confirm next session."
+            # Session is complete - stay in END_SESSION
+            result["context"] = "Session complete. Provide brief, warm confirmation if needed, but session is ending."
             
-            # Safety check: If we somehow got here without a goal, send back to goals
             if not self.session_data.get("goal_details"):
                 result["next_state"] = SessionState.GOALS
                 result["context"] = "ERROR: No goals stored. Let's make sure we have a clear goal before ending."
@@ -1014,20 +960,32 @@ Confirm next session is in 1 week and provide warm closing summary."""
     def _store_completed_goal(self, confidence: int = None):
         """Store a completed goal with its details"""
         if self.session_data["current_goal"]:
-            # Validate that this is actually a goal, not a question or negotiation
             current_goal = self.session_data["current_goal"]
             
-            # Filter out questions and negotiations
             is_question = '?' in current_goal or any(phrase in current_goal.lower() for phrase in ['how about', 'what if', 'maybe we', 'could we'])
             is_too_short = len(current_goal.split()) < 4
             
-            # If it's not a valid goal, don't store it
             if is_question or is_too_short:
                 return
             
-            # Check if this goal is already stored (avoid duplicates)
             existing_goals = [g["goal"] for g in self.session_data["goal_details"]]
-            if current_goal not in existing_goals:
+            
+            similar_exists = False
+            for existing in existing_goals:
+                if existing[:50] == current_goal[:50]:
+                    similar_exists = True
+                    for goal_entry in self.session_data["goal_details"]:
+                        if goal_entry["goal"][:50] == current_goal[:50]:
+                            if len(current_goal) > len(goal_entry["goal"]):
+                                goal_entry["goal"] = current_goal
+                                goal_entry["smart_analysis"] = self.session_data.get("goal_smart_analysis")
+                                goal_entry["refinement_attempts"] = self.session_data.get("smart_refinement_attempts", 0)
+                            if confidence is not None:
+                                goal_entry["confidence"] = confidence
+                            break
+                    break
+            
+            if not similar_exists and current_goal not in existing_goals:
                 goal_entry = {
                     "goal": current_goal,
                     "confidence": confidence,

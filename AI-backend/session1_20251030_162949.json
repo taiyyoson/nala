@@ -1,0 +1,262 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "jade",
+    "program_questions_asked": [],
+    "goals": [
+      "i want to sleep better achieving it by the four week mark"
+    ],
+    "goal_details": [
+      {
+        "goal": "i want to sleep better achieving it by the four week mark",
+        "confidence": 9,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": false,
+              "issue": "Vague action - 'sleep better' needs clarification (e.g., fall asleep faster, sleep longer, reduce wake-ups)"
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No quantifiable metrics (e.g., hours of sleep, sleep quality score, number of interruptions)"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Specify what aspect of sleep to improve and add measurable targets. Example: 'Sleep 7-8 hours per night with no more than 1 wake-up, tracked via sleep app, by the four week mark' or 'Fall asleep within 20 minutes of lying down at least 5 nights per week by the four week mark'"
+          },
+          "suggestions": "Specify what aspect of sleep to improve and add measurable targets. Example: 'Sleep 7-8 hours per night with no more than 1 wake-up, tracked via sleep app, by the four week mark' or 'Fall asleep within 20 minutes of lying down at least 5 nights per week by the four week mark'",
+          "missing_criteria": [
+            "SPECIFIC",
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "current_goal": "i want to sleep better achieving it by the four week mark",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": false,
+          "issue": "Vague action - 'sleep better' needs clarification (e.g., fall asleep faster, sleep longer, reduce wake-ups)"
+        },
+        "measurable": {
+          "met": false,
+          "issue": "No quantifiable metrics (e.g., hours of sleep, sleep quality score, number of interruptions)"
+        },
+        "achievable": {
+          "met": true,
+          "issue": ""
+        },
+        "relevant": {
+          "met": true,
+          "issue": ""
+        },
+        "timebound": {
+          "met": true,
+          "issue": ""
+        },
+        "suggestions": "Specify what aspect of sleep to improve and add measurable targets. Example: 'Sleep 7-8 hours per night with no more than 1 wake-up, tracked via sleep app, by the four week mark' or 'Fall asleep within 20 minutes of lying down at least 5 nights per week by the four week mark'"
+      },
+      "suggestions": "Specify what aspect of sleep to improve and add measurable targets. Example: 'Sleep 7-8 hours per night with no more than 1 wake-up, tracked via sleep app, by the four week mark' or 'Fall asleep within 20 minutes of lying down at least 5 nights per week by the four week mark'",
+      "missing_criteria": [
+        "SPECIFIC",
+        "MEASURABLE"
+      ]
+    },
+    "smart_refinement_attempts": 1,
+    "confidence_level": 9,
+    "session_start": "2025-10-30T16:24:37.079942",
+    "turn_count": 20,
+    "last_coach_response": "That makes a lot of sense, Jade. Having that mental commitment can be really powerful.\n\nWould you like to set one more goal to work on this week, or would you prefer to focus just on this sleep goal?",
+    "tracking_method_discussed": true,
+    "discovery": {
+      "free_time_activities": null,
+      "general_about": "i get 6 hours and not great quality",
+      "current_exercise": "i eat 2 meals with whatever i have on hand",
+      "current_sleep": "i play video games",
+      "current_eating": "no",
+      "questions_asked": [
+        "intro",
+        "general_about",
+        "current_exercise",
+        "current_sleep",
+        "current_eating"
+      ]
+    }
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach, and I'm really glad you're here. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "It's great to meet you, Jade! I'm excited to work with you over the next four weeks.\n\nThis is a 4-week coaching program where we'll meet once a week for a session, just like this one. During our time together, we'll work on setting personalized health goals that matter to you, whether that's around nutrition, exercise, stress management, or other wellness areas. I'll help you create realistic action plans and we'll track your progress each week using evidence-based strategies that actually work.\n\nBetween our weekly sessions, you'll be working on your goals independently, and then we'll reconnect the following week to discuss how things went and adjust as needed. Do you have any questions about how the program works before we dive in?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! Before we dive into goal setting, I'd love to get to know you better.\n\nTell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "Im a college student and i work"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Jade. Being a college student and working at the same time is a lot to juggle, so I appreciate you making time for your health. \n\nWhat does your current exercise routine look like?"
+    },
+    {
+      "role": "user",
+      "content": "i dont have one"
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate your honesty about that. Many people in your situation find it challenging to fit exercise in with school and work demands.\n\nHow are your sleep habits - how many hours are you typically getting per night, and how would you describe the quality?"
+    },
+    {
+      "role": "user",
+      "content": "i get 6 hours and not great quality"
+    },
+    {
+      "role": "assistant",
+      "content": "Six hours with poor quality sleep can definitely impact how you feel throughout the day, especially with your busy schedule. I hear you on that.\n\nWhat are your current eating habits like - things like when you typically eat meals and what kinds of foods you usually go for?"
+    },
+    {
+      "role": "user",
+      "content": "i eat 2 meals with whatever i have on hand"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it - so you're eating two meals a day with whatever's available. That makes sense with your busy schedule between school and work.\n\nWhat do you like to do in your free time when you have it?"
+    },
+    {
+      "role": "user",
+      "content": "i play video games"
+    },
+    {
+      "role": "assistant",
+      "content": "Nice! Video games can be a great way to unwind. Thanks for sharing all of this with me, Jade.\n\nSo let me make sure I've got the full picture: You're balancing school and work, not currently exercising, getting about 6 hours of sleep that's not great quality, eating 2 meals with whatever's on hand, and you enjoy gaming in your free time. Is there anything I'm missing or got wrong?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, thanks for confirming. Now that I have a better sense of where you're at, I'm curious about what brought you to coaching.\n\nWhat would you like to focus on or work towards in our time together?"
+    },
+    {
+      "role": "user",
+      "content": "i want to work on my sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really important area to focus on, Jade. Sleep affects so much - your energy, focus for school and work, and overall well-being.\n\nWhen you say you want to work on your sleep, what specifically would you like to be different about it?"
+    },
+    {
+      "role": "user",
+      "content": "i want to sleep better"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear that you want to sleep better, and that's a great starting point. Right now your goal is pretty broad, so let's work together to make it more specific and measurable so we can actually track your progress.\n\nFor example, are you more concerned about getting more hours of sleep, improving the quality so you feel more rested, or maybe falling asleep faster or staying asleep through the night? What matters most to you?"
+    },
+    {
+      "role": "user",
+      "content": "I want to fall asleep faster"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really helpful to know, Jade. Falling asleep faster can make such a difference in how much rest you actually get.\n\nRight now, about how long does it typically take you to fall asleep, and what would feel like a realistic improvement for you?"
+    },
+    {
+      "role": "user",
+      "content": "about an hour"
+    },
+    {
+      "role": "assistant",
+      "content": "An hour is quite a while to be lying there trying to fall asleep. I can see why you'd want to work on that.\n\nSo if we're making this goal specific and measurable, what would be a realistic target for you - like how many minutes would you ideally like it to take to fall asleep?"
+    },
+    {
+      "role": "user",
+      "content": "30 min"
+    },
+    {
+      "role": "assistant",
+      "content": "So you want to cut your time to fall asleep in half, from an hour down to 30 minutes. That's a solid, measurable target.\n\nNow let's add a timeframe to make this goal complete - are you thinking you'd like to achieve this over the next week, two weeks, or maybe by the end of our four weeks together?"
+    },
+    {
+      "role": "user",
+      "content": "achieving it by the four week mark"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so your goal is to fall asleep within 30 minutes by the four week mark. That gives you time to build new habits gradually.\n\nNow let's think about how you'll measure this - how will you track whether you're falling asleep in 30 minutes or less each night?"
+    },
+    {
+      "role": "user",
+      "content": "ill set my audiobook for a 30 min sleep timer"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a creative tracking method, Jade. Just to make sure I understand correctly - are you saying you'll use the audiobook timer to measure the 30 minutes, or is the audiobook something you're planning to use to help you fall asleep?"
+    },
+    {
+      "role": "user",
+      "content": "for both"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so the audiobook serves double duty - it helps you relax and the timer tells you if you made it within 30 minutes. Smart approach.\n\nOn a scale of 1 to 10, how confident do you feel about achieving this goal of falling asleep within 30 minutes by the four week mark?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's excellent confidence, Jade! A 9 out of 10 shows you really believe you can make this happen.\n\nWhat do you think is making you feel so confident about achieving this goal?"
+    },
+    {
+      "role": "user",
+      "content": "i think if i put my mind to rest it will make me feel better"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes a lot of sense, Jade. Having that mental commitment can be really powerful.\n\nWould you like to set one more goal to work on this week, or would you prefer to focus just on this sleep goal?"
+    },
+    {
+      "role": "user",
+      "content": "just the one goal"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, focusing on one goal is a great way to start.\n\nSo you'll be tracking your progress by noting each night whether you fell asleep within 30 minutes, and you'll use the audiobook with its 30-minute timer to help you achieve this. Does that sound right?"
+    }
+  ]
+}
