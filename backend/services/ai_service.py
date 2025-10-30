@@ -16,6 +16,7 @@ sys.path.insert(0, str(ai_backend_path))
 
 # Import RAG system
 from rag_dynamic import UnifiedRAGChatbot
+from session1_manager import SessionBasedRAGChatbot
 from query import VectorSearch
 
 
@@ -24,28 +25,41 @@ class AIService:
     Service for interacting with the RAG-based AI backend.
 
     Responsibilities:
-    - Initialize and manage RAG chatbot instances
+    - Initialize and manage RAG chatbot instances (with session management)
     - Generate responses using vector search + LLM
     - Handle streaming responses
     - Manage model selection and switching
+    - Manage session state and transitions
     - Format conversation history for RAG system
     """
 
-    def __init__(self, model: str = 'claude-sonnet-4', top_k: int = 3):
+    def __init__(self, model: str = 'claude-sonnet-4', top_k: int = 3, session_number: Optional[int] = None):
         """
         Initialize AI Service
 
         Args:
             model: LLM model to use (e.g., 'gpt-4o-mini', 'claude-sonnet-4')
             top_k: Number of similar coaching examples to retrieve
+            session_number: Session number (1-4) for structured coaching, None for general chat
         """
         self.model = model
         self.top_k = top_k
+        self.session_number = session_number
 
-        # Initialize RAG chatbot
-        self.chatbot = UnifiedRAGChatbot(model=model, top_k=top_k)
-
-        print(f"✓ AIService initialized with model: {model}, top_k: {top_k}")
+        # Initialize appropriate chatbot based on session
+        match session_number:
+            case 1:
+                # Session 1: Goal setting and introduction
+                self.chatbot = SessionBasedRAGChatbot(model=model, top_k=top_k)
+                print(f"✓ AIService initialized with Session 1 structured flow (model: {model})")
+            case 2 | 3 | 4:
+                # Future sessions - placeholder for now
+                self.chatbot = UnifiedRAGChatbot(model=model, top_k=top_k)
+                print(f"✓ AIService initialized for Session {session_number} (using base RAG, model: {model})")
+            case _:
+                # Default: General chat without session structure
+                self.chatbot = UnifiedRAGChatbot(model=model, top_k=top_k)
+                print(f"✓ AIService initialized with model: {model}, top_k: {top_k}")
 
     async def generate_response(
         self,
