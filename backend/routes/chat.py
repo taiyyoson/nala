@@ -1,7 +1,7 @@
 import asyncio
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
@@ -15,11 +15,47 @@ from backend.config.settings import settings
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 
-# Initialize AI service (singleton for the application)
-ai_service = AIService(
-    model=settings.default_llm_model,
-    top_k=settings.top_k_sources
-)
+# AI service cache: maintains session state per conversation
+# Key: conversation_id, Value: AIService instance
+_ai_service_cache: Dict[str, AIService] = {}
+
+
+def get_or_create_ai_service(conversation_id: str, session_number: Optional[int] = None) -> AIService:
+    """
+    Get or create an AI service instance for a conversation.
+    Maintains session state across messages within the same conversation.
+
+    Args:
+        conversation_id: Unique conversation identifier
+        session_number: Session number (1-4) for structured coaching
+
+    Returns:
+        AIService instance with session state
+    """
+    # Check if we already have an AI service for this conversation
+    if conversation_id in _ai_service_cache:
+        existing_service = _ai_service_cache[conversation_id]
+        # Verify session number matches (if provided)
+        if session_number is not None and existing_service.session_number != session_number:
+            # Session number changed - create new service
+            print(f"⚠️ Session number changed for conversation {conversation_id}: {existing_service.session_number} -> {session_number}")
+            ai_service = AIService(
+                model=settings.default_llm_model,
+                top_k=settings.top_k_sources,
+                session_number=session_number
+            )
+            _ai_service_cache[conversation_id] = ai_service
+            return ai_service
+        return existing_service
+
+    # Create new AI service for this conversation
+    ai_service = AIService(
+        model=settings.default_llm_model,
+        top_k=settings.top_k_sources,
+        session_number=session_number
+    )
+    _ai_service_cache[conversation_id] = ai_service
+    return ai_service
 
 
 class ChatMessage(BaseModel):
@@ -32,6 +68,7 @@ class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
     user_id: Optional[str] = None
+    session_number: Optional[int] = None  # 1-4 for structured coaching sessions
 
 
 class ChatResponse(BaseModel):
@@ -62,7 +99,13 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             limit=10  # Last 10 messages for context
         )
 
-        # Generate AI response using RAG system
+        # Get or create AI service with session state for this conversation
+        ai_service = get_or_create_ai_service(
+            conversation_id=conv_id,
+            session_number=request.session_number
+        )
+
+        # Generate AI response using RAG system (with session management if applicable)
         response, sources, model_name = await ai_service.generate_response(
             message=request.message,
             conversation_history=history,
