@@ -28,3 +28,8 @@ ENV/
 Thumbs.db
 __pycache__/
 *.pyc
+
+# temporary 
+
+# docs
+backend/docs/

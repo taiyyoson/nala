@@ -14,9 +14,9 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir.parent))
 
-from backend.config.database import DatabaseConfig
-from backend.config.settings import settings
-from backend.models import Base
+from config.database import DatabaseConfig
+from config.settings import settings
+from models import Base
 
 
 def init_conversation_database():

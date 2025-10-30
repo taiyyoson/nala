@@ -9,9 +9,8 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from models import Conversation, Message
 from sqlalchemy.orm import Session
-
-from backend.models import Conversation, Message
 
 
 class DatabaseService:
