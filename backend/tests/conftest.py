@@ -1,6 +1,15 @@
 import pytest
 from app import app
+from config.database import init_database
+from config.settings import settings
 from fastapi.testclient import TestClient
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    """Initialize database before running tests"""
+    init_database(settings.database_url)
+    yield
 
 
 @pytest.fixture
