@@ -4,11 +4,11 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from routes.chat import chat_router
+from routes.health import health_router
 
 from backend.config.database import init_database
 from backend.config.settings import settings
-from routes.chat import chat_router
-from routes.health import health_router
 
 
 @asynccontextmanager

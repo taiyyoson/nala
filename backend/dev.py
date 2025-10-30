@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import uvicorn
-
 from config.settings import settings
 
 if __name__ == "__main__":
