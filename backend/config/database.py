@@ -4,7 +4,6 @@ Database Configuration - Database connection and session management
 Handles SQLAlchemy engine and session creation for conversation database.
 """
 
-import os
 from contextlib import contextmanager
 from typing import Generator
 
@@ -88,14 +87,14 @@ class DatabaseConfig:
 
     def create_tables(self):
         """Create all tables defined in models."""
-        from backend.models.base import Base
+        from models.base import Base
 
         Base.metadata.create_all(bind=self.engine)
         print("✓ Database tables created")
 
     def drop_tables(self):
         """Drop all tables (use with caution!)."""
-        from backend.models.base import Base
+        from models.base import Base
 
         Base.metadata.drop_all(bind=self.engine)
         print("✓ Database tables dropped")
