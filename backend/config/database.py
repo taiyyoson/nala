@@ -4,11 +4,12 @@ Database Configuration - Database connection and session management
 Handles SQLAlchemy engine and session creation for conversation database.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
+from typing import Generator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 
 class DatabaseConfig:
@@ -39,14 +40,12 @@ class DatabaseConfig:
             database_url,
             connect_args=connect_args,
             pool_pre_ping=True,  # Verify connections before using
-            echo=False  # Set to True for SQL query debugging
+            echo=False,  # Set to True for SQL query debugging
         )
 
         # Create session factory
         self.SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
+            autocommit=False, autoflush=False, bind=self.engine
         )
 
     def get_session(self) -> Generator[Session, None, None]:
@@ -90,12 +89,14 @@ class DatabaseConfig:
     def create_tables(self):
         """Create all tables defined in models."""
         from backend.models.base import Base
+
         Base.metadata.create_all(bind=self.engine)
         print("✓ Database tables created")
 
     def drop_tables(self):
         """Drop all tables (use with caution!)."""
         from backend.models.base import Base
+
         Base.metadata.drop_all(bind=self.engine)
         print("✓ Database tables dropped")
 
