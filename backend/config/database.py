@@ -146,4 +146,4 @@ def get_db() -> Generator[Session, None, None]:
     """
     if db_config is None:
         raise RuntimeError("Database not initialized. Call init_database() first.")
-    return db_config.get_session()
+    yield from db_config.get_session()

@@ -111,4 +111,4 @@ def test_chat_stream_endpoint(client: TestClient, sample_chat_request):
     """Test the chat streaming endpoint"""
     response = client.post("/api/v1/chat/stream", json=sample_chat_request)
     assert response.status_code == 200
-    assert response.headers["content-type"] == "text/plain; charset=utf-8"
+    assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
