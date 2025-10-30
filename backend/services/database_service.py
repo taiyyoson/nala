@@ -5,11 +5,13 @@ This service handles all database operations for conversations and messages.
 Abstracts database implementation details from other services.
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-from sqlalchemy.orm import Session
-from backend.models import Conversation, Message
 import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy.orm import Session
+
+from backend.models import Conversation, Message
 
 
 class DatabaseService:
@@ -56,7 +58,7 @@ class DatabaseService:
             user_id=conversation_data.get("user_id"),
             title=conversation_data.get("title"),
             message_count=0,
-            metadata=conversation_data.get("metadata", {})
+            metadata=conversation_data.get("metadata", {}),
         )
 
         self.session.add(conversation)
@@ -75,15 +77,14 @@ class DatabaseService:
         Returns:
             Conversation object or None
         """
-        return self.session.query(Conversation).filter(
-            Conversation.id == conversation_id
-        ).first()
+        return (
+            self.session.query(Conversation)
+            .filter(Conversation.id == conversation_id)
+            .first()
+        )
 
     def list_user_conversations(
-        self,
-        user_id: str,
-        limit: int = 50,
-        offset: int = 0
+        self, user_id: str, limit: int = 50, offset: int = 0
     ) -> List[Conversation]:
         """
         List all conversations for a user.
@@ -106,9 +107,7 @@ class DatabaseService:
         )
 
     def update_conversation(
-        self,
-        conversation_id: str,
-        updates: Dict[str, Any]
+        self, conversation_id: str, updates: Dict[str, Any]
     ) -> Optional[Conversation]:
         """
         Update conversation fields.
@@ -206,7 +205,7 @@ class DatabaseService:
             conversation_id=message_data["conversation_id"],
             role=message_data["role"],
             content=message_data["content"],
-            metadata=message_data.get("metadata", {})
+            metadata=message_data.get("metadata", {}),
         )
 
         self.session.add(message)
@@ -220,10 +219,7 @@ class DatabaseService:
         return message
 
     def get_messages_by_conversation(
-        self,
-        conversation_id: str,
-        limit: Optional[int] = None,
-        offset: int = 0
+        self, conversation_id: str, limit: Optional[int] = None, offset: int = 0
     ) -> List[Message]:
         """
         Get all messages for a conversation.
@@ -257,14 +253,10 @@ class DatabaseService:
         Returns:
             Message object or None
         """
-        return self.session.query(Message).filter(
-            Message.id == message_id
-        ).first()
+        return self.session.query(Message).filter(Message.id == message_id).first()
 
     def update_message(
-        self,
-        message_id: str,
-        updates: Dict[str, Any]
+        self, message_id: str, updates: Dict[str, Any]
     ) -> Optional[Message]:
         """
         Update message fields.
@@ -334,14 +326,14 @@ class DatabaseService:
         Returns:
             Number of messages
         """
-        return self.session.query(Message).filter(
-            Message.conversation_id == conversation_id
-        ).count()
+        return (
+            self.session.query(Message)
+            .filter(Message.conversation_id == conversation_id)
+            .count()
+        )
 
     def get_recent_messages(
-        self,
-        conversation_id: str,
-        limit: int = 10
+        self, conversation_id: str, limit: int = 10
     ) -> List[Message]:
         """
         Get most recent messages for a conversation.
@@ -359,7 +351,9 @@ class DatabaseService:
             .order_by(Message.created_at.desc())
             .limit(limit)
             .all()
-        )[::-1]  # Reverse to chronological order
+        )[
+            ::-1
+        ]  # Reverse to chronological order
 
     def health_check(self) -> bool:
         """

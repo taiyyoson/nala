@@ -4,10 +4,12 @@ Message Model - Database model for chat messages
 Stores individual messages within conversations.
 """
 
-from sqlalchemy import Column, String, Text, ForeignKey, JSON
-from sqlalchemy.orm import relationship
-from .base import Base, TimestampMixin
 import uuid
+
+from sqlalchemy import JSON, Column, ForeignKey, String, Text
+from sqlalchemy.orm import relationship
+
+from .base import Base, TimestampMixin
 
 
 class Message(Base, TimestampMixin):
@@ -27,8 +29,15 @@ class Message(Base, TimestampMixin):
 
     __tablename__ = "messages"
 
-    id = Column(String(36), primary_key=True, default=lambda: f"msg_{uuid.uuid4().hex[:12]}")
-    conversation_id = Column(String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(
+        String(36), primary_key=True, default=lambda: f"msg_{uuid.uuid4().hex[:12]}"
+    )
+    conversation_id = Column(
+        String(36),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     role = Column(String(20), nullable=False)  # "user", "assistant", "system"
     content = Column(Text, nullable=False)
     metadata = Column(JSON, default=dict)

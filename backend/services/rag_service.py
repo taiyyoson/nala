@@ -8,7 +8,7 @@ with proper initialization, error handling, and streaming support.
 
 import sys
 from pathlib import Path
-from typing import Tuple, List, Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 # Add AI-backend to path
 ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
@@ -20,7 +20,9 @@ from rag_dynamic import UnifiedRAGChatbot
 _rag_chatbot: Optional[UnifiedRAGChatbot] = None
 
 
-def get_rag_chatbot(model: str = "claude-sonnet-4", top_k: int = 3) -> UnifiedRAGChatbot:
+def get_rag_chatbot(
+    model: str = "claude-sonnet-4", top_k: int = 3
+) -> UnifiedRAGChatbot:
     """Get or create the RAG chatbot singleton instance."""
     global _rag_chatbot
     if _rag_chatbot is None:
@@ -29,8 +31,7 @@ def get_rag_chatbot(model: str = "claude-sonnet-4", top_k: int = 3) -> UnifiedRA
 
 
 def get_rag_response(
-    message: str,
-    conversation_history: Optional[List[Dict[str, str]]] = None
+    message: str, conversation_history: Optional[List[Dict[str, str]]] = None
 ) -> Tuple[str, List[Dict]]:
     """
     Get response from RAG system.

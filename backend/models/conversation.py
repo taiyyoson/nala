@@ -4,10 +4,12 @@ Conversation Model - Database model for conversations
 Stores conversation metadata and relationships to messages.
 """
 
-from sqlalchemy import Column, String, Integer, JSON
-from sqlalchemy.orm import relationship
-from .base import Base, TimestampMixin
 import uuid
+
+from sqlalchemy import JSON, Column, Integer, String
+from sqlalchemy.orm import relationship
+
+from .base import Base, TimestampMixin
 
 
 class Conversation(Base, TimestampMixin):
@@ -27,7 +29,9 @@ class Conversation(Base, TimestampMixin):
 
     __tablename__ = "conversations"
 
-    id = Column(String(36), primary_key=True, default=lambda: f"conv_{uuid.uuid4().hex[:12]}")
+    id = Column(
+        String(36), primary_key=True, default=lambda: f"conv_{uuid.uuid4().hex[:12]}"
+    )
     user_id = Column(String(36), index=True, nullable=True)  # Firebase UID
     title = Column(String(255), nullable=True)
     message_count = Column(Integer, default=0)
@@ -38,7 +42,7 @@ class Conversation(Base, TimestampMixin):
         "Message",
         back_populates="conversation",
         cascade="all, delete-orphan",
-        order_by="Message.created_at"
+        order_by="Message.created_at",
     )
 
     def __repr__(self):
@@ -59,13 +63,17 @@ class Conversation(Base, TimestampMixin):
     def update_message_count(self, session):
         """Recalculate and update message count from database."""
         from .message import Message
-        count = session.query(Message).filter(Message.conversation_id == self.id).count()
+
+        count = (
+            session.query(Message).filter(Message.conversation_id == self.id).count()
+        )
         self.message_count = count
         return count
 
     def generate_title_from_first_message(self, session):
         """Auto-generate title from first user message (max 50 chars)."""
         from .message import Message
+
         first_message = (
             session.query(Message)
             .filter(Message.conversation_id == self.id, Message.role == "user")
