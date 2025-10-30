@@ -4,7 +4,7 @@ Request Adapter - Transform API Requests to Service Format
 Converts FastAPI request models to formats expected by service layer and RAG system.
 """
 
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 
 class RequestAdapter:
@@ -23,7 +23,7 @@ class RequestAdapter:
         message: str,
         conversation_id: Optional[str] = None,
         user_id: Optional[str] = None,
-        conversation_history: Optional[List[Dict]] = None
+        conversation_history: Optional[List[Dict]] = None,
     ) -> Dict:
         """
         Transform API chat request to AI service input format.
@@ -59,7 +59,7 @@ class RequestAdapter:
             "message": message.strip(),
             "conversation_history": formatted_history,
             "user_id": user_id,
-            "use_history": use_history
+            "use_history": use_history,
         }
 
     @staticmethod
@@ -89,10 +89,7 @@ class RequestAdapter:
 
             # Only include user and assistant messages (skip system)
             if role in ["user", "assistant"]:
-                formatted.append({
-                    "role": role,
-                    "content": content
-                })
+                formatted.append({"role": role, "content": content})
 
         return formatted
 
@@ -120,7 +117,7 @@ class RequestAdapter:
 
     @staticmethod
     def extract_model_preference(
-        request_metadata: Optional[Dict] = None
+        request_metadata: Optional[Dict] = None,
     ) -> Optional[str]:
         """
         Extract model preference from request metadata.

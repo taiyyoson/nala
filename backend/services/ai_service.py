@@ -5,18 +5,18 @@ This service handles communication with the AI-backend RAG chatbot system,
 managing LLM selection, context retrieval, and response generation.
 """
 
-from typing import List, Dict, Optional, Tuple, AsyncGenerator
-import sys
 import os
+import sys
 from pathlib import Path
+from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
 # Add AI-backend to Python path
 ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
 sys.path.insert(0, str(ai_backend_path))
 
+from query import VectorSearch
 # Import RAG system
 from rag_dynamic import UnifiedRAGChatbot
-from query import VectorSearch
 
 
 class AIService:
@@ -31,7 +31,7 @@ class AIService:
     - Format conversation history for RAG system
     """
 
-    def __init__(self, model: str = 'claude-sonnet-4', top_k: int = 3):
+    def __init__(self, model: str = "claude-sonnet-4", top_k: int = 3):
         """
         Initialize AI Service
 
@@ -52,7 +52,7 @@ class AIService:
         message: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
         user_id: Optional[str] = None,
-        use_history: bool = True
+        use_history: bool = True,
     ) -> Tuple[str, List[Dict], str]:
         """
         Generate a response using the RAG system.
@@ -79,8 +79,7 @@ class AIService:
         # 3. Calls LLM API with context
         # 4. Returns (response, sources, model_name)
         response, sources, model_name = self.chatbot.generate_response(
-            user_message=message,
-            use_history=use_history
+            user_message=message, use_history=use_history
         )
 
         return (response, sources, model_name)
@@ -89,7 +88,7 @@ class AIService:
         self,
         message: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         """
         Stream a response token-by-token (for real-time chat experience).
@@ -152,11 +151,9 @@ class AIService:
         """
         models = []
         for model_id, info in UnifiedRAGChatbot.AVAILABLE_MODELS.items():
-            models.append({
-                "id": model_id,
-                "name": info["name"],
-                "provider": info["provider"]
-            })
+            models.append(
+                {"id": model_id, "name": info["name"], "provider": info["provider"]}
+            )
         return models
 
     def reset_conversation(self):

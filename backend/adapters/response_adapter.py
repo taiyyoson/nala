@@ -4,9 +4,9 @@ Response Adapter - Transform Service Responses to API Format
 Converts service layer and RAG system outputs to FastAPI response models.
 """
 
-from typing import List, Dict, Tuple, Optional
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 
 class ResponseAdapter:
@@ -24,7 +24,7 @@ class ResponseAdapter:
     def ai_response_to_chat_response(
         rag_output: Tuple[str, List[Dict], str],
         conversation_id: str,
-        message_id: Optional[str] = None
+        message_id: Optional[str] = None,
     ) -> Dict:
         """
         Transform RAG output to ChatResponse format.
@@ -66,8 +66,8 @@ class ResponseAdapter:
             "metadata": {
                 "model": model_name,
                 "sources": formatted_sources,
-                "source_count": len(sources)
-            }
+                "source_count": len(sources),
+            },
         }
 
     @staticmethod
@@ -112,8 +112,7 @@ class ResponseAdapter:
 
     @staticmethod
     def conversation_to_api_format(
-        conversation_data: Dict,
-        messages: Optional[List[Dict]] = None
+        conversation_data: Dict, messages: Optional[List[Dict]] = None
     ) -> Dict:
         """
         Format conversation data for API response.
@@ -140,7 +139,7 @@ class ResponseAdapter:
             "message_count": conversation_data.get("message_count", 0),
             "created_at": conversation_data.get("created_at"),
             "updated_at": conversation_data.get("updated_at"),
-            "metadata": conversation_data.get("metadata", {})
+            "metadata": conversation_data.get("metadata", {}),
         }
 
         if messages is not None:
@@ -172,7 +171,7 @@ class ResponseAdapter:
             "last_message_preview": conversation_data.get("last_message_preview"),
             "message_count": conversation_data.get("message_count", 0),
             "created_at": conversation_data.get("created_at"),
-            "updated_at": conversation_data.get("updated_at")
+            "updated_at": conversation_data.get("updated_at"),
         }
 
     @staticmethod
@@ -197,7 +196,7 @@ class ResponseAdapter:
             "error": type(error).__name__,
             "message": str(error),
             "status_code": status_code,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     @staticmethod
@@ -214,9 +213,6 @@ class ResponseAdapter:
         """
         import json
 
-        data = {
-            "content": chunk,
-            "done": done
-        }
+        data = {"content": chunk, "done": done}
 
         return f"data: {json.dumps(data)}\n\n"

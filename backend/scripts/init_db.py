@@ -14,8 +14,8 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir.parent))
 
-from backend.config.settings import settings
 from backend.config.database import DatabaseConfig
+from backend.config.settings import settings
 from backend.models import Base
 
 
@@ -88,9 +88,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Initialize conversation database")
     parser.add_argument(
-        "--reset",
-        action="store_true",
-        help="Reset database (drop and recreate tables)"
+        "--reset", action="store_true", help="Reset database (drop and recreate tables)"
     )
 
     args = parser.parse_args()
@@ -106,5 +104,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n✗ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

@@ -4,10 +4,11 @@ Conversation Service - Conversation State Management
 This service manages conversation lifecycle, message history, and metadata.
 """
 
-from typing import List, Optional, Dict
-from datetime import datetime
-from backend.services.database_service import DatabaseService
 import uuid
+from datetime import datetime
+from typing import Dict, List, Optional
+
+from backend.services.database_service import DatabaseService
 
 
 class ConversationService:
@@ -35,7 +36,7 @@ class ConversationService:
         self,
         user_id: Optional[str] = None,
         title: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Dict:
         """
         Create a new conversation.
@@ -59,7 +60,7 @@ class ConversationService:
         conversation_data = {
             "user_id": user_id,
             "title": title or "New Conversation",
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
 
         conversation = self.db.create_conversation(conversation_data)
@@ -100,10 +101,7 @@ class ConversationService:
         return conv_dict
 
     async def list_conversations(
-        self,
-        user_id: str,
-        limit: int = 50,
-        offset: int = 0
+        self, user_id: str, limit: int = 50, offset: int = 0
     ) -> List[Dict]:
         """
         List conversations for a user.
@@ -142,7 +140,7 @@ class ConversationService:
         conversation_id: str,
         role: str,
         content: str,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Dict:
         """
         Add a message to a conversation.
@@ -174,7 +172,7 @@ class ConversationService:
             "conversation_id": conversation_id,
             "role": role,
             "content": content,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
 
         message = self.db.create_message(message_data)
@@ -188,9 +186,7 @@ class ConversationService:
         return message.to_dict()
 
     async def get_conversation_history(
-        self,
-        conversation_id: str,
-        limit: Optional[int] = None
+        self, conversation_id: str, limit: Optional[int] = None
     ) -> List[Dict[str, str]]:
         """
         Get conversation history formatted for AI service.
@@ -208,18 +204,11 @@ class ConversationService:
         # Format for AI service
         history = []
         for msg in messages:
-            history.append({
-                "role": msg.role,
-                "content": msg.content
-            })
+            history.append({"role": msg.role, "content": msg.content})
 
         return history
 
-    async def update_conversation_title(
-        self,
-        conversation_id: str,
-        title: str
-    ) -> bool:
+    async def update_conversation_title(self, conversation_id: str, title: str) -> bool:
         """
         Update conversation title.
 
@@ -230,16 +219,11 @@ class ConversationService:
         Returns:
             True if successful
         """
-        conversation = self.db.update_conversation(
-            conversation_id,
-            {"title": title}
-        )
+        conversation = self.db.update_conversation(conversation_id, {"title": title})
         return conversation is not None
 
     async def update_conversation_metadata(
-        self,
-        conversation_id: str,
-        metadata: Dict
+        self, conversation_id: str, metadata: Dict
     ) -> bool:
         """
         Update conversation metadata.
@@ -252,8 +236,7 @@ class ConversationService:
             True if successful
         """
         conversation = self.db.update_conversation(
-            conversation_id,
-            {"metadata": metadata}
+            conversation_id, {"metadata": metadata}
         )
         return conversation is not None
 
@@ -270,9 +253,7 @@ class ConversationService:
         return self.db.delete_conversation(conversation_id)
 
     async def get_or_create_conversation(
-        self,
-        conversation_id: Optional[str],
-        user_id: Optional[str]
+        self, conversation_id: Optional[str], user_id: Optional[str]
     ) -> str:
         """
         Get existing conversation or create a new one.

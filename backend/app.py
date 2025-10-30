@@ -1,13 +1,14 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from contextlib import asynccontextmanager
 
+from backend.config.database import init_database
+from backend.config.settings import settings
 from routes.chat import chat_router
 from routes.health import health_router
-from backend.config.settings import settings
-from backend.config.database import init_database
 
 
 @asynccontextmanager
@@ -49,7 +50,7 @@ app = FastAPI(
     title="Nala Health Coach API",
     description="Backend API for health coaching chatbot with RAG (Retrieval-Augmented Generation)",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Configure CORS for React Native development
@@ -77,15 +78,12 @@ async def root():
             "chat": "/api/v1/chat/message",
             "stream": "/api/v1/chat/stream",
             "health": "/api/v1/health",
-            "docs": "/docs"
-        }
+            "docs": "/docs",
+        },
     }
 
 
 if __name__ == "__main__":
     uvicorn.run(
-        "app:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.debug
+        "app:app", host=settings.api_host, port=settings.api_port, reload=settings.debug
     )
