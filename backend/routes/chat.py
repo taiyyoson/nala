@@ -167,6 +167,12 @@ async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
             # Get conversation history
             history = await conv_service.get_conversation_history(conv_id, limit=10)
 
+            # Get or create AI service with session state
+            ai_service = get_or_create_ai_service(
+                conversation_id=conv_id,
+                session_number=request.session_number
+            )
+
             # Stream response from AI service
             full_response = ""
             async for chunk in ai_service.stream_response(request.message, history, request.user_id):
