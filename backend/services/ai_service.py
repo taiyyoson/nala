@@ -15,7 +15,6 @@ ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
 sys.path.insert(0, str(ai_backend_path))
 
 from query import VectorSearch
-
 # Import RAG system
 from rag_dynamic import UnifiedRAGChatbot
 from session1_manager import SessionBasedRAGChatbot
