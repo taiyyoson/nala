@@ -44,12 +44,17 @@ jobs:
         black --check .
         isort --check-only .
 
-    - name: Run tests
+    - name: Run database tests
       run: |
         cd backend
-        pytest -v --tb=short
+        pytest tests/test_database.py -v --tb=short
 
-    - name: Test API endpoints
+    - name: Run API endpoint tests
       run: |
         cd backend
-        python -m pytest tests/ -v -k "test_api"
+        pytest tests/test_api_endpoints.py -v --tb=short
+
+    - name: Run all tests
+      run: |
+        cd backend
+        pytest -v --tb=short --cov=. --cov-report=term-missing
