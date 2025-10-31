@@ -16,7 +16,7 @@ export default function WelcomeSlide({ goToNextSlide }: Props) {
           style={styles.logoImage}
           resizeMode="contain"
         />
-      <Text style={styles.title}>Welcome to Nala</Text>
+      <Text style={styles.title}>Welcome to NALA</Text>
       <Text style={styles.text}>
       Nala is a digital health coach that will help you develop lifestyle and behavior change skills. Nala will help you to set goals for health and wellness, check in on your progress, and 
       problem solve with you when things are difficult. Nala’s goal is to help you to increase your confidence to achieve your goals. 

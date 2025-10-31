@@ -13,6 +13,8 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/AuthStack';
 import { useAuth } from '../contexts/AuthContext';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { auth } from '../config/firebaseConfig'; 
 
 type LoginScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -36,38 +38,68 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Naive validation - any email/password works for testing
-      if (email.includes('@') && password.length >= 6) {
-        // Create a mock user object
-        const mockUser = {
-          uid: 'mock-user-123',
-          email: email,
-          displayName: null,
-        };
-        setLoggedInUser(mockUser);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      const token = await user.getIdToken();
+
+      console.log('✅ Firebase login success');
+      console.log('UID:', user.uid);
+      console.log('Token:', token);
+
+      setLoggedInUser({
+        uid: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? '',
+      });
+
+      navigation.navigate('Onboarding');
+    } catch (err: any) {
+      console.error('❌ Login error:', err.message);
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found for this email.');
+      } else if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password.');
       } else {
-        setError('Invalid email or password must be 6+ characters');
+        setError(err.message || 'Login failed.');
       }
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Please enter your email first.");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent! Check your inbox.");
+    } catch (err: any) {
+      console.error("❌ Password reset error:", err);
+      if (err.code === "auth/user-not-found") {
+        setError("No user found with this email.");
+      } else {
+        setError(err.message);
+      }
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        
         <View style={styles.content}>
           <View style={styles.backButtonContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← </Text>
+              <Text style={styles.backButtonText}>← </Text>
             </TouchableOpacity>
           </View>
+
           <Text style={styles.title}>Welcome back!</Text>
           <Text style={styles.subtitle}>Log in to continue your journey with NALA.</Text>
 
@@ -100,7 +132,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleForgotPassword}>
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
 
@@ -132,43 +164,13 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
-    marginTop: 90,
-
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 40,
-    textAlign: 'center',
-  },
-  form: {
-    width: '100%',
-    maxWidth: 400,
-  },
-  label: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  keyboardView: { flex: 1 },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 30 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#000', marginBottom: 8, marginTop: 90 },
+  subtitle: { fontSize: 14, color: '#666', marginBottom: 40, textAlign: 'center' },
+  form: { width: '100%', maxWidth: 400 },
+  label: { fontSize: 14, color: '#333', marginBottom: 8, fontWeight: '500' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,31 +181,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  inputIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#000',
-  },
-  eyeIcon: {
-    fontSize: 20,
-  },
-  forgotPassword: {
-    textAlign: 'right',
-    color: '#FF6B35',
-    fontSize: 14,
-    marginBottom: 24,
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
+  input: { flex: 1, paddingVertical: 16, fontSize: 16, color: '#000' },
+  eyeIcon: { fontSize: 20 },
+  forgotPassword: { textAlign: 'right', color: '#FF6B35', fontSize: 14, marginBottom: 24 },
+  errorText: { color: '#FF3B30', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   loginButton: {
     backgroundColor: '#48935F',
     paddingVertical: 16,
@@ -211,33 +192,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  loginButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signUpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signUpText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  signUpLink: {
-    color: '#FF6B35',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  backButtonContainer: {
-    width: '100%',
-    alignItems: 'flex-start',
-    marginTop: -200,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#48935F', 
-    fontWeight: '900',
-  },
+  loginButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  signUpContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  signUpText: { color: '#666', fontSize: 14 },
+  signUpLink: { color: '#FF6B35', fontSize: 14, fontWeight: '600' },
+  backButtonContainer: { width: '100%', alignItems: 'flex-start', marginTop: -200 },
+  backButtonText: { fontSize: 16, color: '#48935F', fontWeight: '900' },
 });

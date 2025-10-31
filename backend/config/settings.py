@@ -21,10 +21,13 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+    default_llm_model: str = "claude-sonnet-4.5"
+    top_k_sources: int = 3
 
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "allow"
 
 
 # Global settings instance

@@ -25,7 +25,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
 
   const currentWeek = 1;
   const totalWeeks = 4;
-  const progress = (currentWeek / totalWeeks) * 100;
+  const progress = ((currentWeek / totalWeeks) * 100)-25;
 
   const handleLogout = () => {
     setLoggedInUser(null);

@@ -23,7 +23,7 @@ export default function HowItWorksSlide({ goToNextSlide, goToPreviousSlide }: Pr
 
       <Text style={styles.title}>How It Works</Text>
       <Text style={styles.subtitle}>
-      NALA will use strategies to help you achieve healthy behavior, that come from research and are tailored just for you.
+      Nala will use strategies to help you achieve healthy behavior, that come from research and are tailored just for you.
 
       </Text>
 

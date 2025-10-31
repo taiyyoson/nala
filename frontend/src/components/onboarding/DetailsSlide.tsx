@@ -8,9 +8,9 @@ type Props = {
 
 export default function DetailsSlide({ goToNextSlide, goToPreviousSlide }: Props) {
   const weeks = [
-    { icon: '🌱', title: 'Session 1: Setting Your Foundation', desc: 'I will help you to identify one goal you want to achieve in the next 4 weeks.' },
-    { icon: '🚀', title: 'Session 2: Building Momentum', desc: 'We’ll assess your progress on meeting your goal, with both successes and challenges.' },
-    { icon: '🎯', title: 'Session 3: Staying on Track', desc: 'Maintain motivation and adapt your plan.' },
+    { icon: '🌱', title: 'Session 1: Setting Your Foundation', desc: 'We’ll will help you to identify one major health                 goal you want to achieve in the next 4 weeks.' },
+    { icon: '🚀', title: 'Session 2: Building Momentum', desc: 'We’ll celebrate your successes and problem                 solve your challenges.' },
+    { icon: '🎯', title: 'Session 3: Staying on Track', desc: 'We’ll help you maintain your motivation and adapt                  your plan for success to achieve your goals.' },
     { icon: '🏆', title: 'Session 4: Finishing Strong', desc: 'We’ll reflect on your progress and make a                long-term plan for healthy behavior.' },
   ];
 
