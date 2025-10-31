@@ -14,7 +14,7 @@ __pycache__/
 venv/
 env/
 ENV/
-.venv
+.venv/
 
 # IDE
 .vscode/
@@ -26,17 +26,39 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
-__pycache__/
-*.pyc
 
 # Database files
 *.db
 *.sqlite
 *.sqlite3
 
-# temporary
+# Node / Frontend / React Native
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/.next/
+frontend copy/
 
-# docs
+# Mobile App (Expo / EAS / Android / iOS)
+mobile/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/node_modules/
+mobile/android/
+mobile/ios/
+mobile/build/
+
+# Logs and caches
+*.log
+.cache/
+.expo/
+.expo-shared/
+
+# Docs
 backend/docs/
-.DS_Store
+
+# Firebase credentials
 backend/authentication/firebase-adminsdk.json
