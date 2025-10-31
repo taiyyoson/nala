@@ -38,3 +38,6 @@ __pycache__/
 
 # docs
 backend/docs/
+
+
+.pre-commit-config.yaml
