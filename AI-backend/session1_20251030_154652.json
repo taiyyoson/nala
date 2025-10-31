@@ -1,0 +1,321 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "jade",
+    "program_questions_asked": [],
+    "goals": [
+      "grab and go breakfast items sunday for prep and ingredients wise yogurt, honey, and berries what do you mean by that"
+    ],
+    "goal_details": [
+      {
+        "goal": "grab and go breakfast items sunday for prep and ingredients wise yogurt, honey, and berries",
+        "confidence": 9,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": false,
+              "issue": "Unclear what action is being taken - prep for what? The sentence structure is incomplete"
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No quantities specified for ingredients, no clear metric for success"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": false,
+              "issue": "Sunday is mentioned but no specific date, and unclear if this is a one-time or recurring goal"
+            },
+            "suggestions": "Clarify the goal with complete sentence structure. Example: 'Prep 7 breakfast parfaits on Sunday, January 15th using 2 cups yogurt, 1/4 cup honey, and 2 cups mixed berries'"
+          },
+          "suggestions": "Clarify the goal with complete sentence structure. Example: 'Prep 7 breakfast parfaits on Sunday, January 15th using 2 cups yogurt, 1/4 cup honey, and 2 cups mixed berries'",
+          "missing_criteria": [
+            "SPECIFIC",
+            "MEASURABLE",
+            "TIMEBOUND"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "current_goal": "grab and go breakfast items sunday for prep and ingredients wise yogurt, honey, and berries what do you mean by that",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": false,
+          "issue": "This is a question, not a goal statement with clear action"
+        },
+        "measurable": {
+          "met": false,
+          "issue": "No metrics, targets, or quantifiable outcomes defined"
+        },
+        "achievable": {
+          "met": false,
+          "issue": "Cannot assess achievability as this is not a goal"
+        },
+        "relevant": {
+          "met": false,
+          "issue": "Not related to health, wellness, or any goal-oriented outcome"
+        },
+        "timebound": {
+          "met": false,
+          "issue": "No deadline or timeframe specified"
+        },
+        "suggestions": "This appears to be a question rather than a goal. Please provide a clear goal statement. Example: 'Exercise for 30 minutes, 5 times per week for the next 2 months' or 'Lose 10 pounds in 3 months by following a balanced diet and exercising regularly.'"
+      },
+      "suggestions": "This appears to be a question rather than a goal. Please provide a clear goal statement. Example: 'Exercise for 30 minutes, 5 times per week for the next 2 months' or 'Lose 10 pounds in 3 months by following a balanced diet and exercising regularly.'",
+      "missing_criteria": [
+        "SPECIFIC",
+        "MEASURABLE",
+        "ACHIEVABLE",
+        "RELEVANT",
+        "TIMEBOUND"
+      ]
+    },
+    "smart_refinement_attempts": 2,
+    "confidence_level": 9,
+    "session_start": "2025-10-30T15:19:51.565619",
+    "turn_count": 27,
+    "last_coach_response": "That makes total sense - when you enjoy something and it's easy to do, you're way more likely to stick with it. That's a recipe for success right there.\n\nWould you like to set another goal to work on this week, or would you prefer to focus just on this one?",
+    "discovery": {
+      "free_time_activities": null,
+      "general_about": "i get maybe 7 hours and its normally good",
+      "current_exercise": "i eat 2 meals normally just whatever is available",
+      "current_sleep": "i like to play pokemon go",
+      "current_eating": "not that i can think of",
+      "questions_asked": [
+        "intro",
+        "general_about",
+        "current_exercise",
+        "current_sleep",
+        "current_eating"
+      ]
+    }
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach for this program. I'm really glad you're here and excited to work with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "Great to meet you, Jade! Let me tell you a bit about how this program works. We'll have four coaching sessions together, meeting once a week. Each session is a chance for us to talk about your goals, explore what's working and what's challenging, and create action steps that fit your life. Between our weekly sessions, you'll be working on the goals we set together, and when we meet each week, we'll discuss your progress and adjust as needed. The program is really about helping you build sustainable habits that support your health and wellbeing in a way that feels right for you.\n\nDo you have any questions about how the program works before we dive in?"
+    },
+    {
+      "role": "user",
+      "content": "confidentiality"
+    },
+    {
+      "role": "assistant",
+      "content": "That's an important question, and I'm glad you asked. Everything we discuss in our sessions is kept confidential. The information you share with me stays private and is used only to support your coaching journey. Your personal details and our conversations won't be shared with anyone outside of this program without your permission.\n\nIs there anything else you'd like to know about the program, or are you ready to start talking about what brought you here today?"
+    },
+    {
+      "role": "user",
+      "content": "nothing else"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect. Before we dive into goal setting, I'd love to get to know you better. This helps me understand how I can best support you over the next four weeks.\n\nTell me a bit about yourself - what's important to you right now?"
+    },
+    {
+      "role": "user",
+      "content": "im a college student and i work"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Jade. Being a college student and working at the same time is a lot to balance. I can imagine your schedule is pretty full.\n\nWhat does your current exercise routine look like, if you have one?"
+    },
+    {
+      "role": "user",
+      "content": "i dont workout at all"
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate you being honest about that. A lot of people are in the same boat, especially when juggling school and work.\n\nHow are your sleep habits these days - how many hours are you typically getting per night, and how would you say the quality is?"
+    },
+    {
+      "role": "user",
+      "content": "i get maybe 7 hours and its normally good"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really good that you're getting solid sleep most nights. Seven hours with good quality is a strong foundation to build on.\n\nWhat are your current eating habits like - things like when you eat, what types of foods you tend to go for, that kind of thing?"
+    },
+    {
+      "role": "user",
+      "content": "i eat 2 meals normally just whatever is available"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so you're eating two meals a day and it sounds like convenience plays a big role in what you choose. That makes sense with your busy schedule.\n\nWhat do you like to do in your free time when you're not studying or working?"
+    },
+    {
+      "role": "user",
+      "content": "i like to play pokemon go"
+    },
+    {
+      "role": "assistant",
+      "content": "That's awesome! Pokemon Go is a great way to get outside and moving without it feeling like traditional exercise.\n\nSo let me make sure I've got the full picture. You're juggling school and work, getting about seven hours of good sleep, eating two meals a day based on what's available, not currently working out, and you enjoy playing Pokemon Go in your free time. Is there anything else about your current routine or lifestyle that would be helpful for me to know?"
+    },
+    {
+      "role": "user",
+      "content": "not that i can think of"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, thanks for sharing all of that with me. I'm getting a good sense of where you're at right now.\n\nSo what brought you to coaching today - what are you hoping to work on or change?"
+    },
+    {
+      "role": "user",
+      "content": "i want to eat more consistentky"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you wanting to eat more consistently. That's a great thing to focus on, especially since you mentioned you're currently eating two meals a day based on what's available.\n\nWhen you say more consistently, what does that mean to you - are you thinking about eating at more regular times, adding more meals, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "adding more meals"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so you want to add more meals to your day beyond the two you're currently eating.\n\nWhat's making it hard right now to fit in more than two meals?"
+    },
+    {
+      "role": "user",
+      "content": "my schedule"
+    },
+    {
+      "role": "assistant",
+      "content": "Your schedule makes it tough to fit in more meals. That's really common and something we can definitely work with.\n\nCan you tell me a bit more about what your typical day looks like - like when do you usually eat those two meals and what fills up the rest of your time?"
+    },
+    {
+      "role": "user",
+      "content": "i get up pretty early and head to class so i miss breakfast then i eat dbetween classes something small and on the go. and then i have work so i dont get to eat lunch again till my work lunch period"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Jade. So if I'm hearing you right, you wake up early and go straight to class without breakfast, then you grab something small between classes, and your next meal isn't until your work lunch break. Is that accurate?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, so it sounds like you're getting two meals in but they're both happening later in the day, and you're missing that morning meal because of your early class schedule.\n\nWhen you think about adding more meals, what would feel most realistic for you - would it be adding breakfast before class, having something more substantial between classes, adding an evening meal, or something else entirely?"
+    },
+    {
+      "role": "user",
+      "content": "maybe breakfast before class or something i can eat furing class"
+    },
+    {
+      "role": "assistant",
+      "content": "Those are both solid options that could work with your schedule. Eating something before class or having something portable you can eat during class would help you get that morning fuel in.\n\nWhat kinds of foods do you think would be easiest for you to grab or prepare given your early mornings?"
+    },
+    {
+      "role": "user",
+      "content": "maybe i could meal prep?"
+    },
+    {
+      "role": "assistant",
+      "content": "Meal prepping could definitely work for you. It would save you time in those early mornings when you're rushing to class.\n\nWhat does meal prepping look like to you - are you thinking about prepping full meals, or more like grab-and-go breakfast items you could eat before or during class?"
+    },
+    {
+      "role": "user",
+      "content": "grab and go breakfast items"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a practical approach for your schedule. Now let's make sure this goal is really clear and actionable so you can succeed with it.\n\nWhen you say grab-and-go breakfast items, how many days per week are you thinking you'd do this, and what specific items are you considering preparing?"
+    },
+    {
+      "role": "user",
+      "content": "i think parfaits are reasonable"
+    },
+    {
+      "role": "assistant",
+      "content": "Parfaits are a great choice - they're easy to prep ahead and you can grab them quickly. So just to make sure I understand what you're planning, how many parfaits would you prep each week, and on which days would you eat them?"
+    },
+    {
+      "role": "user",
+      "content": "5 days and i would eat them on weekdays"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so you'd prep 5 parfaits and eat one each weekday before heading to class. That's really specific and doable.\n\nLet me put this together as a SMART goal: \"I will prep 5 parfaits each week and eat one every weekday morning for the next week.\" Does that capture what you want to do?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Awesome, Jade! You've got a solid goal to work with. Now that we've nailed down what you're doing, let's talk about how you'll make this happen. \n\nWhat day of the week would work best for you to prep all 5 parfaits, and what ingredients do you think you'll need to have on hand?"
+    },
+    {
+      "role": "user",
+      "content": "sunday for prep and ingredients wise yogurt, honey, and berries"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so your complete goal is: \"I will prep 5 parfaits every Sunday using yogurt, honey, and berries, and eat one each weekday morning for the next week.\"\n\nNow let's think about tracking your progress so you can see how it goes. How will you keep track of whether you actually eat a parfait each weekday morning?"
+    },
+    {
+      "role": "user",
+      "content": "what do you mean by that"
+    },
+    {
+      "role": "assistant",
+      "content": "I mean how will you remind yourself or check off that you actually ate your parfait each morning? Some people use their phone calendar, others put a checkmark on a piece of paper, or just mentally note it. \n\nWhat method would feel easiest for you to remember whether you stuck to your goal each day?"
+    },
+    {
+      "role": "user",
+      "content": "I could add it to my morning routine when i make my water for the day"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a smart way to link it to something you already do! So when you make your water each morning, you'll grab your parfait at the same time.\n\nOn a scale of 1 to 10, how confident do you feel about achieving this goal of prepping 5 parfaits every Sunday and eating one each weekday morning for the next week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's fantastic confidence, Jade! A 9 out of 10 shows you really believe you can do this. Since you're feeling so confident, it sounds like this goal is a great fit for you right now.\n\nWhat makes you feel so confident about making this happen?"
+    },
+    {
+      "role": "user",
+      "content": "I like parfaits so im likely to eat them and they are easy to make"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes total sense - when you enjoy something and it's easy to do, you're way more likely to stick with it. That's a recipe for success right there.\n\nWould you like to set another goal to work on this week, or would you prefer to focus just on this one?"
+    },
+    {
+      "role": "user",
+      "content": "focus just on this one"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! Focusing on one goal gives you the best chance to really make it a habit. Let me make sure I have everything right. Your goal is to prep 5 parfaits every Sunday with yogurt, honey, and berries, then eat one each weekday morning when you make your water. You're feeling a 9 out of 10 confident about this.\n\nHow will you track your progress this week so we can talk about how it went at our next session?"
+    }
+  ]
+}

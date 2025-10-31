@@ -1,4 +1,4 @@
-import openai 
+from openai import OpenAI
 from anthropic import Anthropic
 from query import VectorSearch
 import os
@@ -106,7 +106,7 @@ Use these examples as guidance for your coaching style and responses. Mirror the
         
         messages.append({"role": "user", "content": user_message})
         
-        response = self.openai_client.ChatCompletion.create(
+        response = self.openai_client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.7,

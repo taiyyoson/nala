@@ -2,6 +2,7 @@ from rag_dynamic import UnifiedRAGChatbot
 from session1 import Session1Manager, SessionState
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -31,33 +32,43 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
             
             def evaluate_goal(self, prompt):
                 """Quick evaluation call to LLM for SMART goal checking"""
-                try:
-                    if self.parent.model_info['provider'] == 'anthropic':
-                        model_id = self.parent.model_info.get('model_id', self.parent.model)
-                        response = self.parent.anthropic_client.messages.create(
-                            model=model_id,
-                            max_tokens=1000,
-                            temperature=0.1,
-                            messages=[{
-                                "role": "user",
-                                "content": prompt
-                            }]
-                        )
-                        return response.content[0].text
-                    else:  # OpenAI
-                        response = self.parent.openai_client.chat.completions.create(
-                            model=self.parent.model,
-                            messages=[
-                                {"role": "system", "content": "You are a SMART goal evaluator. Respond only with valid JSON. Never include markdown formatting."},
-                                {"role": "user", "content": prompt}
-                            ],
-                            temperature=0.1,
-                            max_tokens=1000,
-                            response_format={"type": "json_object"}
-                        )
-                        return response.choices[0].message.content
-                except Exception as e:
-                    raise
+                max_retries = 3
+                retry_delay = 1
+                
+                for attempt in range(max_retries):
+                    try:
+                        if self.parent.model_info['provider'] == 'anthropic':
+                            model_id = self.parent.model_info.get('model_id', self.parent.model)
+                            response = self.parent.anthropic_client.messages.create(
+                                model=model_id,
+                                max_tokens=1000,
+                                temperature=0.1,
+                                messages=[{
+                                    "role": "user",
+                                    "content": prompt
+                                }]
+                            )
+                            return response.content[0].text
+                        else:  # OpenAI
+                            response = self.parent.openai_client.chat.completions.create(
+                                model=self.parent.model,
+                                messages=[
+                                    {"role": "system", "content": "You are a SMART goal evaluator. Respond only with valid JSON. Never include markdown formatting."},
+                                    {"role": "user", "content": prompt}
+                                ],
+                                temperature=0.1,
+                                max_tokens=1000,
+                                response_format={"type": "json_object"}
+                            )
+                            return response.choices[0].message.content
+                    except Exception as e:
+                        error_str = str(e)
+                        if 'overloaded' in error_str.lower() and attempt < max_retries - 1:
+                            print(f"\n[API Overloaded during SMART eval - Retrying in {retry_delay}s...]", flush=True)
+                            time.sleep(retry_delay)
+                            retry_delay *= 2
+                        else:
+                            raise
         
         return LLMEvaluator(self)
     
@@ -213,7 +224,8 @@ Instead of promising check-ins, encourage:
         # Process through session manager
         session_result = self.session_manager.process_user_input(
             user_message,
-            last_coach_response=last_coach_response
+            last_coach_response=last_coach_response,
+            conversation_history=self.conversation_history  # Pass the history
         )
         
         # Update state BEFORE generating response
@@ -222,9 +234,9 @@ Instead of promising check-ins, encourage:
             new_state = session_result["next_state"].value
             self.session_manager.set_state(session_result["next_state"])
             
-            # Only log significant state changes (not staying in same state)
-            if old_state != new_state:
-                print(f"\n[State: {old_state} → {new_state}]", flush=True)
+            # Only log significant state changes (left here for help with debugging)
+            # if old_state != new_state:
+            #     print(f"\n[State: {old_state} → {new_state}]", flush=True)
         
         # Retrieve examples only if RAG needed
         retrieved_examples = []
@@ -240,7 +252,7 @@ Instead of promising check-ins, encourage:
         if session_result["context"]:
             system_prompt += f"\n\n--- ADDITIONAL CONTEXT ---\n{session_result['context']}"
         
-        # ALWAYS add memory summary (not just for longer conversations)
+        # ALWAYS add memory summary
         memory_summary = self._get_memory_summary()
         if memory_summary:
             system_prompt += f"\n\n--- PERSISTENT MEMORY ---\n{memory_summary}"
@@ -253,24 +265,40 @@ Instead of promising check-ins, encourage:
             model_id = self.model_info.get('model_id', self.model)
             full_response = ""
             
-            with self.anthropic_client.messages.stream(
-                model=model_id,
-                max_tokens=500,
-                temperature=0.7,
-                system=[
-                    {
-                        "type": "text",
-                        "text": system_prompt,
-                        "cache_control": {"type": "ephemeral"}
-                    }
-                ],
-                messages=context_messages
-            ) as stream:
-                for text in stream.text_stream:
-                    print(text, end="", flush=True)
-                    full_response += text
+            # Retry logic with exponential backoff
+            max_retries = 3
+            retry_delay = 1
             
-            response = full_response
+            for attempt in range(max_retries):
+                try:
+                    with self.anthropic_client.messages.stream(
+                        model=model_id,
+                        max_tokens=500,
+                        temperature=0.7,
+                        system=[
+                            {
+                                "type": "text",
+                                "text": system_prompt,
+                                "cache_control": {"type": "ephemeral"}
+                            }
+                        ],
+                        messages=context_messages
+                    ) as stream:
+                        for text in stream.text_stream:
+                            print(text, end="", flush=True)
+                            full_response += text
+                    
+                    response = full_response
+                    break  # Success, exit retry loop
+                    
+                except Exception as e:
+                    error_str = str(e)
+                    if 'overloaded' in error_str.lower() and attempt < max_retries - 1:
+                        print(f"\n[API Overloaded - Retrying in {retry_delay}s...]", flush=True)
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                    else:
+                        raise
             
         else:  # OpenAI
             messages = [{"role": "system", "content": system_prompt}]

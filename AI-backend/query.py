@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -10,8 +10,8 @@ class VectorSearch:
     """Vector search module for coaching conversations database"""
     
     def __init__(self):
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = openai        
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
     def get_db_connection(self):
     
         database_url = os.getenv('DATABASE_URL')
@@ -79,7 +79,7 @@ class VectorSearch:
             enhanced_query = f"Context: general | Goal: general | {query}"
         
         # Generate embedding for enhanced query
-        query_embedding = self.client.Embedding.create(
+        query_embedding = self.client.embeddings.create(
             model="text-embedding-3-small",
             input=enhanced_query
         ).data[0].embedding
@@ -139,7 +139,7 @@ class VectorSearch:
         enhanced_query = f"Context: {detected_context} | Goal: {detected_context} | {query}"
         
         # Generate embedding for enhanced query
-        query_embedding = self.client.Embedding.create(
+        query_embedding = self.client.embeddings.create(
             model="text-embedding-3-small",
             input=enhanced_query
         ).data[0].embedding
@@ -247,7 +247,7 @@ class VectorSearch:
         Pure vector search (faster than hybrid) with detailed results
         """
         
-        query_embedding = self.client.Embedding.create(
+        query_embedding = self.client.embeddings.create(
             model="text-embedding-3-small",
             input=query
         ).data[0].embedding
