@@ -1,10 +1,13 @@
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from app import app
 from config.database import init_database
 from config.settings import settings
+from events import event_bus
 from fastapi.testclient import TestClient
+from subscribers import database_subscriber
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -12,6 +15,17 @@ def setup_database():
     """Initialize database before running tests"""
     init_database(settings.database_url)
     yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_event_bus():
+    """Initialize event bus and subscribers for tests"""
+    # Just register the subscriber - don't start the async processor
+    # Events will be processed synchronously via publish_async in tests
+    database_subscriber.register()
+    yield
+    # Clear subscribers
+    event_bus.clear_all_subscribers()
 
 
 @pytest.fixture(autouse=True)
