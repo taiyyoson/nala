@@ -5,4 +5,3 @@ from dotenv import load_dotenv
 load_dotenv()
 cred = credentials.Certificate(os.getenv("FIREBASE_CREDENTIALS_PATH"))
 initialize_app(cred)
-

@@ -1,30 +1,34 @@
 from fastapi import APIRouter, Depends, Request
 from .auth_service import verify_token
-import firebase_admin 
-from firebase_admin import auth  
+import firebase_admin
+from firebase_admin import auth
 from fastapi import Request, HTTPException
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 
 @router.get("/verify")
 def verify_user(request: Request):
     decoded = verify_token(request)
     return {"message": "Token valid", "user": decoded}
 
+
 @router.get("/test-public")
 def test_public():
     """Public endpoint - no auth needed (for testing)"""
     return {"message": "Public endpoint works!"}
+
 
 @router.get("/test-protected")
 def test_protected(request: Request):
     """Protected endpoint - requires valid Firebase token (for testing)"""
     decoded = verify_token(request)
     return {
-        "message": "Protected endpoint works!", 
+        "message": "Protected endpoint works!",
         "user_id": decoded.get("uid"),
-        "email": decoded.get("email")
+        "email": decoded.get("email"),
     }
+
 
 @router.get("/test")
 def test_firebase():
@@ -32,7 +36,9 @@ def test_firebase():
         try:
             app = firebase_admin.get_app()
         except ValueError:
-            cred = firebase_admin.credentials.Certificate("authentication/firebase-adminsdk.json")
+            cred = firebase_admin.credentials.Certificate(
+                "authentication/firebase-adminsdk.json"
+            )
             app = firebase_admin.initialize_app(cred)
 
         return {
@@ -41,6 +47,7 @@ def test_firebase():
         }
     except Exception as e:
         return {"error": str(e)}
+
 
 @router.post("/verify")
 async def verify_token(request: Request):
