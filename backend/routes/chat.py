@@ -2,6 +2,7 @@ import asyncio
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
+import traceback
 
 from adapters import RequestAdapter, ResponseAdapter
 from config.database import get_db

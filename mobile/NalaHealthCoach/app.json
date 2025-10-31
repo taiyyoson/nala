@@ -1,0 +1,7 @@
+{
+  "name": "NalaHealthCoach",
+  "slug": "NalaHealthCoach",
+  "ios": {
+    "bundleIdentifier": "com.anonymous.NalaHealthCoach"
+  }
+}
