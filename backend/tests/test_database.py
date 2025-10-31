@@ -274,7 +274,9 @@ class TestConversationHistory:
 
         assert len(history) == 6
         assert history[0].content == "Hi, I'm struggling with my nutrition"
-        assert history[-1].content == "Great! Let's start with small, sustainable changes."
+        assert (
+            history[-1].content == "Great! Let's start with small, sustainable changes."
+        )
 
         # Verify conversation metadata
         updated_conv = db_service.get_conversation_by_id(conv.id)
