@@ -39,3 +39,4 @@ __pycache__/
 # docs
 backend/docs/
 .DS_Store
+backend/authentication/firebase-adminsdk.json
