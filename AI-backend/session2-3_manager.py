@@ -1,27 +1,27 @@
 from rag_dynamic import UnifiedRAGChatbot
-from session1 import Session1Manager, SessionState
+from session2 import Session2Manager, Session2State
 import os
 from dotenv import load_dotenv
 import time
+import json
 
 load_dotenv()
 
 
-class SessionBasedRAGChatbot(UnifiedRAGChatbot):
+class Session2RAGChatbot(UnifiedRAGChatbot):
     """
-    Extends UnifiedRAGChatbot with session management for structured coaching flows
+    Extends UnifiedRAGChatbot with Session 2 management for progress review and goal adjustment
     """
     
-    def __init__(self, model='claude-sonnet-4.5', top_k=3, program_info_file='program_info.txt',
+    def __init__(self, session1_data=None, model='claude-sonnet-4.5', top_k=3, 
                  recent_messages=6, relevant_history_count=4, validate_constraints=True):
         super().__init__(model=model, top_k=top_k)
         
-        self.program_info_file = program_info_file
         self.recent_messages = recent_messages
         self.relevant_history_count = relevant_history_count
         self.validate_constraints = validate_constraints
         
-        self.session_manager = Session1Manager(program_info_file=program_info_file)
+        self.session_manager = Session2Manager(session1_data=session1_data)
         self.session_manager.set_llm_client(self._create_llm_evaluator())
     
     def _create_llm_evaluator(self):
@@ -100,7 +100,7 @@ class SessionBasedRAGChatbot(UnifiedRAGChatbot):
                         
                         keywords = ['goal', 'exercise', 'eat', 'sleep', 'weight', 'health', 
                                   'walk', 'run', 'diet', 'nutrition', 'water', 'stress',
-                                  'event', 'wear', 'fit', 'clothes', 'dress', 'outfit']
+                                  'challenge', 'success', 'difficult', 'accomplished']
                         
                         user_keywords = [k for k in keywords if k in user_content_lower]
                         current_keywords = [k for k in keywords if k in current_lower]
@@ -176,7 +176,6 @@ CRITICAL ACCURACY RULES:
 - If you're unsure about something they said, ASK for clarification
 - Repeat back what you heard to confirm accuracy: "So you said X, is that right?"
 - Don't do math or count things unless the user gave you exact numbers
-- If they say "MW and the weekend", that's 2-3 days, NOT "three times a week"
 - Always verify your understanding before moving forward
 
 CRITICAL WRITING STYLE:
@@ -225,18 +224,12 @@ Instead of promising check-ins, encourage:
         session_result = self.session_manager.process_user_input(
             user_message,
             last_coach_response=last_coach_response,
-            conversation_history=self.conversation_history  # Pass the history
+            conversation_history=self.conversation_history
         )
         
         # Update state BEFORE generating response
         if session_result["next_state"]:
-            old_state = self.session_manager.get_state().value
-            new_state = session_result["next_state"].value
             self.session_manager.set_state(session_result["next_state"])
-            
-            # Only log significant state changes (left here for help with debugging)
-            # if old_state != new_state:
-            #     print(f"\n[State: {old_state} → {new_state}]", flush=True)
         
         # Retrieve examples only if RAG needed
         retrieved_examples = []
@@ -289,7 +282,7 @@ Instead of promising check-ins, encourage:
                             full_response += text
                     
                     response = full_response
-                    break  # Success, exit retry loop
+                    break
                     
                 except Exception as e:
                     error_str = str(e)
@@ -343,99 +336,67 @@ Instead of promising check-ins, encourage:
         if user_name:
             summary_parts.append(f"Participant name: {user_name}")
         
-        # Add discovery information if available
-        discovery = self.session_manager.session_data.get('discovery', {})
-        if discovery:
-            discovery_items = []
-            if discovery.get('general_about'):
-                discovery_items.append(f"  - Background: {discovery['general_about']}")
-            if discovery.get('current_exercise'):
-                discovery_items.append(f"  - Current exercise: {discovery['current_exercise']}")
-            if discovery.get('current_sleep'):
-                discovery_items.append(f"  - Sleep habits: {discovery['current_sleep']}")
-            if discovery.get('current_eating'):
-                discovery_items.append(f"  - Eating habits: {discovery['current_eating']}")
-            if discovery.get('free_time_activities'):
-                discovery_items.append(f"  - Free time activities: {discovery['free_time_activities']}")
-            
-            if discovery_items:
-                summary_parts.append("\nDiscovery information:")
-                summary_parts.extend(discovery_items)
-        
-        # Add all goals with details
-        goal_details = self.session_manager.session_data.get('goal_details', [])
-        if goal_details:
-            summary_parts.append(f"\nGoals set ({len(goal_details)} total):")
-            for i, goal_info in enumerate(goal_details, 1):
+        # Previous goals from Session 1
+        previous_goals = self.session_manager.session_data.get('previous_goals', [])
+        if previous_goals:
+            summary_parts.append(f"\nPrevious goals from Session 1 ({len(previous_goals)} total):")
+            for i, goal_info in enumerate(previous_goals, 1):
                 goal_text = goal_info['goal']
                 confidence = goal_info.get('confidence', 'N/A')
                 summary_parts.append(f"  {i}. {goal_text} (Confidence: {confidence}/10)")
         
-        # Also include current goal being worked on (if not yet stored)
+        # Current session data
+        stress_level = self.session_manager.session_data.get('stress_level')
+        if stress_level:
+            summary_parts.append(f"\nStress level this week: {stress_level}/10")
+        
+        path_chosen = self.session_manager.session_data.get('path_chosen')
+        if path_chosen:
+            path_names = {
+                'same': 'Continuing with same goals',
+                'different': 'Keeping some goals and adding new ones',
+                'new': 'Setting completely new goals'
+            }
+            summary_parts.append(f"\nPath chosen: {path_names.get(path_chosen, path_chosen)}")
+        
+        # Goals to keep
+        goals_to_keep = self.session_manager.session_data.get('goals_to_keep', [])
+        if goals_to_keep:
+            summary_parts.append(f"\nGoals being kept from last week:")
+            for i, goal in enumerate(goals_to_keep, 1):
+                summary_parts.append(f"  {i}. {goal}")
+        
+        # New goals for this week
+        new_goals = self.session_manager.session_data.get('new_goals', [])
+        if new_goals:
+            summary_parts.append(f"\nNew goals for this week ({len(new_goals)} total):")
+            for i, goal in enumerate(new_goals, 1):
+                summary_parts.append(f"  {i}. {goal}")
+        
+        # Current goal being worked on
         current_goal = self.session_manager.session_data.get('current_goal')
-        if current_goal and not any(g['goal'] == current_goal for g in goal_details):
+        if current_goal and current_goal not in new_goals:
             summary_parts.append(f"\nCurrent goal being refined: {current_goal}")
         
+        # Successes and challenges
+        successes = self.session_manager.session_data.get('successes', [])
+        if successes:
+            summary_parts.append(f"\nSuccesses this week:")
+            for success in successes:
+                summary_parts.append(f"  - {success}")
+        
+        challenges = self.session_manager.session_data.get('challenges', [])
+        if challenges:
+            summary_parts.append(f"\nChallenges this week:")
+            for challenge in challenges:
+                summary_parts.append(f"  - {challenge}")
+        
         return "\n".join(summary_parts) if summary_parts else ""
-    
-    def get_status(self):
-        """
-        Get current session status as a structured dictionary.
-        Returns all status information for programmatic use.
-        
-        Returns:
-            dict: Complete session status including:
-                - current_state: Current session state
-                - turn_count: Number of turns in session
-                - total_messages: Total messages exchanged
-                - user_name: Participant name
-                - discovery: Discovery information collected
-                - goals: List of goals with details
-                - current_goal: Goal currently being worked on
-                - memory_summary: Formatted memory summary text
-        """
-        info = self.get_session_info()
-        
-        # Extract discovery information
-        discovery = info['data']['session_data'].get('discovery', {})
-        questions_asked = discovery.get('questions_asked', [])
-        
-        # Extract goal information
-        goal_details = info['data']['session_data'].get('goal_details', [])
-        current_goal = info['data']['session_data'].get('current_goal')
-        
-        # Build structured status dictionary
-        status = {
-            'current_state': info['state'],
-            'turn_count': info['data']['duration_turns'],
-            'total_messages': info['total_messages'],
-            'user_name': info['data']['session_data'].get('user_name'),
-            'discovery': {
-                'questions_asked_count': len(questions_asked),
-                'topics_covered': questions_asked,
-                'general_about': discovery.get('general_about'),
-                'current_exercise': discovery.get('current_exercise'),
-                'current_sleep': discovery.get('current_sleep'),
-                'current_eating': discovery.get('current_eating'),
-                'free_time_activities': discovery.get('free_time_activities'),
-            },
-            'goals': [
-                {
-                    'goal': g['goal'],
-                    'confidence': g.get('confidence', 'N/A')
-                }
-                for g in goal_details
-            ],
-            'goals_count': len(goal_details),
-            'current_goal': current_goal,
-            'memory_summary': info['memory_summary']
-        }
-        
-        return status
     
     def get_session_info(self):
         """Get current session state and data"""
         return {
+            "session_number": 2,
             "state": self.session_manager.get_state().value,
             "data": self.session_manager.get_session_summary(),
             "total_messages": len(self.conversation_history),
@@ -454,26 +415,59 @@ Instead of promising check-ins, encourage:
     
     def reset_session(self):
         """Reset session to beginning"""
-        self.session_manager = Session1Manager(self.program_info_file)
+        session1_data = self.session_manager.session_data.get('previous_goals')
+        self.session_manager = Session2Manager(session1_data={'goal_details': session1_data} if session1_data else None)
         self.session_manager.set_llm_client(self._create_llm_evaluator())
         self.conversation_history = []
-        print("✓ Session reset to beginning")
+        print("✓ Session 2 reset to beginning")
 
 
-def interactive_session_chat():
-    """Interactive chat with session management"""
+def interactive_session2_chat():
+    """Interactive chat for Session 2"""
     print("=" * 80)
-    print("Health Coaching Session 1 - Structured Flow")
+    print("Health Coaching Session 2 - Progress Review & Goal Adjustment")
     print("=" * 80)
     
-    print("\nCommands:")
+    # Check if user wants to load Session 1 data
+    print("\nWould you like to load data from Session 1?")
+    load_choice = input("Load Session 1 data? (yes/no): ").strip().lower()
+    
+    session1_data = None
+    if load_choice in ['yes', 'y']:
+        session1_file = input("Enter Session 1 filename (e.g., session1_20240101_120000.json): ").strip()
+        if os.path.exists(session1_file):
+            try:
+                with open(session1_file, 'r') as f:
+                    session1_full_data = json.load(f)
+                    session1_data = session1_full_data.get('session_data', {})
+                print(f"✓ Loaded Session 1 data from {session1_file}")
+                
+                # Show what was loaded
+                if session1_data.get('user_name'):
+                    print(f"  Participant: {session1_data['user_name']}")
+                if session1_data.get('goal_details'):
+                    print(f"  Previous goals: {len(session1_data['goal_details'])} goal(s)")
+                    for i, goal_info in enumerate(session1_data['goal_details'], 1):
+                        print(f"    {i}. {goal_info['goal']}")
+            except Exception as e:
+                print(f"Error loading file: {e}")
+                print("Starting Session 2 without previous data...")
+        else:
+            print(f"File not found: {session1_file}")
+            print("Starting Session 2 without previous data...")
+    
+    print("\n" + "=" * 80)
+    print("Commands:")
     print("  'status' - Show current session state and data")
     print("  'save' - Save current session to file")
     print("  'reset' - Start session over from beginning")
     print("  'quit' - Exit")
-    print("\n" + "=" * 80 + "\n")
+    print("=" * 80 + "\n")
     
-    chatbot = SessionBasedRAGChatbot(model='claude-sonnet-4.5')
+    chatbot = Session2RAGChatbot(
+        session1_data=session1_data,
+        model='claude-sonnet-4.5'
+    )
     
     print("Nala: ", end="")
     initial_response, _, _ = chatbot.generate_response("[START_SESSION]")
@@ -495,30 +489,10 @@ def interactive_session_chat():
         
         if user_input.lower() == 'status':
             info = chatbot.get_session_info()
-            print(f"\n--- Session Status ---")
+            print(f"\n--- Session 2 Status ---")
             print(f"Current State: {info['state']}")
             print(f"Turn Count: {info['data']['duration_turns']}")
             print(f"Total Messages: {info['total_messages']}")
-            print(f"User Name: {info['data']['session_data'].get('user_name', 'Not set')}")
-            
-            discovery = info['data']['session_data'].get('discovery', {})
-            questions_asked = discovery.get('questions_asked', [])
-            if questions_asked:
-                print(f"\nDiscovery Questions Asked: {len(questions_asked)}")
-                print(f"Topics covered: {', '.join(questions_asked)}")
-            
-            goal_details = info['data']['session_data'].get('goal_details', [])
-            if goal_details:
-                print(f"\nGoals ({len(goal_details)} total):")
-                for i, goal_info in enumerate(goal_details, 1):
-                    print(f"  {i}. {goal_info['goal']}")
-                    print(f"     Confidence: {goal_info['confidence']}/10")
-            else:
-                print(f"Goals: No completed goals yet")
-            
-            current_goal = info['data']['session_data'].get('current_goal')
-            if current_goal:
-                print(f"\nCurrent goal in progress: {current_goal}")
             
             if info['memory_summary']:
                 print(f"\nMemory Summary:\n{info['memory_summary']}")
@@ -535,7 +509,7 @@ def interactive_session_chat():
             if confirm in ['yes', 'y']:
                 chatbot.reset_session()
                 print("\nNala: Let's start fresh...\n")
-                initial_response, _, _ = chatbot.generate_response("Hello")
+                initial_response, _, _ = chatbot.generate_response("[START_SESSION]")
                 print("\n")
             continue
         
@@ -545,30 +519,27 @@ def interactive_session_chat():
             print("\n")
             
             session_state = chatbot.session_manager.get_state()
-            if session_state == SessionState.END_SESSION:
+            if session_state == Session2State.END_SESSION:
                 print("\n" + "=" * 80)
-                print("SESSION 1 COMPLETE!")
+                print("SESSION 2 COMPLETE!")
                 print("=" * 80)
                 
                 filename = chatbot.save_session()
                 print(f"\n✓ Session automatically saved to: {filename}")
                 
                 info = chatbot.get_session_info()
-                goal_details = info['data']['session_data'].get('goal_details', [])
-                if goal_details:
-                    print(f"\n📊 Session Summary:")
-                    print(f"   Participant: {info['data']['session_data'].get('user_name', 'N/A')}")
-                    print(f"   Goals Set: {len(goal_details)}")
-                    for i, goal_info in enumerate(goal_details, 1):
-                        print(f"   {i}. {goal_info['goal']}")
-                        print(f"      Confidence: {goal_info['confidence']}/10")
+                print(f"\n📊 Session Summary:")
+                if info['memory_summary']:
+                    print(info['memory_summary'])
                 
-                print(f"\n👋 See you next week at Session 2!")
+                print(f"\n👋 See you next week at Session 3!")
                 print("=" * 80 + "\n")
                 break
             
         except Exception as e:
             print(f"\nError: {e}\n")
+            import traceback
+            traceback.print_exc()
     
     final_save = input("\nSave final session? (yes/no): ").strip().lower()
     if final_save in ['yes', 'y']:
@@ -577,4 +548,4 @@ def interactive_session_chat():
 
 
 if __name__ == "__main__":
-    interactive_session_chat()
+    interactive_session2_chat()
