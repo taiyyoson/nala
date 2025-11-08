@@ -14,7 +14,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../navigation/AuthStack";
 import { useAuth } from "../contexts/AuthContext";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from '../config/firebaseConfig'; 
+import { auth } from "../config/firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type SignUpScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, "SignUp">;
@@ -27,7 +28,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { setLoggedInUser } = useAuth();
+  const { setLoggedInUser, setHasCompletedOnboarding } = useAuth();
 
   const handleSignUp = async () => {
     if (!email || !password) {
@@ -52,17 +53,22 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const userData = {
-        uid: user.uid,
-        email: user.email ?? "",             //  fallback for null values
-        displayName: user.displayName ?? "", // fallback for null values
-      };
+      console.log("✅ Firebase sign-up success");
+      console.log("UID:", user.uid);
 
-      setLoggedInUser(userData);
-      navigation.navigate("Onboarding");
+      setLoggedInUser({
+        uid: user.uid,
+        email: user.email ?? "",
+        displayName: user.displayName ?? "",
+      });
+
+      await AsyncStorage.setItem("hasCompletedOnboarding", "false");
+      setHasCompletedOnboarding(false);
+
+      navigation.replace("Onboarding");
     } catch (err: any) {
-      console.error("Sign-up error:", err);
-      setError(err.message);
+      console.error("❌ Sign-up error:", err);
+      setError(err.message || "Sign-up failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -77,9 +83,10 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
         <View style={styles.content}>
           <View style={styles.backButtonContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.backButtonText}>← </Text>
+              <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
           </View>
+
           <Text style={styles.title}>Create Your Account</Text>
 
           <View style={styles.form}>
@@ -118,11 +125,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
               onPress={handleSignUp}
               disabled={isLoading}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.signUpButtonText}>Sign Up</Text>
-              )}
+              {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.signUpButtonText}>Sign Up</Text>}
             </TouchableOpacity>
 
             <View style={styles.loginContainer}>
@@ -141,19 +144,8 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   keyboardView: { flex: 1 },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 40,
-    marginTop: 90,
-  },
+  content: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 30 },
+  title: { fontSize: 28, fontWeight: "bold", color: "#000", marginBottom: 40, marginTop: 90 },
   form: { width: "100%", maxWidth: 400 },
   label: { fontSize: 14, color: "#333", marginBottom: 8, fontWeight: "500" },
   inputContainer: {

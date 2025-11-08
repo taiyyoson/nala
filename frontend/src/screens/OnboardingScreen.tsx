@@ -1,27 +1,23 @@
-import React, { useRef, useState, useCallback } from 'react';
-import {
-  View,
-  SafeAreaView,
-  FlatList,
-  Dimensions,
-  StyleSheet,
-} from 'react-native';
-import type { ViewToken } from 'react-native';
-import WelcomeSlide from '../components/onboarding/WelcomeSlide';
-import HowItWorksSlide from '../components/onboarding/HowItWorksSlide';
-import DetailsSlide from '../components/onboarding/DetailsSlide';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useRef, useState, useCallback } from "react";
+import { View, SafeAreaView, FlatList, Dimensions, StyleSheet } from "react-native";
+import type { ViewToken } from "react-native";
+import WelcomeSlide from "../components/onboarding/WelcomeSlide";
+import HowItWorksSlide from "../components/onboarding/HowItWorksSlide";
+import DetailsSlide from "../components/onboarding/DetailsSlide";
+import ConsentSlide from "../components/onboarding/Consent";
+import { useAuth } from "../contexts/AuthContext";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface SlideItem {
   key: string;
 }
 
 const slides: SlideItem[] = [
-  { key: 'welcome' },
-  { key: 'how-it-works' },
-  { key: 'details' },
+  { key: "welcome" },
+  { key: "how-it-works" },
+  { key: "details" },
+  { key: "consent" },
 ];
 
 export default function OnboardingScreen() {
@@ -35,14 +31,16 @@ export default function OnboardingScreen() {
     setCurrentSlide(index);
   };
 
-  const goToNextSlide = () => {
-    if (currentSlide < slides.length - 1) goToSlide(currentSlide + 1);
-    else setHasCompletedOnboarding(true);
+  const goToNextSlide = async () => {
+    if (currentSlide < slides.length - 1) {
+      goToSlide(currentSlide + 1);
+    } else {
+      setHasCompletedOnboarding(true);
+    }
   };
 
   const goToPreviousSlide = () => goToSlide(currentSlide - 1);
 
-  // Detect which slide is visible
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
       if (viewableItems.length > 0) {
@@ -79,6 +77,12 @@ export default function OnboardingScreen() {
               <DetailsSlide {...commonProps} />
             </View>
           );
+        case 3:
+          return (
+            <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+              <ConsentSlide {...commonProps} />
+            </View>
+          );
         default:
           return null;
       }
@@ -88,7 +92,6 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* @ts-expect-error pagingEnabled missing in RN types */}
       <FlatList
         ref={flatListRef}
         data={slides}
@@ -108,15 +111,11 @@ export default function OnboardingScreen() {
         windowSize={2}
       />
 
-      {/* Progress Dots */}
       <View style={styles.progressContainer}>
         {slides.map((_, idx) => (
           <View
             key={idx}
-            style={[
-              styles.dot,
-              idx === currentSlide && styles.dotActive,
-            ]}
+            style={[styles.dot, idx === currentSlide && styles.dotActive]}
           />
         ))}
       </View>
@@ -125,26 +124,26 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: "#fff" },
   slide: { flex: 1 },
   progressContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 28,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 8,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
     marginHorizontal: 4,
   },
   dotActive: {
     width: 22,
-    backgroundColor: '#9ACDAF',
+    backgroundColor: "#9ACDAF",
   },
 });

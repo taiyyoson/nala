@@ -378,6 +378,61 @@ Instead of promising check-ins, encourage:
         
         return "\n".join(summary_parts) if summary_parts else ""
     
+    def get_status(self):
+        """
+        Get current session status as a structured dictionary.
+        Returns all status information for programmatic use.
+        
+        Returns:
+            dict: Complete session status including:
+                - current_state: Current session state
+                - turn_count: Number of turns in session
+                - total_messages: Total messages exchanged
+                - user_name: Participant name
+                - discovery: Discovery information collected
+                - goals: List of goals with details
+                - current_goal: Goal currently being worked on
+                - memory_summary: Formatted memory summary text
+        """
+        info = self.get_session_info()
+        
+        # Extract discovery information
+        discovery = info['data']['session_data'].get('discovery', {})
+        questions_asked = discovery.get('questions_asked', [])
+        
+        # Extract goal information
+        goal_details = info['data']['session_data'].get('goal_details', [])
+        current_goal = info['data']['session_data'].get('current_goal')
+        
+        # Build structured status dictionary
+        status = {
+            'current_state': info['state'],
+            'turn_count': info['data']['duration_turns'],
+            'total_messages': info['total_messages'],
+            'user_name': info['data']['session_data'].get('user_name'),
+            'discovery': {
+                'questions_asked_count': len(questions_asked),
+                'topics_covered': questions_asked,
+                'general_about': discovery.get('general_about'),
+                'current_exercise': discovery.get('current_exercise'),
+                'current_sleep': discovery.get('current_sleep'),
+                'current_eating': discovery.get('current_eating'),
+                'free_time_activities': discovery.get('free_time_activities'),
+            },
+            'goals': [
+                {
+                    'goal': g['goal'],
+                    'confidence': g.get('confidence', 'N/A')
+                }
+                for g in goal_details
+            ],
+            'goals_count': len(goal_details),
+            'current_goal': current_goal,
+            'memory_summary': info['memory_summary']
+        }
+        
+        return status
+    
     def get_session_info(self):
         """Get current session state and data"""
         return {

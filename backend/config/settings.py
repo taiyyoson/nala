@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     # Claude API settings
     claude_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     claude_model: str = "claude-3-sonnet-20240229"
-
+    # OpenAI API settings
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     # Database
     database_url: str = "sqlite:///./nala_dev.db"
 

@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from services import AIService, ConversationService, DatabaseService
 from sqlalchemy.orm import Session
-
+from session1_manager import SessionBasedRAGChatbot
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 
 # AI service cache: maintains session state per conversation
@@ -23,6 +23,8 @@ _ai_service_cache: Dict[str, AIService] = {}
 def get_or_create_ai_service(
     conversation_id: str, session_number: Optional[int] = None
 ) -> AIService:
+    print(f"🧠 Using conversation {conversation_id}, existing={conversation_id in _ai_service_cache}, session={session_number}")
+
     """
     Get or create an AI service instance for a conversation.
     Maintains session state across messages within the same conversation.
@@ -99,29 +101,34 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             conversation_id=request.conversation_id, user_id=request.user_id
         )
 
-        # Get conversation history
+        # Get conversation history (last few messages)
         history = await conv_service.get_conversation_history(
-            conversation_id=conv_id, limit=10  # Last 10 messages for context
+            conversation_id=conv_id, limit=10
         )
 
-        # Get or create AI service with session state for this conversation
+        # Get or create AI service (handles RAG + session logic)
         ai_service = get_or_create_ai_service(
             conversation_id=conv_id, session_number=request.session_number
         )
+        print(f"🧩 chatbot object id: {id(ai_service.chatbot)}")
+        if hasattr(ai_service.chatbot, "session_manager"):
+            print(f"🧩 session_manager state: {ai_service.chatbot.session_manager.get_state().value}")
 
-        # Generate AI response using RAG system (with session management if applicable)
+        # Generate AI response
         response, sources, model_name = await ai_service.generate_response(
             message=request.message,
             conversation_history=history,
             user_id=request.user_id,
         )
 
-        # Save user message to database
+        # Save user message
         await conv_service.add_message(
-            conversation_id=conv_id, role="user", content=request.message
+            conversation_id=conv_id,
+            role="user",
+            content=request.message,
         )
 
-        # Save assistant response to database
+        # Save assistant response
         msg_data = await conv_service.add_message(
             conversation_id=conv_id,
             role="assistant",
@@ -132,12 +139,20 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             },
         )
 
-        # Format response using adapter
+        #NEW: Get session state if available
+        session_state = None
+        if hasattr(ai_service.chatbot, "session_manager"):
+            session_state = ai_service.chatbot.session_manager.get_state().value
+
+        # Format standard response
         formatted_response = ResponseAdapter.ai_response_to_chat_response(
             rag_output=(response, sources, model_name),
             conversation_id=conv_id,
             message_id=msg_data["message_id"],
         )
+
+        # Add session_state to the returned JSON
+        #formatted_response["session_state"] = session_state
 
         return ChatResponse(**formatted_response)
 

@@ -1,0 +1,288 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "alina",
+    "program_questions_asked": [],
+    "goals": [
+      "i want to use my body more and stretch , i want to do it at home we can start with 3x i will do it for a month getting out of bed and having time to stretch"
+    ],
+    "goal_details": [
+      {
+        "goal": "i want to use my body more and stretch , i want to do it at home we can start with 3x i will do it for a month getting out of bed and having time to stretch",
+        "confidence": 7,
+        "smart_analysis": {
+          "is_smart": true,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": true,
+              "issue": ""
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Goal meets SMART criteria. Consider specifying: duration of each stretching session (e.g., 10-15 minutes), exact times of day for the 3x weekly sessions, and which specific stretches you'll perform to track progress more effectively."
+          },
+          "suggestions": "Goal meets SMART criteria. Consider specifying: duration of each stretching session (e.g., 10-15 minutes), exact times of day for the 3x weekly sessions, and which specific stretches you'll perform to track progress more effectively.",
+          "missing_criteria": []
+        },
+        "refinement_attempts": 3
+      }
+    ],
+    "current_goal": "i want to use my body more and stretch , i want to do it at home we can start with 3x i will do it for a month getting out of bed and having time to stretch",
+    "goal_smart_analysis": {
+      "is_smart": true,
+      "analysis": {
+        "specific": {
+          "met": true,
+          "issue": ""
+        },
+        "measurable": {
+          "met": true,
+          "issue": ""
+        },
+        "achievable": {
+          "met": true,
+          "issue": ""
+        },
+        "relevant": {
+          "met": true,
+          "issue": ""
+        },
+        "timebound": {
+          "met": true,
+          "issue": ""
+        },
+        "suggestions": "Goal meets SMART criteria. Consider specifying: duration of each stretching session (e.g., 10-15 minutes), exact times of day for the 3x weekly sessions, and which specific stretches you'll perform to track progress more effectively."
+      },
+      "suggestions": "Goal meets SMART criteria. Consider specifying: duration of each stretching session (e.g., 10-15 minutes), exact times of day for the 3x weekly sessions, and which specific stretches you'll perform to track progress more effectively.",
+      "missing_criteria": []
+    },
+    "smart_refinement_attempts": 3,
+    "confidence_level": 7,
+    "session_start": "2025-11-06T20:33:56.309923",
+    "turn_count": 24,
+    "last_coach_response": "Perfect! Your mirror is a spot you'll see every day, so that's a smart choice.\n\nIs there anything else you'd like to talk about before we wrap up today?",
+    "tracking_method_discussed": true,
+    "discovery": {
+      "free_time_activities": null,
+      "general_about": "i go on walks 2-3 times a week for an hour",
+      "current_exercise": "i sleep ok 6-8 hours of good sleep",
+      "current_sleep": "i eat a goood 3 meals a day , eggs in the morning, sandwich for lunch and dinner varies",
+      "current_eating": "i go out with my friends to eat and hangout",
+      "questions_asked": [
+        "intro",
+        "general_about",
+        "current_exercise",
+        "current_sleep",
+        "current_eating"
+      ]
+    }
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach for the next four weeks. I'm really glad you're here and excited to work with you on your health and wellness goals. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "alina"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Alina! I'm so glad you're here and taking this step for your health and wellness.\n\nLet me tell you a bit about what we'll be doing together. This is a four-week coaching program with four sessions, one each week. We'll meet once a week like this, and during our sessions, we'll work together on setting personalized goals, tracking your progress, and using strategies that really work for creating lasting change. Between our weekly sessions, you'll be working on your goals independently, and when we meet each week, we'll discuss how things went and adjust as needed.\n\nDoes that sound good to you? Do you have any questions about how the program works before we dive in?"
+    },
+    {
+      "role": "user",
+      "content": "no questions"
+    },
+    {
+      "role": "assistant",
+      "content": "Great! Before we dive into goal setting, I'd love to get to know you better. This will help me understand what matters most to you and how I can best support you over the next four weeks.\n\nTell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "i am a student and i work"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Alina. It sounds like you have a lot on your plate balancing school and work.\n\nWhat does your current exercise routine look like?"
+    },
+    {
+      "role": "user",
+      "content": "i dont exercise in a gym i just go on walks"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're already getting some movement in with walks. Walking is a wonderful form of exercise.\n\nHow often do you typically go on these walks, and how long do they usually last?"
+    },
+    {
+      "role": "user",
+      "content": "i go on walks 2-3 times a week for an hour"
+    },
+    {
+      "role": "assistant",
+      "content": "That's fantastic, Alina! Getting out for hour-long walks a few times a week is a solid foundation to build on.\n\nHow are your sleep habits? How many hours do you typically get per night, and how would you describe the quality of your sleep?"
+    },
+    {
+      "role": "user",
+      "content": "i sleep ok 6-8 hours of good sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "That's good to hear you're getting decent sleep most nights. Sleep is such an important foundation for everything else.\n\nWhat are your current eating habits like? Tell me about your typical meal patterns and the kinds of foods you usually eat."
+    },
+    {
+      "role": "user",
+      "content": "i eat a goood 3 meals a day , eggs in the morning, sandwich for lunch and dinner varies"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a pretty consistent eating routine, Alina. It's great that you're eating three regular meals and starting your day with protein from eggs.\n\nWhat do you like to do in your free time? What are some of your hobbies or interests outside of work or daily responsibilities?"
+    },
+    {
+      "role": "user",
+      "content": "i go out with my friends to eat and hangout"
+    },
+    {
+      "role": "assistant",
+      "content": "I love that you're staying connected with your friends! Social time is so important for our overall wellbeing.\n\nNow that I have a better sense of where you're at, I'm curious about what brought you here today. What would you like to focus on or work toward during our time together?"
+    },
+    {
+      "role": "user",
+      "content": "i want to start doing yoga"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a great goal, Alina! Yoga can be such a wonderful practice for both body and mind, and it sounds like it could fit nicely with the walks you're already doing.\n\nTo help make this goal really work for you, let's get more specific. What draws you to yoga, and what would starting yoga look like for you? For example, are you thinking about going to classes, doing it at home, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "i want to use my body more and stretch , i want to do it at home"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you, Alina. You want to move your body more and stretch, and doing it at home works best for you. That's a really solid foundation for a goal.\n\nTo help make this something you can really stick with and measure your progress on, we need to add a few more details. How many times per week do you think you could realistically do this stretching or movement practice at home, and for how long each time?"
+    },
+    {
+      "role": "user",
+      "content": "maybe 10 minutes in the morning"
+    },
+    {
+      "role": "assistant",
+      "content": "So you're thinking 10 minutes in the morning. That's a really manageable amount of time to start with.\n\nHow many mornings per week do you see yourself doing this 10-minute stretching routine?"
+    },
+    {
+      "role": "user",
+      "content": "we can start with 3x"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, so you want to do 10 minutes of stretching at home, three times per week, in the morning. That sounds like a really achievable starting point.\n\nNow, to make this goal complete, we need to add a timeframe. Are you thinking you'll do this for the next week, for the next month, or some other period of time?"
+    },
+    {
+      "role": "user",
+      "content": "i will do it for a month"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, Alina. So let me make sure I have this right: You want to do 10 minutes of stretching at home, three mornings per week, for the next month. Is that accurate?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Wonderful! That's a really solid SMART goal. You've got it specific with the stretching, measurable with 10 minutes three times a week, achievable since you're starting at home, relevant to your desire to use your body more, and time-bound with that one-month commitment.\n\nWhat do you think will be the biggest challenge for you in sticking to this morning stretching routine over the next month?"
+    },
+    {
+      "role": "user",
+      "content": "getting out of bed and having time to stretch"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes total sense. Mornings can be really rushed, and getting out of bed earlier is tough. \n\nOn a scale of 1 to 10, how confident do you feel about achieving this goal of stretching for 10 minutes, three mornings per week, for the next month?"
+    },
+    {
+      "role": "user",
+      "content": "7"
+    },
+    {
+      "role": "assistant",
+      "content": "A 7 is pretty good, Alina. That shows you believe this is doable, which is great.\n\nWhat would need to happen to bump that confidence up to an 8 or 9?"
+    },
+    {
+      "role": "user",
+      "content": "i would need to get out of bed"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you. Getting out of bed is the key step that would boost your confidence.\n\nWhat could make it easier for you to actually get out of bed on those mornings when you plan to stretch?"
+    },
+    {
+      "role": "user",
+      "content": "if my room was clean so i could go straight into it"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really helpful insight. Having a clean space ready to go would remove that barrier and make it easier to just start stretching right away.\n\nWould you like to set another goal for this week, or would you prefer to focus just on this stretching goal?"
+    },
+    {
+      "role": "user",
+      "content": "focus on stretchong"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, let's focus on the stretching goal then. Now I want to help you think about how you'll remember to do this.\n\nHow will you remember to work on your stretching goal three times this week?"
+    },
+    {
+      "role": "user",
+      "content": "i think ill remember our converstation"
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate that our conversation is meaningful to you. And you might remember at first, but life gets busy and it's easy for things to slip our minds.\n\nWhat's one simple thing you could do to help remind yourself, like setting a phone alarm, writing it on a calendar, or putting a note somewhere you'll see it?"
+    },
+    {
+      "role": "user",
+      "content": "ill put a note"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great! A note can be a really effective reminder.\n\nWhere will you put the note so you'll definitely see it at the right time to stretch?"
+    },
+    {
+      "role": "user",
+      "content": "on my mirror in my room"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! Your mirror is a spot you'll see every day, so that's a smart choice.\n\nIs there anything else you'd like to talk about before we wrap up today?"
+    },
+    {
+      "role": "user",
+      "content": "no all is well"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm so glad we had this time together today, Alina. You've set a really clear goal to stretch at home three times a week for a month, right when you get out of bed. With your confidence at a seven out of ten and your note on the mirror to remind you, you're set up well to get started. I'm really looking forward to hearing how your first week goes when we meet next week at Session 2!"
+    }
+  ]
+}
