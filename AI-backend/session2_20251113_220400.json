@@ -1,0 +1,145 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "Jade",
+    "previous_goals": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "discovery_questions": [],
+    "discovery_responses": [],
+    "discovery_question_index": 0,
+    "stress_level": 9,
+    "goal_completion_status": {},
+    "successes": [],
+    "challenges": [],
+    "path_chosen": "same",
+    "goals_to_keep": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goals_to_keep_identified": false,
+    "new_goals": [],
+    "goals_completed_count": 0,
+    "current_goal": null,
+    "goal_smart_analysis": null,
+    "smart_refinement_attempts": 0,
+    "confidence_level": null,
+    "changes_needed": {},
+    "solutions": {},
+    "challenges_discussed": false,
+    "adjustments_discussed": false,
+    "session_start": "2025-11-13T22:01:11.193973",
+    "turn_count": 8,
+    "last_coach_response": "It's great that the alarm is working to remind you, and I completely understand the pull to keep studying when finals are looming. It sounds like you're caught between wanting better sleep and feeling like you need every minute to prepare.\n\nGiven that finals are coming up and you really want to keep working on this goal, what small adjustment could you make this week that honors both your need to study and your sleep goal?",
+    "tracking_method_discussed": false,
+    "anything_else_asked": false,
+    "confidence_asked_for_same_goal": false,
+    "questions_asked": [
+      "successes_challenges",
+      "check_in",
+      "goal_completion",
+      "greeting",
+      "stress_level"
+    ],
+    "final_goodbye_given": true
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, welcome back! It's great to see you again for our second session. How has your week been going?"
+    },
+    {
+      "role": "user",
+      "content": "Its been well"
+    },
+    {
+      "role": "assistant",
+      "content": "That's good to hear! So, how did it go with turning off your devices an hour before you wanted to go to sleep this past week?"
+    },
+    {
+      "role": "user",
+      "content": "I think it went well"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great! On a scale of 1 to 10, how stressed were you this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you - that's a high stress level. I'm really glad you still made progress with your sleep goal despite feeling so stressed. That takes real commitment.\n\nWhat's been contributing to that stress level of 9 this week?"
+    },
+    {
+      "role": "user",
+      "content": "Finals week is soon"
+    },
+    {
+      "role": "assistant",
+      "content": "Finals week is definitely stressful. It makes sense that you're feeling that pressure right now.\n\nSo thinking about next week, what would you like to focus on for your goals? You have three options: keep working on the same sleep goal, keep that goal and add something new to support you during finals, or set completely new goals. What feels right for you?"
+    },
+    {
+      "role": "user",
+      "content": "Let's keep working on the same goal"
+    },
+    {
+      "role": "assistant",
+      "content": "Sounds good. So what went well this week with turning off screens an hour before bed? What was challenging?"
+    },
+    {
+      "role": "user",
+      "content": "I think the alarm reminding me made sure I remembered to log off. It was difficult to do so though because finals is soon and I really need to study"
+    },
+    {
+      "role": "assistant",
+      "content": "It's great that the alarm is working to remind you, and I completely understand the pull to keep studying when finals are looming. It sounds like you're caught between wanting better sleep and feeling like you need every minute to prepare.\n\nGiven that finals are coming up and you really want to keep working on this goal, what small adjustment could you make this week that honors both your need to study and your sleep goal?"
+    },
+    {
+      "role": "user",
+      "content": "I think reducing from an hour to 30 mins would do well for me"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a really practical adjustment for right now. So just to make sure I heard you right, you want to turn off screens 30 minutes before bed instead of an hour during this finals period, is that correct?"
+    }
+  ]
+}

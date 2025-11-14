@@ -1,0 +1,177 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "Jade",
+    "previous_goals": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "discovery_questions": [],
+    "discovery_responses": [],
+    "discovery_question_index": 0,
+    "stress_level": 9,
+    "goal_completion_status": {},
+    "successes": [],
+    "challenges": [],
+    "path_chosen": "same",
+    "goals_to_keep": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goals_to_keep_identified": false,
+    "new_goals": [],
+    "goals_completed_count": 0,
+    "current_goal": null,
+    "goal_smart_analysis": null,
+    "smart_refinement_attempts": 0,
+    "confidence_level": null,
+    "changes_needed": {},
+    "solutions": {},
+    "challenges_discussed": false,
+    "adjustments_discussed": false,
+    "session_start": "2025-11-13T22:11:47.562443",
+    "turn_count": 12,
+    "last_coach_response": "Great. So we'll keep the goal of turning off screens an hour before bed for another week. You've already got your alarms set up which has been working well, and you've figured out the workaround of waking up earlier if you need extra homework time. Is there anything else you want to work on this week, or are you good focusing just on this one goal?",
+    "tracking_method_discussed": false,
+    "anything_else_asked": false,
+    "confidence_asked_for_same_goal": false,
+    "questions_asked": [
+      "greeting",
+      "stress_level",
+      "check_in",
+      "goal_completion",
+      "successes_challenges"
+    ],
+    "final_goodbye_given": true
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, it's great to see you again! How has your week been going?"
+    },
+    {
+      "role": "user",
+      "content": "its been going well"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great to hear! So, how did it go with turning off your devices an hour before you wanted to go to sleep this week?"
+    },
+    {
+      "role": "user",
+      "content": "It went well"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful! I'm glad to hear it went well. On a scale of 1 to 10, how stressed were you this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you, that's a really high stress level. That must have been a tough week. Can you tell me what's been contributing to that stress?"
+    },
+    {
+      "role": "user",
+      "content": "My finals week is coming up"
+    },
+    {
+      "role": "assistant",
+      "content": "Finals week is definitely stressful. It sounds like you've got a lot on your plate right now. So thinking about next week, what would you like to focus on for your goals? You have three options: keep working on the same sleep goal, keep that sleep goal and add something new, or set completely new goals. What feels right for you?"
+    },
+    {
+      "role": "user",
+      "content": "I want to keep working on the same goals"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense, especially with finals coming up. Sticking with what you know can be really helpful during stressful times. Since you said things went well this week, what specifically went well with turning off your screens an hour before bed?"
+    },
+    {
+      "role": "user",
+      "content": "I felt like I went to sleep faster and I really kept up with it because of the alarms I set"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really great that the alarms helped you stay consistent and you noticed you fell asleep faster. It sounds like you found a system that's working for you. What was challenging this week?"
+    },
+    {
+      "role": "user",
+      "content": "I found that I didn't want to log off because I've been busy with homeowrk"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you. It's tough when you're working late on homework and then you have to choose between finishing up or sticking to your screen time goal. So you said you did keep up with turning off screens an hour before bed because of your alarms. Can you help me understand this better? Were there some nights where you logged off on time and others where you stayed on longer, or how did that work out?"
+    },
+    {
+      "role": "user",
+      "content": "I ended up just logging out and just waking up earlier to tackle my homwork"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really smart problem-solving. You found a way to honor your sleep goal and still get your homework done by shifting your schedule around. How did waking up earlier work out for you? Did you feel more rested even though you were getting up earlier?"
+    },
+    {
+      "role": "user",
+      "content": "I definietely felt more well rested even with a little less sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "That's such an important discovery. Even with slightly less total sleep, the quality improved because you were falling asleep faster and not on screens right before bed. Now that you've had a week of success with this, do you want to keep this goal the same for another week, or would you like to adjust anything about it?"
+    },
+    {
+      "role": "user",
+      "content": "I like the goal as is"
+    },
+    {
+      "role": "assistant",
+      "content": "Great. So we'll keep the goal of turning off screens an hour before bed for another week. You've already got your alarms set up which has been working well, and you've figured out the workaround of waking up earlier if you need extra homework time. Is there anything else you want to work on this week, or are you good focusing just on this one goal?"
+    },
+    {
+      "role": "user",
+      "content": "nothing else"
+    },
+    {
+      "role": "assistant",
+      "content": "Excellent work today, Jade. You've made real progress with your sleep routine and found what works for you. I'll see you next week at Session 3. Take care!"
+    }
+  ]
+}

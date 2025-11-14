@@ -254,14 +254,14 @@ Instead of promising check-ins, encourage:
         if self.model_info['provider'] == 'anthropic':
             context_messages = self._build_context_messages(user_message)
             context_messages.append({"role": "user", "content": user_message})
-            
+
             model_id = self.model_info.get('model_id', self.model)
             full_response = ""
-            
+
             # Retry logic with exponential backoff
-            max_retries = 3
+            max_retries = 4
             retry_delay = 1
-            
+
             for attempt in range(max_retries):
                 try:
                     with self.anthropic_client.messages.stream(
@@ -277,19 +277,42 @@ Instead of promising check-ins, encourage:
                         ],
                         messages=context_messages
                     ) as stream:
-                        for text in stream.text_stream:
-                            print(text, end="", flush=True)
-                            full_response += text
-                    
+
+                        # In rare cases, the stream iterator itself throws.
+                        try:
+                            for text in stream.text_stream:
+                                print(text, end="", flush=True)
+                                full_response += text
+                        except Exception as stream_err:
+                            # Partial SSE failure → treat like server error
+                            raise RuntimeError(f"SSE chunk error: {stream_err}")
+
                     response = full_response
                     break
-                    
-                except Exception as e:
-                    error_str = str(e)
-                    if 'overloaded' in error_str.lower() and attempt < max_retries - 1:
-                        print(f"\n[API Overloaded - Retrying in {retry_delay}s...]", flush=True)
+
+                except APIStatusError as e:
+                    # If Anthropic returns a 5xx, retry automatically
+                    is_server_error = (
+                        hasattr(e, "status_code") and
+                        isinstance(e.status_code, int) and
+                        500 <= e.status_code < 600
+                    )
+
+                    if is_server_error and attempt < max_retries - 1:
+                        print(f"\n[WARN] Anthropic server error: {e}. Retrying in {retry_delay}s…")
                         time.sleep(retry_delay)
                         retry_delay *= 2
+                        continue
+                    else:
+                        raise
+
+                except Exception as e:
+                    # Fallback for other non-5xx failures
+                    if attempt < max_retries - 1:
+                        print(f"\n[WARN] Unexpected streaming error: {e}. Retrying in {retry_delay}s…")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
                     else:
                         raise
             

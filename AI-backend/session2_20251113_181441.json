@@ -1,0 +1,258 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "Jade",
+    "previous_goals": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "discovery_questions": [],
+    "discovery_responses": [],
+    "discovery_question_index": 0,
+    "stress_level": 9,
+    "goal_completion_status": {},
+    "successes": [],
+    "challenges": [],
+    "path_chosen": "different",
+    "goals_to_keep": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goals_to_keep_identified": true,
+    "new_goals": [
+      "I think maybe closer to 5 mins would be better"
+    ],
+    "goals_completed_count": 0,
+    "current_goal": "I think maybe closer to 5 mins would be better",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": false,
+          "issue": "No clear action is defined - '5 mins' of what activity is not specified"
+        },
+        "measurable": {
+          "met": true,
+          "issue": ""
+        },
+        "achievable": {
+          "met": false,
+          "issue": "Cannot assess achievability without knowing what the activity is"
+        },
+        "relevant": {
+          "met": false,
+          "issue": "Cannot determine if it's health/wellness related without context about the activity"
+        },
+        "timebound": {
+          "met": false,
+          "issue": "No frequency or schedule specified (e.g., daily, weekly, when to start)"
+        },
+        "suggestions": "Rewrite to include: (1) What specific activity will be done for 5 minutes, (2) How often this will occur (daily, 3x per week, etc.), (3) When you'll start. Example: 'I will meditate for 5 minutes every morning starting tomorrow' or 'I will do stretching exercises for 5 minutes after each work break, 3 times daily.'"
+      },
+      "suggestions": "Rewrite to include: (1) What specific activity will be done for 5 minutes, (2) How often this will occur (daily, 3x per week, etc.), (3) When you'll start. Example: 'I will meditate for 5 minutes every morning starting tomorrow' or 'I will do stretching exercises for 5 minutes after each work break, 3 times daily.'",
+      "missing_criteria": [
+        "SPECIFIC",
+        "ACHIEVABLE",
+        "RELEVANT",
+        "TIMEBOUND"
+      ]
+    },
+    "smart_refinement_attempts": 3,
+    "confidence_level": 30,
+    "changes_needed": {},
+    "solutions": {},
+    "challenges_discussed": false,
+    "adjustments_discussed": false,
+    "session_start": "2025-11-13T18:06:11.901566",
+    "turn_count": 18,
+    "last_coach_response": "Alarms worked well for you before, so that makes sense to stick with what you know.\n\nWould you like to set another goal for this week, or do you feel good focusing on these two sleep goals?",
+    "tracking_method_discussed": false,
+    "anything_else_asked": false,
+    "confidence_asked_for_same_goal": false,
+    "questions_asked": [
+      "successes_challenges",
+      "stress_level",
+      "goal_completion",
+      "check_in",
+      "greeting"
+    ]
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, welcome back! It's great to see you for our second session. How has your week been going?"
+    },
+    {
+      "role": "user",
+      "content": "great"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful to hear! So, how did it go with turning off your devices an hour before you wanted to go to sleep this week?"
+    },
+    {
+      "role": "user",
+      "content": "i managed to do 5 days"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really impressive, Jade! Five out of seven days is a strong start, especially for a new habit. What helped you succeed on those five days?"
+    },
+    {
+      "role": "user",
+      "content": "my alarm"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that the alarm worked well for you! On a scale of 1 to 10, how stressed were you this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you, Jade. A stress level of 9 is really high, and I'm glad you're here to talk about it. How has that stress been affecting you this week?"
+    },
+    {
+      "role": "user",
+      "content": "ive been tired"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense. High stress and tiredness often go hand in hand, especially when you're working on better sleep habits. \n\nNow let's think about next week. You have three options: you could keep working on the same screen time goal, you could keep that goal and add something new, or you could focus on completely different goals. What sounds right for you?"
+    },
+    {
+      "role": "user",
+      "content": "keepbworking onn the same goal"
+    },
+    {
+      "role": "assistant",
+      "content": "Sounds good, we'll keep working on turning off screens an hour before bed. What went well this week? What was challenging?"
+    },
+    {
+      "role": "user",
+      "content": "I managed to do it 5 days so that went really well, but I've been a bit behind on my studying since I'm not studying till I sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you managed 5 days, Jade. It sounds like you're seeing a trade-off between better sleep habits and your study time. \n\nHow are you feeling about continuing with this goal, knowing that it's affecting your study schedule?"
+    },
+    {
+      "role": "user",
+      "content": "I want to continue it but I would be happy to make some changes for now"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense. You want to keep working toward better sleep, but maybe adjust things so it fits better with your studying needs.\n\nWhat kind of change are you thinking about? Would you want to adjust the timing, the number of days, or something else about the goal?"
+    },
+    {
+      "role": "user",
+      "content": "I want to make it more flexible so maybe just for this next week adjust it from 1 hour to 30 mins before I sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "So if I'm hearing you right, you want to turn off screens 30 minutes before bed instead of an hour, just for this coming week. Is that correct?\n\nAnd would this be every night, or are you thinking of doing it a certain number of nights per week?"
+    },
+    {
+      "role": "user",
+      "content": "I want to continue it for 5 days this next week"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect. So your goal for this week is to turn off screens 30 minutes before bed for 5 days.\n\nOn a scale of 1 to 10, how confident do you feel that you can achieve this goal this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great confidence. It sounds like adjusting to 30 minutes makes this feel really doable for you right now.\n\nSince you're at a 9 out of 10, what do you think might get in the way of that last point? What could make it challenging on any of those 5 days?"
+    },
+    {
+      "role": "user",
+      "content": "I think just needing to study last minute might change up my plans"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense, especially with finals coming up in two weeks. So when you say studying last minute might change your plans, are you worried about needing to use your laptop or phone to study right before bed, or is it more about losing track of time while studying?"
+    },
+    {
+      "role": "user",
+      "content": "both"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so both needing your devices to study and losing track of time are concerns.\n\nWhat if we made your goal more specific to work around this? For example, on nights when you need to study late, what would feel realistic for you in terms of screen time before bed?"
+    },
+    {
+      "role": "user",
+      "content": "I think maybe closer to 5 mins would be better"
+    },
+    {
+      "role": "assistant",
+      "content": "So you're thinking on study nights, turning off screens 5 minutes before bed would be more realistic than 30 minutes?\n\nJust to make sure I understand correctly, do you want to keep your original goal of 30 minutes for non-study nights and have 5 minutes as the goal for study nights, or are you saying 5 minutes every night feels more doable overall?"
+    },
+    {
+      "role": "user",
+      "content": "original goal og 30 mins for non study nights and have 5 mins as the goal for study nights"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so 30 minutes screen-free before bed on regular nights, and 5 minutes on study nights. That sounds like a flexible plan that works with your schedule.\n\nHow will you remember to start winding down and actually turn off your devices at those times, especially when you're deep into studying?"
+    },
+    {
+      "role": "user",
+      "content": "alarms like before"
+    },
+    {
+      "role": "assistant",
+      "content": "Alarms worked well for you before, so that makes sense to stick with what you know.\n\nWould you like to set another goal for this week, or do you feel good focusing on these two sleep goals?"
+    },
+    {
+      "role": "user",
+      "content": "two sleep goals?"
+    },
+    {
+      "role": "assistant",
+      "content": "Sorry, let me clarify. I meant the one goal with two different timeframes: 30 minutes screen-free on regular nights and 5 minutes on study nights. That's one goal total.\n\nWould you like to add another goal for this week, or focus just on this one?"
+    }
+  ]
+}

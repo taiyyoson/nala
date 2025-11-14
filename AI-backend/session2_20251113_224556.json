@@ -1,0 +1,300 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "Jade",
+    "previous_goals": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "discovery_questions": [],
+    "discovery_responses": [],
+    "discovery_question_index": 0,
+    "stress_level": 9,
+    "goal_completion_status": {},
+    "successes": [],
+    "challenges": [],
+    "path_chosen": "same",
+    "goals_to_keep": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goals_to_keep_identified": false,
+    "new_goals": [
+      "it makes me feel better and I really need that right now"
+    ],
+    "goals_completed_count": 0,
+    "current_goal": "it makes me feel better and I really need that right now",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": false,
+          "issue": "No clear action is defined - only describes a desired feeling without stating what will be done"
+        },
+        "measurable": {
+          "met": false,
+          "issue": "No quantifiable metrics, numbers, frequency, or duration specified"
+        },
+        "achievable": {
+          "met": false,
+          "issue": "Cannot assess achievability without knowing what action is being proposed"
+        },
+        "relevant": {
+          "met": false,
+          "issue": "While emotional wellbeing relates to health, no specific health/wellness action is mentioned"
+        },
+        "timebound": {
+          "met": false,
+          "issue": "No timeframe, schedule, or deadline specified"
+        },
+        "suggestions": "Transform this into a SMART goal by specifying an action. For example: 'I will practice 10 minutes of guided meditation daily for the next 2 weeks to improve my mood' or 'I will take a 20-minute walk outside 3 times per week for the next month to boost my mental health.' Include what you'll do, how much/how long, and when/how often."
+      },
+      "suggestions": "Transform this into a SMART goal by specifying an action. For example: 'I will practice 10 minutes of guided meditation daily for the next 2 weeks to improve my mood' or 'I will take a 20-minute walk outside 3 times per week for the next month to boost my mental health.' Include what you'll do, how much/how long, and when/how often.",
+      "missing_criteria": [
+        "SPECIFIC",
+        "MEASURABLE",
+        "ACHIEVABLE",
+        "RELEVANT",
+        "TIMEBOUND"
+      ]
+    },
+    "smart_refinement_attempts": 3,
+    "confidence_level": 30,
+    "changes_needed": {},
+    "solutions": {},
+    "challenges_discussed": false,
+    "adjustments_discussed": false,
+    "session_start": "2025-11-13T22:37:05.339456",
+    "turn_count": 23,
+    "last_coach_response": "I hear you. Better sleep can really help when stress is high. So just to confirm, your goal for this week is to turn off screens an hour before bed, and you'll use 30 minutes of that time for homework. Is that right?",
+    "tracking_method_discussed": false,
+    "anything_else_asked": false,
+    "confidence_asked_for_same_goal": false,
+    "questions_asked": [
+      "successes_challenges",
+      "greeting",
+      "check_in",
+      "goal_completion",
+      "stress_level"
+    ],
+    "final_goodbye_given": true
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, it's great to see you again! How has your week been going?"
+    },
+    {
+      "role": "user",
+      "content": "been great"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful to hear! So, how did it go with turning off your screens an hour before you wanted to go to sleep this past week?"
+    },
+    {
+      "role": "user",
+      "content": "It went really well"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm so glad to hear that! On a scale of 1 to 10, how stressed were you this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm sorry you had such a stressful week, especially when your goal went well. That 9 out of 10 is really high. What's been contributing to your stress?"
+    },
+    {
+      "role": "user",
+      "content": "My finals week is coming up"
+    },
+    {
+      "role": "assistant",
+      "content": "Finals week is definitely stressful. It makes sense that your stress is so high right now. So thinking about next week, what would you like to focus on? You have three options: keep working on the same screen time goal, keep that goal and add something new, or set completely new goals that might help with finals stress."
+    },
+    {
+      "role": "user",
+      "content": "I want to keep working on the same goal"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense to keep building on what's working. What went well this week? What was challenging?"
+    },
+    {
+      "role": "user",
+      "content": "The alarms really helped me stay on track but I just didnt want to log off because ive been busy"
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like the alarms are doing their job in reminding you, but the busyness of finals prep is making it really hard to actually step away from your screens. That's totally understandable when you have so much on your plate."
+    },
+    {
+      "role": "user",
+      "content": "Yeah"
+    },
+    {
+      "role": "assistant",
+      "content": "So thinking about this week with finals coming up, is there anything about your goal that needs to be adjusted? For example, maybe aiming for a certain number of nights instead of every night, or pushing the screen cutoff time a bit later during finals week?"
+    },
+    {
+      "role": "user",
+      "content": "I might want to push the screen time cutoff for a bit later. Like to 30 mins instead of an hour before"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it. So instead of turning off screens an hour before you want to sleep, you'd switch to 30 minutes before. Is that what you're thinking?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense given how busy you are right now. What concerns do you have about making that adjustment, or do you feel pretty good about being able to stick with 30 minutes?"
+    },
+    {
+      "role": "user",
+      "content": "I feel pretty good about it"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you feel confident about it. So just to make sure I have this right, your adjusted goal is to turn off screens 30 minutes before you want to go to sleep, and you still want to work on this for the next 4 weeks. Is that accurate?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect. On a scale of 1 to 10, how confident are you that you can stick with turning off screens 30 minutes before bed for the next week?"
+    },
+    {
+      "role": "user",
+      "content": "10"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful confidence. What do you think will be most helpful for you in making this happen consistently this week?"
+    },
+    {
+      "role": "user",
+      "content": "I think the same thing of the alarms"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, so setting alarms will help remind you to turn off your screens 30 minutes before bed. What time will you set that alarm for?"
+    },
+    {
+      "role": "user",
+      "content": "11:30 pm"
+    },
+    {
+      "role": "assistant",
+      "content": "Just to make sure I understand correctly, if you're setting an alarm for 11:30 pm to turn off screens, what time are you planning to actually go to sleep?"
+    },
+    {
+      "role": "user",
+      "content": "12 am"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so your goal is to turn off all screens by 11:30 pm and be asleep by midnight. How many nights this week do you want to aim for doing this?"
+    },
+    {
+      "role": "user",
+      "content": "5"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a solid plan. So to make sure I have this right, your goal for this week is to turn off all screens by 11:30 pm and be asleep by midnight, five nights this week. Does that capture it accurately?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Great! On a scale of 1 to 10, how confident are you that you can achieve this goal of turning off screens by 11:30 pm and being asleep by midnight five nights this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really high confidence level, which is wonderful. What makes you feel so confident about being able to do this?"
+    },
+    {
+      "role": "user",
+      "content": "It gives me more time to do homeowrk but I get to continue with keeping up with my goal"
+    },
+    {
+      "role": "assistant",
+      "content": "I want to make sure I understand. Are you saying that turning off screens earlier gives you more time for homework, or are you planning to do homework during that screen-free hour before bed?"
+    },
+    {
+      "role": "user",
+      "content": "planning to do homework in tyhe 30 mins that I'm taking away from my goal"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, so you're planning to use 30 minutes of that screen-free hour for homework. Help me understand - why is getting better sleep important to you personally, especially with everything you have going on?"
+    },
+    {
+      "role": "user",
+      "content": "it makes me feel better and I really need that right now"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you. Better sleep can really help when stress is high. So just to confirm, your goal for this week is to turn off screens an hour before bed, and you'll use 30 minutes of that time for homework. Is that right?"
+    },
+    {
+      "role": "user",
+      "content": "I changed it to turning off screens 30 min before bed so i have more time for homework"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it. So your updated goal is to turn off screens 30 minutes before bed, which gives you more time for homework earlier in the evening. That sounds like a realistic adjustment that works better for your schedule. Great work today, Jade. You'll be working on turning off screens 30 minutes before bed to help you sleep better. I'll see you next week at Session 3. Take care!"
+    }
+  ]
+}

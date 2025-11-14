@@ -1,0 +1,219 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "Jade",
+    "previous_goals": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "discovery_questions": [],
+    "discovery_responses": [],
+    "discovery_question_index": 0,
+    "stress_level": 9,
+    "goal_completion_status": {},
+    "successes": [],
+    "challenges": [],
+    "path_chosen": "different",
+    "goals_to_keep": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goals_to_keep_identified": true,
+    "new_goals": [
+      "Tuesday, Thursday, Friday , and afternoons"
+    ],
+    "goals_completed_count": 0,
+    "current_goal": "Tuesday, Thursday, Friday , and afternoons",
+    "goal_smart_analysis": {
+      "is_smart": false,
+      "analysis": {
+        "specific": {
+          "met": false,
+          "issue": "No clear action is stated - only days and times are mentioned without describing what activity or behavior should be performed"
+        },
+        "measurable": {
+          "met": false,
+          "issue": "No quantifiable metrics included - no duration, frequency count, or measurable outcome specified"
+        },
+        "achievable": {
+          "met": false,
+          "issue": "Cannot assess achievability without knowing what the intended action is"
+        },
+        "relevant": {
+          "met": false,
+          "issue": "No health or wellness activity is mentioned, so relevance cannot be determined"
+        },
+        "timebound": {
+          "met": false,
+          "issue": "While days are mentioned, there's no clear schedule pattern or duration commitment (e.g., 'for 4 weeks' or 'starting this week')"
+        },
+        "suggestions": "Transform this into a complete goal by adding: (1) A specific action (e.g., 'Go to the gym', 'Practice yoga', 'Meal prep'), (2) Measurable details (e.g., 'for 45 minutes', '3 sets of exercises'), (3) A time commitment (e.g., 'for the next 4 weeks'). Example: 'Attend 45-minute gym sessions every Tuesday, Thursday, and Friday afternoon for the next 4 weeks.'"
+      },
+      "suggestions": "Transform this into a complete goal by adding: (1) A specific action (e.g., 'Go to the gym', 'Practice yoga', 'Meal prep'), (2) Measurable details (e.g., 'for 45 minutes', '3 sets of exercises'), (3) A time commitment (e.g., 'for the next 4 weeks'). Example: 'Attend 45-minute gym sessions every Tuesday, Thursday, and Friday afternoon for the next 4 weeks.'",
+      "missing_criteria": [
+        "SPECIFIC",
+        "MEASURABLE",
+        "ACHIEVABLE",
+        "RELEVANT",
+        "TIMEBOUND"
+      ]
+    },
+    "smart_refinement_attempts": 3,
+    "confidence_level": 9,
+    "changes_needed": {},
+    "solutions": {},
+    "challenges_discussed": false,
+    "adjustments_discussed": false,
+    "session_start": "2025-11-14T00:25:30.939259",
+    "turn_count": 13,
+    "last_coach_response": "That sounds like a solid plan. So just to recap, you're keeping your screen time goal from last week and adding this new walking goal for Tuesday, Thursday, and Friday afternoons. Since this is a 4-session program with sessions once a week, we'll check in on both of these goals at our next session next week. Does that sound good to you?",
+    "tracking_method_discussed": false,
+    "anything_else_asked": false,
+    "confidence_asked_for_same_goal": false,
+    "questions_asked": [
+      "greeting",
+      "stress_level",
+      "goal_completion",
+      "check_in"
+    ],
+    "final_goodbye_given": true
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, welcome back! It's great to see you again for our second session. How has your week been going?"
+    },
+    {
+      "role": "user",
+      "content": "good"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great to hear! So, how did it go with turning off your screens an hour before you wanted to go to sleep this past week?"
+    },
+    {
+      "role": "user",
+      "content": "great"
+    },
+    {
+      "role": "assistant",
+      "content": "Wonderful! I'm so glad to hear that. On a scale of 1 to 10, how stressed were you this week?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you, that's a high stress level. I'm really glad the screen time goal went well despite that stress. What's been contributing to your stress this week?"
+    },
+    {
+      "role": "user",
+      "content": "finals week coming up"
+    },
+    {
+      "role": "assistant",
+      "content": "Finals week is definitely stressful. It sounds like you're managing a lot right now. Looking ahead to next week, what would you like to focus on for your goals? You have three options: stick with the same screen time goal, keep that goal and add something new, or try completely new goals. What feels right for you?"
+    },
+    {
+      "role": "user",
+      "content": "keep my same goal from last week and add something new"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense, especially with finals coming up. Keeping that screen time routine can really help with sleep during a stressful week. What new goal would you like to add?"
+    },
+    {
+      "role": "user",
+      "content": "I want to play more pokemon go for my mental health"
+    },
+    {
+      "role": "assistant",
+      "content": "I love that you're thinking about your mental health during finals week. To make this goal more specific, what exactly would playing more Pokemon Go look like for you? For example, would you go for walks while playing, or play during study breaks?"
+    },
+    {
+      "role": "user",
+      "content": "I would go on walks and play"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, so walks while playing Pokemon Go. To make this really clear and doable during finals week, how long would each walk be, and how many times per week do you want to do this?"
+    },
+    {
+      "role": "user",
+      "content": "I like 3 times a week for about an hour"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so 3 walks per week for about an hour each while playing Pokemon Go. Just to make sure this fits with your schedule during finals, which 3 days were you thinking, and what time of day works best for you?"
+    },
+    {
+      "role": "user",
+      "content": "Tuesday, Thursday, Friday , and afternoons"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so Tuesday, Thursday, and Friday afternoons for about an hour each. On a scale of 1 to 10, how confident are you that you can achieve this goal?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really high confidence, which is awesome. How will you remember to do this and track whether you actually went on your walks each week?"
+    },
+    {
+      "role": "user",
+      "content": "I will set reminders for myself anf track it on my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a solid plan. So just to recap, you're keeping your screen time goal from last week and adding this new walking goal for Tuesday, Thursday, and Friday afternoons. Since this is a 4-session program with sessions once a week, we'll check in on both of these goals at our next session next week. Does that sound good to you?"
+    },
+    {
+      "role": "user",
+      "content": "yup sounds good"
+    },
+    {
+      "role": "assistant",
+      "content": "Great work today, Jade! You're keeping your screen time goal and adding walks on Tuesday, Thursday, and Friday afternoons. I'll see you next week at Session 3. Take care!"
+    }
+  ]
+}
