@@ -3,13 +3,11 @@ from contextlib import asynccontextmanager
 import uvicorn
 from config.database import init_database
 from config.settings import settings
-from events import event_bus
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from routes.chat import chat_router
 from routes.health import health_router
-from subscribers import database_subscriber
 
 
 @asynccontextmanager
@@ -32,22 +30,6 @@ async def lifespan(app: FastAPI):
         print(f"✗ Database initialization failed: {e}")
         print("⚠️  API will start but database operations will fail")
 
-    # Initialize event bus
-    print(f"\n📡 Initializing event bus...")
-    try:
-        await event_bus.start()
-        print("✓ Event bus started successfully")
-    except Exception as e:
-        print(f"✗ Event bus initialization failed: {e}")
-
-    # Register database subscriber
-    print(f"\n🔗 Registering database subscriber...")
-    try:
-        database_subscriber.register()
-        print("✓ Database subscriber registered successfully")
-    except Exception as e:
-        print(f"✗ Database subscriber registration failed: {e}")
-
     print("\n" + "=" * 80)
     print("API READY")
     print("=" * 80)
@@ -55,21 +37,12 @@ async def lifespan(app: FastAPI):
     print(f"📚 Docs: http://{settings.api_host}:{settings.api_port}/docs")
     print(f"🤖 AI Model: {settings.default_llm_model}")
     print(f"🔍 RAG Top-K: {settings.top_k_sources}")
-    print(f"📡 Event Bus: Active (pub/sub enabled)")
     print("=" * 80 + "\n")
 
     yield  # API runs here
 
     # Shutdown
     print("\n🛑 Shutting down...")
-
-    # Stop event bus
-    print("📡 Stopping event bus...")
-    try:
-        await event_bus.stop()
-        print("✓ Event bus stopped successfully")
-    except Exception as e:
-        print(f"✗ Event bus shutdown failed: {e}")
 
 
 app = FastAPI(
