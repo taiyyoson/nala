@@ -108,12 +108,32 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             conversation_id=conv_id, session_number=request.session_number
         )
 
-        # Generate AI response using RAG system (with session management if applicable)
-        response, sources, model_name = await ai_service.generate_response(
-            message=request.message,
-            conversation_history=history,
-            user_id=request.user_id,
-        )
+        # DEBUG: Log what's happening
+        print(f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}")
+        print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
+        print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
+
+        # For Session 1: Initialize session with [START_SESSION] if this is the first message
+        # This ensures the session state machine starts properly, just like interactive_session_chat()
+        if request.session_number == 1 and len(history) == 0:
+            print("🎯 INITIALIZING Session 1 with [START_SESSION]")
+            # This is the first message in a Session 1 conversation
+            # Send [START_SESSION] to initialize the session properly
+            response, sources, model_name = await ai_service.generate_response(
+                message="[START_SESSION]",
+                conversation_history=[],
+                user_id=request.user_id,
+            )
+            print(f"📝 Init response (Nala's greeting): {response[:100]}...")
+            # Return Nala's greeting directly - don't process user's message yet
+            # The user hasn't actually said anything meaningful yet, this is just to trigger initialization
+        else:
+            # Normal flow: generate response for existing conversation
+            response, sources, model_name = await ai_service.generate_response(
+                message=request.message,
+                conversation_history=history,
+                user_id=request.user_id,
+            )
 
         # Save user message to database
         await conv_service.add_message(
