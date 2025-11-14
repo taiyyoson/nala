@@ -172,9 +172,13 @@ export default function ChatScreen({ navigation }: Props) {
       </View>
 
       {/* Messages */}
-      <ScrollView 
+      <ScrollView
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
       >
         {messages.map((message) => (
           <View 
@@ -311,6 +315,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     padding: 16,
+    flexGrow: 1,
   },
   messageWrapper: {
     marginBottom: 12,
