@@ -74,6 +74,7 @@ class Session2Manager:
             "new_goals": [],
             "goals_completed_count": 0,
             "current_goal": None,
+            "goal_parts": [],  # NEW: Accumulate goal pieces during refinement
             "goal_smart_analysis": None,
             "smart_refinement_attempts": 0,
             "confidence_level": None,
@@ -87,12 +88,35 @@ class Session2Manager:
             "tracking_method_discussed": False,
             "anything_else_asked": False,
             "confidence_asked_for_same_goal": False,
+            "explored_low_confidence": False,
             "questions_asked": set(),
             "final_goodbye_given": False  # NEW: Track if goodbye was given
         }
         self.llm_client = llm_client
         self._log_debug(f"Session initialized with user: {user_name}")
         self._log_debug(f"Discovery questions loaded: {len(discovery_questions)}")
+    
+    def _create_concise_goal(self, full_goal: str) -> str:
+        """Create a concise version of the goal for storage"""
+        # Remove filler words and phrases
+        concise = full_goal.lower()
+        
+        filler_phrases = [
+            "i want to", "i would like to", "i'm going to", "i will",
+            "my goal is to", "the goal is to", "i plan to"
+        ]
+        
+        for phrase in filler_phrases:
+            concise = concise.replace(phrase, "")
+        
+        # Clean up spacing
+        concise = " ".join(concise.split())
+        
+        # Capitalize first letter
+        if concise:
+            concise = concise[0].upper() + concise[1:]
+        
+        return concise.strip()
     
     def _log_debug(self, message: str):
         if self.debug:
@@ -167,30 +191,38 @@ Respond ONLY with a JSON object in this exact format:
     def _heuristic_smart_check(self, goal: str) -> Dict[str, Any]:
         goal_lower = goal.lower()
         has_numbers = bool(re.search(r'\d+', goal))
-        time_words = ['day', 'week', 'month', 'daily', 'weekly', 'monthly', 'per week', 'per day', 'times', 'every', 'each', 'by', 'for']
+        time_words = ['day', 'week', 'month', 'daily', 'weekly', 'monthly', 'per week', 'per day', 'times', 'every', 'each', 'by', 'for', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'monday']
         has_timeframe = any(word in goal_lower for word in time_words)
-        action_verbs = ['walk', 'run', 'exercise', 'eat', 'drink', 'sleep', 'reduce', 'increase', 'practice', 'meditate', 'stretch']
-        has_action = any(verb in goal_lower for verb in action_verbs)
-        vague_words = ['more', 'better', 'less', 'healthier', 'improve']
-        has_vague = any(word in goal_lower for word in vague_words)
         
-        is_smart = has_numbers and has_timeframe and has_action and not has_vague and len(goal.split()) >= 5
+        # More lenient action checking - look for activity verbs or activity names
+        action_verbs = ['walk', 'run', 'exercise', 'eat', 'drink', 'sleep', 'reduce', 'increase', 'practice', 'meditate', 'stretch', 'play']
+        activity_names = ['pokemon go', 'yoga', 'gym', 'swimming', 'biking', 'hiking']
+        has_action = any(verb in goal_lower for verb in action_verbs) or any(activity in goal_lower for activity in activity_names)
+        
+        vague_words = ['more', 'better', 'less', 'healthier', 'improve']
+        has_vague = any(word in goal_lower for word in vague_words) and not has_numbers
+        
+        # Check if has specific days
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        has_specific_days = any(day in goal_lower for day in days)
+        
+        is_smart = has_numbers and (has_timeframe or has_specific_days) and has_action and not has_vague and len(goal.split()) >= 5
         missing = []
         if not has_action or has_vague: 
             missing.append("SPECIFIC")
         if not has_numbers: 
             missing.append("MEASURABLE")
-        if not has_timeframe: 
-            missing.append("TIME-BOUND")
+        if not (has_timeframe or has_specific_days): 
+            missing.append("TIMEBOUND")
         
         return {
             'is_smart': is_smart,
             'analysis': {
-                'specific': {'met': has_action and not has_vague, 'issue': 'Use specific action verbs, avoid vague words'},
+                'specific': {'met': has_action and not has_vague, 'issue': 'Use specific action verbs or activity names, avoid vague words'},
                 'measurable': {'met': has_numbers, 'issue': 'Include specific numbers or quantities'},
                 'achievable': {'met': True, 'issue': ''},
                 'relevant': {'met': True, 'issue': ''},
-                'timebound': {'met': has_timeframe, 'issue': 'Specify frequency or deadline'}
+                'timebound': {'met': has_timeframe or has_specific_days, 'issue': 'Specify frequency or deadline'}
             },
             'suggestions': 'Make it more specific with numbers and a clear timeframe',
             'missing_criteria': missing
@@ -479,78 +511,162 @@ Respond ONLY with a JSON object in this exact format:
             goal_candidate = user_input.strip()
             
             # Check if this is a substantial goal statement (not just "yes" or very short responses)
-            is_affirmation = user_lower in ["yes", "yeah", "yep", "no", "nope", "ok", "okay"]
+            is_affirmation = user_lower in ["yes", "yeah", "yep", "no", "nope", "ok", "okay", "correct", "right"]
             is_conversational = any(phrase in user_lower for phrase in [
-                "i like", "i think", "i feel", "i want to", "i'm feeling",
-                "it's a lot", "just ", "that makes sense", "i understand"
-            ]) and len(goal_candidate.split()) < 8
+                "like i said", "i told you", "as i mentioned", "i already said",
+                "its going to be fun", "it's fun", "i want to do this", "i will want to",
+                "that makes sense", "i understand", "i like", "because"
+            ])
+            is_confidence_response = re.search(r'\b([1-9]|10)\b', user_input) and "confident" in self.session_data.get("last_coach_response", "").lower()
             
-            if not is_affirmation and not is_conversational and len(goal_candidate.split()) > 5:
-                # This might be a goal attempt - evaluate it
-                smart_eval = self.evaluate_smart_goal(goal_candidate)
-                self.session_data["goal_smart_analysis"] = smart_eval
-                self.session_data["smart_refinement_attempts"] += 1
-                
-                # Only update the goal if it's getting better (more SMART criteria met)
-                if smart_eval["is_smart"]:
-                    # Goal is SMART - save it and move on
-                    self.session_data["current_goal"] = goal_candidate
-                    if self.session_data["new_goals"]:
-                        self.session_data["new_goals"][-1] = goal_candidate
-                    else:
-                        self.session_data["new_goals"].append(goal_candidate)
-                    
-                    result["next_state"] = Session2State.CONFIDENCE_CHECK
-                    result["context"] = "Goal is SMART! Ask confidence (1-10)."
-                elif self.session_data["smart_refinement_attempts"] >= 3:
-                    # Tried 3 times, accept what we have
-                    self.session_data["current_goal"] = goal_candidate
-                    if self.session_data["new_goals"]:
-                        self.session_data["new_goals"][-1] = goal_candidate
-                    else:
-                        self.session_data["new_goals"].append(goal_candidate)
-                    
-                    result["next_state"] = Session2State.CONFIDENCE_CHECK
-                    result["context"] = "Move to confidence check after 3 attempts."
-                else:
-                    # Needs more work - update current goal but keep refining
-                    self.session_data["current_goal"] = goal_candidate
-                    result["context"] = f"Goal still missing: {', '.join(smart_eval['missing_criteria'])}. Ask specific questions to get those details."
-            else:
-                # This is just a conversational response, keep asking for goal details
-                result["context"] = "Continue refining. Ask specific questions to make the goal SMART (numbers, frequency, timeframe)."
-        
-        elif self.state == Session2State.CONFIDENCE_CHECK:
-            # Only look for numbers if we haven't already gotten confidence
-            if self.session_data.get("confidence_level") is None:
+            # If they're giving a confidence number, capture it and transition
+            if is_confidence_response:
                 numbers = re.findall(r'\d+', user_input)
                 if numbers:
                     confidence = int(numbers[0])
                     self.session_data["confidence_level"] = confidence
                     
+                    # Complete the goal with what we have
+                    complete_goal = " ".join(self.session_data["goal_parts"])
+                    concise_goal = self._create_concise_goal(complete_goal)
+                    self.session_data["current_goal"] = concise_goal
+                    
+                    if self.session_data["new_goals"]:
+                        self.session_data["new_goals"][-1] = concise_goal
+                    else:
+                        self.session_data["new_goals"].append(concise_goal)
+                    
+                    self.session_data["goal_parts"] = []
+                    
+                    result["next_state"] = Session2State.CONFIDENCE_CHECK
+                    result["context"] = f"Confidence captured as {confidence}. Transition to handle confidence level."
+                    return result
+            
+            # If it's a substantive response (not affirmation/conversational), add to goal parts
+            if not is_affirmation and not is_conversational and len(goal_candidate.split()) >= 2:
+                # Add this piece to the goal parts
+                if goal_candidate not in self.session_data["goal_parts"]:
+                    self.session_data["goal_parts"].append(goal_candidate)
+                
+                # Build the complete goal from all parts
+                complete_goal = " ".join(self.session_data["goal_parts"])
+                
+                # Evaluate the complete goal
+                smart_eval = self.evaluate_smart_goal(complete_goal)
+                self.session_data["goal_smart_analysis"] = smart_eval
+                self.session_data["smart_refinement_attempts"] += 1
+                
+                # If SMART, create a concise version and save it
+                if smart_eval["is_smart"]:
+                    # Create concise version of goal
+                    concise_goal = self._create_concise_goal(complete_goal)
+                    self.session_data["current_goal"] = concise_goal
+                    
+                    if self.session_data["new_goals"]:
+                        self.session_data["new_goals"][-1] = concise_goal
+                    else:
+                        self.session_data["new_goals"].append(concise_goal)
+                    
+                    # Clear goal parts for next goal
+                    self.session_data["goal_parts"] = []
+                    
+                    result["next_state"] = Session2State.CONFIDENCE_CHECK
+                    result["context"] = "Goal is SMART! Ask confidence (1-10)."
+                elif self.session_data["smart_refinement_attempts"] >= 4:
+                    # After 4 attempts, accept what we have
+                    concise_goal = self._create_concise_goal(complete_goal)
+                    self.session_data["current_goal"] = concise_goal
+                    
+                    if self.session_data["new_goals"]:
+                        self.session_data["new_goals"][-1] = concise_goal
+                    else:
+                        self.session_data["new_goals"].append(concise_goal)
+                    
+                    self.session_data["goal_parts"] = []
+                    
+                    result["next_state"] = Session2State.CONFIDENCE_CHECK
+                    result["context"] = "Move to confidence check after 4 attempts."
+                else:
+                    # Still needs more work
+                    self.session_data["current_goal"] = complete_goal
+                    result["context"] = f"Building goal: '{complete_goal}'. Still missing: {', '.join(smart_eval['missing_criteria'])}. Ask specific questions to get those details. DO NOT ask about confidence yet."
+            elif is_affirmation:
+                # They're confirming - check if current goal is good enough
+                if self.session_data.get("goal_parts"):
+                    complete_goal = " ".join(self.session_data["goal_parts"])
+                    smart_eval = self.evaluate_smart_goal(complete_goal)
+                    
+                    if smart_eval["is_smart"] or self.session_data["smart_refinement_attempts"] >= 3:
+                        # Good enough, move on
+                        concise_goal = self._create_concise_goal(complete_goal)
+                        self.session_data["current_goal"] = concise_goal
+                        
+                        if self.session_data["new_goals"]:
+                            self.session_data["new_goals"][-1] = concise_goal
+                        else:
+                            self.session_data["new_goals"].append(concise_goal)
+                        
+                        self.session_data["goal_parts"] = []
+                        
+                        result["next_state"] = Session2State.CONFIDENCE_CHECK
+                        result["context"] = "Goal confirmed. Ask confidence (1-10)."
+                    else:
+                        result["context"] = f"Still missing: {', '.join(smart_eval['missing_criteria'])}. Ask for those details."
+                else:
+                    result["context"] = "Ask them to describe their goal."
+            else:
+                # Conversational response - don't add to goal, keep asking for goal details
+                result["context"] = "That was conversational. Continue refining. Ask specific questions to make the goal SMART (numbers, frequency, timeframe). DO NOT ask about confidence."
+        
+        elif self.state == Session2State.CONFIDENCE_CHECK:
+            # Check if we already have confidence stored
+            if self.session_data.get("confidence_level") is not None:
+                # Already have confidence - this is a follow-up response
+                confidence = self.session_data["confidence_level"]
+                
+                if confidence <= 7:
+                    # Low confidence path
+                    if not self.session_data.get("explored_low_confidence"):
+                        self.session_data["explored_low_confidence"] = True
+                        result["next_state"] = Session2State.LOW_CONFIDENCE
+                        result["context"] = "Explore what would help increase confidence."
+                    else:
+                        # Already explored, move on
+                        result["next_state"] = Session2State.MAKE_ACHIEVABLE
+                        result["context"] = "Help make goal more achievable."
+                else:
+                    # High confidence (8-10) - move to tracking
+                    is_same = self.session_data.get("path_chosen") == "same"
+                    if is_same:
+                        result["next_state"] = Session2State.END_SESSION
+                        result["context"] = "High confidence on same goal! Give final goodbye."
+                        self.session_data["final_goodbye_given"] = True
+                    else:
+                        result["next_state"] = Session2State.REMEMBER_GOAL
+                        result["context"] = "High confidence! Ask about tracking method."
+            else:
+                # Don't have confidence yet - look for the number
+                numbers = re.findall(r'\d+', user_input)
+                if numbers:
+                    confidence = int(numbers[0])
+                    self.session_data["confidence_level"] = confidence
+                    
+                    # Immediately transition based on confidence
                     if confidence <= 7:
                         result["next_state"] = Session2State.LOW_CONFIDENCE
                         result["context"] = "Low confidence. Explore what would help increase it."
                     else:
+                        # High confidence (8-10)
                         is_same = self.session_data.get("path_chosen") == "same"
                         if is_same:
                             result["next_state"] = Session2State.END_SESSION
-                            result["context"] = "High confidence! Give final goodbye."
+                            result["context"] = "High confidence on same goal! Give final goodbye."
                             self.session_data["final_goodbye_given"] = True
                         else:
                             result["next_state"] = Session2State.REMEMBER_GOAL
-                            result["context"] = "High confidence! Ask about tracking method."
+                            result["context"] = "High confidence! Acknowledge briefly, then ask about tracking method."
                 else:
                     result["context"] = "Ask for confidence as a number (1-10). Be clear and direct."
-            else:
-                # Already have confidence, they're just responding - move forward
-                confidence = self.session_data["confidence_level"]
-                if confidence <= 7:
-                    result["next_state"] = Session2State.LOW_CONFIDENCE
-                    result["context"] = "Explore what would help."
-                else:
-                    result["next_state"] = Session2State.REMEMBER_GOAL
-                    result["context"] = "Ask about tracking method."
         
         elif self.state == Session2State.LOW_CONFIDENCE:
             result["next_state"] = Session2State.MAKE_ACHIEVABLE
@@ -732,32 +848,45 @@ Ask about new goal.
             Session2State.REFINE_GOAL: f"""
 Goal needs refinement to be SMART.
 
-Current goal attempt: {self.session_data.get('current_goal')}
+Current goal parts collected: {self.session_data.get('goal_parts', [])}
+Complete goal so far: {' '.join(self.session_data.get('goal_parts', []))}
 Missing criteria: {', '.join((self.session_data.get('goal_smart_analysis') or {}).get('missing_criteria', []))}
-Refinement attempts: {self.session_data.get('smart_refinement_attempts', 0)}/3
+Refinement attempts: {self.session_data.get('smart_refinement_attempts', 0)}/4
 
 CRITICAL: Your job is ONLY to help refine the goal. DO NOT ask about confidence yet.
 
+The system is building the goal piece by piece from their responses.
+
 Ask specific questions to get missing information:
-- If missing SPECIFIC: "What exactly will you do?"
-- If missing MEASURABLE: "How much/many? How long?"
-- If missing TIMEBOUND: "How often? Which days? When?"
+- If missing SPECIFIC: "What exactly will you do?" (e.g., "play Pokemon Go", "walk")
+- If missing MEASURABLE: "How much/many? How long?" (e.g., "1 hour", "3 times")
+- If missing TIMEBOUND: "How often? Which days? When?" (e.g., "Tuesday, Thursday, Friday", "daily", "3 times a week")
 
 Keep questions simple and focused. One question at a time.
 
-Once they give you all the details, the system will move to confidence check automatically.
+When they give you a piece of info (like "Tuesday Thursday Friday"), acknowledge briefly and check if you need more details.
+
+Once the goal has all SMART criteria, the system will automatically transition to confidence check.
 {session_context}""",
             
             Session2State.CONFIDENCE_CHECK: f"""
-Ask about confidence level.
+Ask about confidence level ONCE, then move on.
 
 Current goal: {self.session_data.get('current_goal')}
+Confidence already captured: {self.session_data.get('confidence_level')}
 
-CRITICAL: Ask ONLY about confidence. Do NOT ask about other topics.
+IF confidence not yet captured:
+  Ask: "On a scale of 1 to 10, how confident are you that you can achieve this goal?"
+  Wait for number.
 
-"On a scale of 1 to 10, how confident are you that you can achieve this goal?"
+IF confidence already captured and this is a follow-up response:
+  Acknowledge VERY briefly (1 sentence max).
+  DO NOT explore further.
+  DO NOT ask "what might get in the way?"
+  DO NOT ask follow-up questions about the goal.
+  The system will automatically transition to the next appropriate state.
 
-Wait for a number. Don't explore or discuss until they give you the confidence rating.
+CRITICAL: Once you have the confidence number, you're done in this state. Just briefly acknowledge and let the system transition.
 {session_context}""",
             
             Session2State.LOW_CONFIDENCE: f"""
@@ -777,9 +906,16 @@ Ask how they'll remember/track the goal.
 {session_context}""",
             
             Session2State.MORE_GOALS_CHECK: f"""
-Ask: "Would you like to set another goal?"
+Ask if they want to set another goal.
 
-Simple yes/no question.
+"Would you like to set another goal for this week?"
+
+CRITICAL: 
+- This is a simple YES or NO question
+- If YES → they'll add another goal
+- If NO → session ends
+- Don't ask "anything else" or continue conversation
+- Wait for clear yes/no response
 {session_context}""",
             
             Session2State.END_SESSION: f"""
