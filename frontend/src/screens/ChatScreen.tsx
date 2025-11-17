@@ -30,16 +30,22 @@ type Message = {
 };
 
 const chatAPI = {
-  sendMessage: async (message: string): Promise<string> => {
+  sendMessage: async (message: string, conversationId?: string): Promise<{response: string, conversationId: string}> => {
     try {
       console.log('Sending message to backend:', message);
-      
+      console.log('Conversation ID:', conversationId);
+
       const response = await fetch('http://localhost:8000/api/v1/chat/message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify({
+          message: message,
+          session_number: 1,  // Session 1: Goal setting and introduction
+          conversation_id: conversationId,
+          user_id: 'demo_user'  // For now, hardcoded
+        })
       });
       
       console.log('Backend response status:', response.status);
@@ -50,11 +56,17 @@ const chatAPI = {
       
       const data = await response.json();
       console.log('Backend response data:', data);
-      
-      return data.response || data.message || "Sorry, I didn't understand that.";
+
+      return {
+        response: data.response || data.message || "Sorry, I didn't understand that.",
+        conversationId: data.conversation_id || conversationId || ''
+      };
     } catch (error) {
       console.error('Error sending message:', error);
-      return "I'm having trouble connecting to the backend. Make sure it's running on port 8000.";
+      return {
+        response: "I'm having trouble connecting to the backend. Make sure it's running on port 8000.",
+        conversationId: conversationId || ''
+      };
     }
   },
 
@@ -74,6 +86,7 @@ export default function ChatScreen({ navigation }: Props) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     testBackendConnection();
@@ -94,13 +107,16 @@ export default function ChatScreen({ navigation }: Props) {
 
   const sendInitialGreeting = async () => {
     setIsLoading(true);
-    
-    const response = await chatAPI.sendMessage("hello");
-    
+
+    // Send a dummy message to trigger [START_SESSION] initialization
+    // Nala will respond with her greeting
+    const result = await chatAPI.sendMessage("[INIT]", conversationId);
+    setConversationId(result.conversationId);
+
     const nalaMessage: Message = {
       id: Date.now(),
       sender: "nala",
-      text: response,
+      text: result.response,
       timestamp: new Date()
     };
 
@@ -123,12 +139,13 @@ export default function ChatScreen({ navigation }: Props) {
     setInput("");
     setIsLoading(true);
 
-    const response = await chatAPI.sendMessage(messageText);
+    const result = await chatAPI.sendMessage(messageText, conversationId);
+    setConversationId(result.conversationId);
 
     const nalaMessage: Message = {
       id: Date.now() + 1,
       sender: "nala",
-      text: response,
+      text: result.response,
       timestamp: new Date()
     };
 
@@ -172,9 +189,13 @@ export default function ChatScreen({ navigation }: Props) {
       </View>
 
       {/* Messages */}
-      <ScrollView 
+      <ScrollView
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
       >
         {messages.map((message) => (
           <View 
@@ -311,6 +332,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     padding: 16,
+    flexGrow: 1,
   },
   messageWrapper: {
     marginBottom: 12,

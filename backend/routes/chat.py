@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 from adapters import RequestAdapter, ResponseAdapter
 from config.database import get_db
 from config.settings import settings
-from events import MessageReceivedEvent, ResponseGeneratedEvent, event_bus
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -88,7 +87,7 @@ class ChatResponse(BaseModel):
 
 @chat_router.post("/message", response_model=ChatResponse)
 async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
-    """Send a message to the health coaching chatbot (with async database via pub/sub)"""
+    """Send a message to the health coaching chatbot"""
     try:
         # Initialize services
         db_service = DatabaseService(db)
@@ -98,16 +97,6 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
         conv_id = await conv_service.get_or_create_conversation(
             conversation_id=request.conversation_id, user_id=request.user_id
         )
-
-        # Publish event: User message received (DB save happens async via subscriber)
-        user_msg_event = MessageReceivedEvent(
-            conversation_id=conv_id,
-            message=request.message,
-            role="user",
-            user_id=request.user_id,
-        )
-        # Use publish_async to ensure immediate processing in tests
-        await event_bus.publish_async(user_msg_event)
 
         # Get conversation history (for AI context)
         history = await conv_service.get_conversation_history(
@@ -119,35 +108,54 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             conversation_id=conv_id, session_number=request.session_number
         )
 
-        # Generate AI response using RAG system (with session management if applicable)
-        response, sources, model_name = await ai_service.generate_response(
-            message=request.message,
-            conversation_history=history,
-            user_id=request.user_id,
+        # DEBUG: Log what's happening
+        print(f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}")
+        print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
+        print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
+
+        # For Session 1: Initialize session with [START_SESSION] if this is the first message
+        # This ensures the session state machine starts properly, just like interactive_session_chat()
+        if request.session_number == 1 and len(history) == 0:
+            print("🎯 INITIALIZING Session 1 with [START_SESSION]")
+            # This is the first message in a Session 1 conversation
+            # Send [START_SESSION] to initialize the session properly
+            response, sources, model_name = await ai_service.generate_response(
+                message="[START_SESSION]",
+                conversation_history=[],
+                user_id=request.user_id,
+            )
+            print(f"📝 Init response (Nala's greeting): {response[:100]}...")
+            # Return Nala's greeting directly - don't process user's message yet
+            # The user hasn't actually said anything meaningful yet, this is just to trigger initialization
+        else:
+            # Normal flow: generate response for existing conversation
+            response, sources, model_name = await ai_service.generate_response(
+                message=request.message,
+                conversation_history=history,
+                user_id=request.user_id,
+            )
+
+        # Save user message to database
+        await conv_service.add_message(
+            conversation_id=conv_id, role="user", content=request.message
         )
 
-        # Publish event: AI response generated (DB save happens async via subscriber)
-        ai_response_event = ResponseGeneratedEvent(
+        # Save assistant response to database
+        msg_data = await conv_service.add_message(
             conversation_id=conv_id,
-            response=response,
             role="assistant",
-            model=model_name,
-            sources=ResponseAdapter.format_sources(sources),
-            user_id=request.user_id,
+            content=response,
+            metadata={
+                "model": model_name,
+                "sources": ResponseAdapter.format_sources(sources),
+            },
         )
-        # Use publish_async to ensure immediate processing in tests
-        await event_bus.publish_async(ai_response_event)
-
-        # Generate a temporary message ID for response (actual ID created by subscriber)
-        import uuid
-
-        temp_message_id = f"msg_{uuid.uuid4().hex[:12]}"
 
         # Format response using adapter
         formatted_response = ResponseAdapter.ai_response_to_chat_response(
             rag_output=(response, sources, model_name),
             conversation_id=conv_id,
-            message_id=temp_message_id,
+            message_id=msg_data["message_id"],
         )
 
         return ChatResponse(**formatted_response)
@@ -164,7 +172,7 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
 
 @chat_router.post("/stream")
 async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
-    """Stream chatbot response for real-time chat experience (with async database via pub/sub)"""
+    """Stream chatbot response for real-time chat experience"""
 
     async def generate_stream():
         try:
@@ -176,15 +184,6 @@ async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
             conv_id = await conv_service.get_or_create_conversation(
                 conversation_id=request.conversation_id, user_id=request.user_id
             )
-
-            # Publish event: User message received (DB save happens async)
-            user_msg_event = MessageReceivedEvent(
-                conversation_id=conv_id,
-                message=request.message,
-                role="user",
-                user_id=request.user_id,
-            )
-            await event_bus.publish_async(user_msg_event)
 
             # Get conversation history
             history = await conv_service.get_conversation_history(conv_id, limit=10)
@@ -205,14 +204,17 @@ async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
             # Final chunk
             yield ResponseAdapter.streaming_chunk_to_sse("", done=True)
 
-            # Publish event: AI response generated (DB save happens async)
-            ai_response_event = ResponseGeneratedEvent(
-                conversation_id=conv_id,
-                response=full_response.strip(),
-                role="assistant",
-                user_id=request.user_id,
+            # Save user message to database
+            await conv_service.add_message(
+                conversation_id=conv_id, role="user", content=request.message
             )
-            await event_bus.publish_async(ai_response_event)
+
+            # Save assistant response to database
+            await conv_service.add_message(
+                conversation_id=conv_id,
+                role="assistant",
+                content=full_response.strip(),
+            )
 
         except Exception as e:
             error_chunk = ResponseAdapter.error_to_api_response(e, 500)
