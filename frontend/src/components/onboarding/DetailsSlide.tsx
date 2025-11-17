@@ -13,27 +13,27 @@ type Props = {
 const weeklyPlan = [
   {
     Icon: Sprout,
-    title: 'Session 1: Setting Your Foundation',
+    title: 'Setting Your Foundation',
     description:
       'Nala will help you to identify one major health goal you want to achieve in the next 4 weeks.',
     color: '#48935F',
   },
   {
     Icon: Rocket,
-    title: 'Session 2: Building Momentum',
+    title: 'Building Momentum',
     description: 'Nala will celebrate your successes and problem solve your challenges.',
     color: '#F7C948',
   },
   {
     Icon: Target,
-    title: 'Session 3: Staying on Track',
+    title: 'Staying on Track',
     description:
       'Nala will help you maintain your motivation and adapt your plan for success to achieve your goals.',
     color: '#E297B4',
   },
   {
     Icon: Trophy,
-    title: 'Session 4: Finishing Strong',
+    title: 'Finishing Strong',
     description:
       'Nala will reflect on your progress and make a long-term plan for healthy behavior.',
     color: '#90CDB5',

@@ -27,17 +27,10 @@ type Message = {
   sender: "nala" | "user";
   text: string;
   timestamp: Date;
+  isLoading?: boolean;
 };
 
-interface ChatResponse {
-  response: string;
-  conversation_id: string;
-  message_id: string;
-  timestamp: string;
-  session_state?: string;
-}
-
-// 🟢 Simple typing indicator (works in Expo Go)
+// simple typing indicator animation
 function TypingIndicator() {
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
@@ -98,33 +91,20 @@ const chatAPI = {
   sendMessage: async (
     message: string,
     userId: string,
-    conversationId: string
-  ): Promise<ChatResponse> => {
-    try {
-      const response = await fetch("http://localhost:8000/api/v1/chat/message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          user_id: userId,
-          conversation_id: conversationId || undefined,
-          session_number: 1,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      console.error("Error sending message:", error);
-      return {
-        response:
-          "I'm having trouble connecting to the backend. Make sure it's running on port 8000.",
-        conversation_id: conversationId,
-        message_id: "",
-        timestamp: new Date().toISOString(),
-        session_state: "error",
-      };
-    }
+    conversationId?: string
+  ) => {
+    const res = await fetch("http://localhost:8000/api/v1/chat/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        user_id: userId,
+        conversation_id: conversationId || undefined,
+        session_number: 1,
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
   },
 
   testConnection: async (): Promise<boolean> => {
@@ -146,41 +126,54 @@ export default function ChatScreen({ navigation }: Props) {
 
   const userId = "default_user";
   const hasInitialized = useRef(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-  if (hasInitialized.current) return;  // ⛔ prevents double-run
-  hasInitialized.current = true;
-    testBackendConnection();
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const init = async () => {
+      const isConnected = await chatAPI.testConnection();
+      setBackendConnected(isConnected);
+      if (isConnected) sendInitialGreeting();
+    };
+    init();
   }, []);
 
-  const testBackendConnection = async () => {
-    const isConnected = await chatAPI.testConnection();
-    setBackendConnected(isConnected);
-    useEffect(() => {
-      const init = async () => {
-        const ok = await chatAPI.testConnection();
-        setBackendConnected(ok);
-        if (ok && !hasInitialized.current) {
-          hasInitialized.current = true;
-          await sendInitialGreeting();
-        }
-      };
-      init();
-    }, []);
-  };
+  useEffect(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, [messages]);
 
   const sendInitialGreeting = async () => {
-    setIsLoading(true);
-    const res = await chatAPI.sendMessage("[START_SESSION]", userId, conversationId);
-    if (res.conversation_id) setConversationId(res.conversation_id);
-    const nalaMsg: Message = {
-      id: Date.now(),
-      sender: "nala",
-      text: res.response,
-      timestamp: new Date(),
-    };
-    setMessages([nalaMsg]);
-    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      const nalaPlaceholder: Message = {
+        id: Date.now(),
+        sender: "nala",
+        text: "",
+        timestamp: new Date(),
+        isLoading: true,
+      };
+      setMessages([nalaPlaceholder]);
+
+      const data = await chatAPI.sendMessage("[START_SESSION]", userId, conversationId);
+      setConversationId(data.conversation_id);
+
+      setMessages([
+        {
+          ...nalaPlaceholder,
+          text: data.response,
+          isLoading: false,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (err) {
+      console.error("Error initializing greeting:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sendUserMessage = async () => {
@@ -188,31 +181,45 @@ export default function ChatScreen({ navigation }: Props) {
 
     const text = input.trim();
     setInput("");
-    setIsLoading(true);
-
     const userMsg: Message = {
       id: Date.now(),
       sender: "user",
       text,
       timestamp: new Date(),
     };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
+    const nalaPlaceholder: Message = {
+      id: Date.now() + 1,
+      sender: "nala",
+      text: "",
+      timestamp: new Date(),
+      isLoading: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, nalaPlaceholder]);
+    setIsLoading(true);
 
     try {
-      const res = await chatAPI.sendMessage(text, userId, conversationId || "");
-      if (res.conversation_id && res.conversation_id !== conversationId)
-        setConversationId(res.conversation_id);
+      const data = await chatAPI.sendMessage(text, userId, conversationId);
+      if (data.conversation_id && data.conversation_id !== conversationId) {
+        setConversationId(data.conversation_id);
+      }
 
-      const nalaMsg: Message = {
-        id: Date.now() + 1,
-        sender: "nala",
-        text: res.response,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, nalaMsg]);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === nalaPlaceholder.id
+            ? { ...msg, text: data.response, isLoading: false }
+            : msg
+        )
+      );
     } catch (err) {
-      console.error("Send failed:", err);
+      console.error("Send message error:", err);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === nalaPlaceholder.id
+            ? { ...msg, text: "Error connecting to NALA.", isLoading: false }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -233,21 +240,23 @@ export default function ChatScreen({ navigation }: Props) {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backArrow}>←</Text>
-          </TouchableOpacity>
-          <View style={styles.headerTitles}>
-            <Text style={styles.title}>Week 1 Session</Text>
-          </View>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerTitles}>
+          <Text style={styles.title}>Week 1 Session</Text>
         </View>
       </View>
 
       {/* Messages */}
-      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.messagesContainer}
+        contentContainerStyle={styles.messagesContent}
+      >
         {messages.map((m) => (
           <View
             key={m.id}
@@ -274,14 +283,18 @@ export default function ChatScreen({ navigation }: Props) {
               >
                 {m.sender === "user" ? "You" : "NALA"}
               </Text>
-              <Text
-                style={[
-                  styles.messageText,
-                  m.sender === "user" && styles.userMessageText,
-                ]}
-              >
-                {m.text}
-              </Text>
+              {m.isLoading ? (
+                <TypingIndicator />
+              ) : (
+                <Text
+                  style={[
+                    styles.messageText,
+                    m.sender === "user" && styles.userMessageText,
+                  ]}
+                >
+                  {m.text}
+                </Text>
+              )}
               <Text
                 style={[
                   styles.timestamp,
@@ -296,18 +309,9 @@ export default function ChatScreen({ navigation }: Props) {
             </View>
           </View>
         ))}
-
-        {/* Typing Indicator */}
-        {isLoading && (
-          <View style={[styles.messageWrapper, styles.nalaMessageWrapper]}>
-            <View style={[styles.messageBubble, styles.nalaBubble]}>
-              <TypingIndicator />
-            </View>
-          </View>
-        )}
       </ScrollView>
 
-      {/* Input Area */}
+      {/* Input */}
       <View style={styles.inputArea}>
         <TextInput
           style={styles.input}
@@ -348,18 +352,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-  },
-  headerTop: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
   },
-  backButton: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
+  backButton: { marginRight: 10 },
   backArrow: { fontSize: 28, color: "#fff", fontWeight: "600" },
-  headerTitles: { marginTop: 20, flex: 1, alignItems: "center" },
+  headerTitles: { flex: 1, alignItems: "center" },
   title: { fontSize: 20, fontWeight: "bold", color: "#fff" },
-
   messagesContainer: { flex: 1 },
   messagesContent: { padding: 16, flexGrow: 1 },
   messageWrapper: { marginBottom: 12, flexDirection: "row" },
@@ -379,8 +378,6 @@ const styles = StyleSheet.create({
   userMessageText: { color: "#fff" },
   timestamp: { fontSize: 10, color: "#4F4F4F", marginTop: 4 },
   userTimestamp: { color: "rgba(255, 255, 255, 0.7)" },
-
-  // 🟢 Typing indicator
   typingContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -395,7 +392,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#4A8B6F",
     marginHorizontal: 3,
   },
-
   inputArea: {
     flexDirection: "row",
     padding: 10,

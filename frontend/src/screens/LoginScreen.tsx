@@ -11,11 +11,12 @@ import {
   Platform,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { AuthStackParamList } from "../navigation/AuthStack";
-import { useAuth } from "../contexts/AuthContext";
+import { CommonActions } from "@react-navigation/native";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
-import { CommonActions } from "@react-navigation/native";
+import { useAuth } from "../contexts/AuthContext";
+import { ApiService } from "../services/ApiService"; // ✅ centralized backend calls
+import { AuthStackParamList } from "../navigation/AuthStack";
 
 type LoginScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, "Login">;
@@ -28,8 +29,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { setLoggedInUser, hasCompletedOnboarding } = useAuth();
+  const { setLoggedInUser } = useAuth();
 
+  // Login handler with onboarding check
   const handleLogin = async () => {
     if (!email || !password) {
       setError("Please fill in all fields");
@@ -40,21 +42,28 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setError("");
 
     try {
+      //  Firebase authentication
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       console.log("✅ Firebase login success");
       console.log("UID:", user.uid);
 
-      // Save user to context
+      // Save user in context
       setLoggedInUser({
         uid: user.uid,
         email: user.email ?? "",
         displayName: user.displayName ?? "",
       });
 
+      //  Check onboarding completion from backend
+      const status = await ApiService.getUserStatus(user.uid);
+      const onboardingDone = status?.onboarding_completed ?? false;
+
+      console.log("🎯 Onboarding completed?", onboardingDone);
+
       // Navigate based on onboarding status
-      if (hasCompletedOnboarding) {
+      if (onboardingDone) {
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -74,6 +83,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     }
   };
 
+  // Forgot password logic
   const handleForgotPassword = async () => {
     if (!email) {
       setError("Please enter your email first.");
@@ -112,6 +122,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           <Text style={styles.subtitle}>Log in to continue your journey with NALA.</Text>
 
           <View style={styles.form}>
+            {/* Email Field */}
             <Text style={styles.label}>Email</Text>
             <View style={styles.inputContainer}>
               <TextInput
@@ -125,6 +136,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               />
             </View>
 
+            {/* Password Field */}
             <Text style={styles.label}>Password</Text>
             <View style={styles.inputContainer}>
               <TextInput
@@ -146,14 +158,20 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+            {/* Login Button */}
             <TouchableOpacity
               style={styles.loginButton}
               onPress={handleLogin}
               disabled={isLoading}
             >
-              {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginButtonText}>Log In</Text>}
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>Log In</Text>
+              )}
             </TouchableOpacity>
 
+            {/* Sign-Up Link */}
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
@@ -166,6 +184,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
