@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  Animated,
 } from "react-native";
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MainStackParamList } from '../navigation/MainStack';
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { MainStackParamList } from "../navigation/MainStack";
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
   MainStackParamList,
-  'Chat'
+  "Chat"
 >;
 
 type Props = {
@@ -27,58 +27,113 @@ type Message = {
   sender: "nala" | "user";
   text: string;
   timestamp: Date;
+  isLoading?: boolean;
 };
 
+// simple typing indicator animation
+function TypingIndicator() {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animateDot = (dot: Animated.Value, delay: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 400,
+            delay,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+    animateDot(dot1, 0);
+    animateDot(dot2, 200);
+    animateDot(dot3, 400);
+  }, []);
+
+  return (
+    <View style={styles.typingContainer}>
+      {[dot1, dot2, dot3].map((dot, i) => (
+        <Animated.View
+          key={i}
+          style={[
+            styles.dot,
+            {
+              opacity: dot.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.3, 1],
+              }),
+              transform: [
+                {
+                  translateY: dot.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -4],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
 const chatAPI = {
-  sendMessage: async (message: string, conversationId?: string): Promise<{response: string, conversationId: string}> => {
+  sendMessage: async (
+    message: string,
+    userId: string,
+    conversationId?: string
+  ) => {
     try {
-      console.log('Sending message to backend:', message);
-      console.log('Conversation ID:', conversationId);
+      console.log("Sending message:", message);
+      console.log("Conversation ID:", conversationId);
 
-      const response = await fetch('http://localhost:8000/api/v1/chat/message', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch("http://localhost:8000/api/v1/chat/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: message,
-          session_number: 1,  // Session 1: Goal setting and introduction
-          conversation_id: conversationId,
-          user_id: 'demo_user'  // For now, hardcoded
-        })
+          message,
+          user_id: userId,
+          conversation_id: conversationId || undefined,
+          session_number: 1,
+        }),
       });
-      
-      console.log('Backend response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Backend response data:', data);
 
+      console.log("Backend status:", res.status);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      console.log("Backend data:", data);
+
+      return data;
+    } catch (err) {
+      console.error("Error sending message:", err);
       return {
-        response: data.response || data.message || "Sorry, I didn't understand that.",
-        conversationId: data.conversation_id || conversationId || ''
-      };
-    } catch (error) {
-      console.error('Error sending message:', error);
-      return {
-        response: "I'm having trouble connecting to the backend. Make sure it's running on port 8000.",
-        conversationId: conversationId || ''
+        response:
+          "I'm having trouble connecting to the backend. Make sure it's running on port 8000.",
+        conversation_id: conversationId || "",
       };
     }
   },
 
   testConnection: async (): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/health');
-      return response.ok;
-    } catch (error) {
-      console.error('Backend health check failed:', error);
+      const res = await fetch("http://localhost:8000/api/v1/health");
+      return res.ok;
+    } catch {
       return false;
     }
-  }
+  },
 };
 
 export default function ChatScreen({ navigation }: Props) {
@@ -86,162 +141,210 @@ export default function ChatScreen({ navigation }: Props) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
-  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+
+  const [conversationId, setConversationId] = useState<string>("");
+
+  const userId = "default_user";
+  const hasInitialized = useRef(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    testBackendConnection();
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const init = async () => {
+      const isConnected = await chatAPI.testConnection();
+      setBackendConnected(isConnected);
+      if (isConnected) sendInitialGreeting();
+    };
+    init();
   }, []);
 
-  const testBackendConnection = async () => {
-    console.log('Testing backend connection...');
-    const isConnected = await chatAPI.testConnection();
-    setBackendConnected(isConnected);
-    
-    if (isConnected) {
-      console.log('Backend connected! Sending initial greeting...');
-      sendInitialGreeting();
-    } else {
-      console.log('Backend not connected. Make sure to run: python dev.py');
-    }
-  };
+  useEffect(() => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, [messages]);
 
   const sendInitialGreeting = async () => {
-    setIsLoading(true);
+    try {
+      setIsLoading(true);
 
-    // Send a dummy message to trigger [START_SESSION] initialization
-    // Nala will respond with her greeting
-    const result = await chatAPI.sendMessage("[INIT]", conversationId);
-    setConversationId(result.conversationId);
+      const nalaPlaceholder: Message = {
+        id: Date.now(),
+        sender: "nala",
+        text: "",
+        timestamp: new Date(),
+        isLoading: true,
+      };
+      setMessages([nalaPlaceholder]);
 
-    const nalaMessage: Message = {
-      id: Date.now(),
-      sender: "nala",
-      text: result.response,
-      timestamp: new Date()
-    };
+      const data = await chatAPI.sendMessage(
+        "[START_SESSION]",
+        userId,
+        conversationId
+      );
 
-    setMessages([nalaMessage]);
-    setIsLoading(false);
+      if (data.conversation_id) setConversationId(data.conversation_id);
+
+      setMessages([
+        {
+          ...nalaPlaceholder,
+          text: data.response,
+          isLoading: false,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (err) {
+      console.error("Error initializing greeting:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sendUserMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = {
+    const text = input.trim();
+    setInput("");
+
+    const userMsg: Message = {
       id: Date.now(),
       sender: "user",
-      text: input.trim(),
-      timestamp: new Date()
+      text,
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    const messageText = input.trim();
-    setInput("");
-    setIsLoading(true);
-
-    const result = await chatAPI.sendMessage(messageText, conversationId);
-    setConversationId(result.conversationId);
-
-    const nalaMessage: Message = {
+    const nalaPlaceholder: Message = {
       id: Date.now() + 1,
       sender: "nala",
-      text: result.response,
-      timestamp: new Date()
+      text: "",
+      timestamp: new Date(),
+      isLoading: true,
     };
 
-    setMessages(prev => [...prev, nalaMessage]);
-    setIsLoading(false);
+    setMessages((prev) => [...prev, userMsg, nalaPlaceholder]);
+    setIsLoading(true);
+
+    try {
+      const data = await chatAPI.sendMessage(text, userId, conversationId);
+
+      if (data.conversation_id && data.conversation_id !== conversationId) {
+        setConversationId(data.conversation_id);
+      }
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === nalaPlaceholder.id
+            ? { ...msg, text: data.response, isLoading: false }
+            : msg
+        )
+      );
+    } catch (err) {
+      console.error("Send message error:", err);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === nalaPlaceholder.id
+            ? { ...msg, text: "Error connecting to Nala.", isLoading: false }
+            : msg
+        )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: any) => {
+    if (e.nativeEvent.key === "Enter" && !e.nativeEvent.shiftKey) {
+      e.preventDefault();
+      sendUserMessage();
+    }
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backArrow}>←</Text>
-          </TouchableOpacity>
-          <View style={styles.headerTitles}>
-            <Text style={styles.title}>Week 1 Session</Text>
-          </View>
-          <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerTitles}>
+          <Text style={styles.title}>Week 1 Session</Text>
         </View>
-        {backendConnected === null && (
-          <Text style={styles.statusText}>Testing connection...</Text>
-        )}
-        {backendConnected === false && (
-          <Text style={[styles.statusText, styles.errorText]}>
-            ⚠️ Backend not connected
-          </Text>
-        )}
-        {backendConnected === true && (
-          <Text style={[styles.statusText, styles.successText]}>
-            ✓ Connected
-          </Text>
-        )}
       </View>
 
       {/* Messages */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={true}
-        bounces={true}
-        scrollEnabled={true}
-        nestedScrollEnabled={true}
       >
-        {messages.map((message) => (
-          <View 
-            key={message.id} 
+        {messages.map((m) => (
+          <View
+            key={m.id}
             style={[
               styles.messageWrapper,
-              message.sender === 'user' ? styles.userMessageWrapper : styles.nalaMessageWrapper
+              m.sender === "user"
+                ? styles.userMessageWrapper
+                : styles.nalaMessageWrapper,
             ]}
           >
-            <View style={[
-              styles.messageBubble,
-              message.sender === 'user' ? styles.userBubble : styles.nalaBubble
-            ]}>
-              <Text style={[
-                styles.senderName,
-                message.sender === 'user' ? styles.userSenderName : styles.nalaSenderName
-              ]}>
-                {message.sender === 'user' ? 'You' : 'NALA'}
+            <View
+              style={[
+                styles.messageBubble,
+                m.sender === "user" ? styles.userBubble : styles.nalaBubble,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.senderName,
+                  m.sender === "user"
+                    ? styles.userSenderName
+                    : styles.nalaSenderName,
+                ]}
+              >
+                {m.sender === "user" ? "You" : "Nala"}
               </Text>
-              <Text style={[
-                styles.messageText,
-                message.sender === 'user' && styles.userMessageText
-              ]}>
-                {message.text}
-              </Text>
-              <Text style={[
-                styles.timestamp,
-                message.sender === 'user' && styles.userTimestamp
-              ]}>
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+              {m.isLoading ? (
+                <TypingIndicator />
+              ) : (
+                <Text
+                  style={[
+                    styles.messageText,
+                    m.sender === "user" && styles.userMessageText,
+                  ]}
+                >
+                  {m.text}
+                </Text>
+              )}
+
+              <Text
+                style={[
+                  styles.timestamp,
+                  m.sender === "user" && styles.userTimestamp,
+                ]}
+              >
+                {m.timestamp.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
             </View>
           </View>
         ))}
-        
-        {isLoading && (
-          <View style={[styles.messageWrapper, styles.nalaMessageWrapper]}>
-            <View style={[styles.messageBubble, styles.nalaBubble]}>
-              <ActivityIndicator size="small" color="rgb(72, 147, 95)" />
-              <Text style={styles.messageText}>NALA is typing...</Text>
-            </View>
-          </View>
-        )}
       </ScrollView>
 
-      {/* Input Area */}
+      {/* Input */}
       <View style={styles.inputArea}>
         <TextInput
           style={styles.input}
@@ -250,13 +353,19 @@ export default function ChatScreen({ navigation }: Props) {
           value={input}
           onChangeText={setInput}
           onSubmitEditing={sendUserMessage}
+          onKeyPress={handleKeyPress}
           editable={!isLoading && backendConnected !== false}
           returnKeyType="send"
+          multiline
+          scrollEnabled={false}
+          blurOnSubmit={false}
         />
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
             styles.sendButton,
-            (isLoading || !input.trim() || backendConnected === false) && styles.sendButtonDisabled
+            (isLoading || !input.trim() || backendConnected === false) &&
+              styles.sendButtonDisabled,
           ]}
           onPress={sendUserMessage}
           disabled={isLoading || !input.trim() || backendConnected === false}
@@ -269,155 +378,101 @@ export default function ChatScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F9F7',
-  },
+  container: { flex: 1, backgroundColor: "#F9FAFB" },
+
   header: {
-    backgroundColor: 'rgb(72, 147, 95)',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    backgroundColor: "#2E7D32",
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backArrow: {
-    fontSize: 28,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  headerTitles: {
-    marginTop: 20,
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  statusText: {
-    fontSize: 12,
-    marginTop: 4,
-    color: '#fff',
-    textAlign: 'center',
-  },
-  errorText: {
-    color: 'rgb(248, 186, 32)',
-  },
-  successText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    padding: 16,
-    flexGrow: 1,
-  },
-  messageWrapper: {
-    marginBottom: 12,
-    flexDirection: 'row',
-  },
-  userMessageWrapper: {
-    justifyContent: 'flex-end',
-  },
-  nalaMessageWrapper: {
-    justifyContent: 'flex-start',
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
-  },
-  userBubble: {
-    backgroundColor: '#48935F',
-  },
+
+  backButton: { marginRight: 10 },
+  backArrow: { fontSize: 28, color: "#fff", fontWeight: "600" },
+  headerTitles: { flex: 1, alignItems: "center" },
+
+  title: { fontSize: 20, fontWeight: "bold", color: "#fff" },
+
+  messagesContainer: { flex: 1 },
+  messagesContent: { padding: 16, flexGrow: 1 },
+
+  messageWrapper: { marginBottom: 12, flexDirection: "row" },
+  userMessageWrapper: { justifyContent: "flex-end" },
+  nalaMessageWrapper: { justifyContent: "flex-start" },
+
+  messageBubble: { maxWidth: "80%", padding: 12, borderRadius: 16 },
+
+  userBubble: { backgroundColor: "#2E7D32" },
   nalaBubble: {
-    backgroundColor: '#9ACDBF',
-    borderWidth: 2,
-    borderColor: 'rgb(154, 205, 191)',
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
   },
-  senderName: {
-    fontWeight: 'bold',
-    fontSize: 12,
-    marginBottom: 4,
+
+  senderName: { fontWeight: "bold", fontSize: 12, marginBottom: 4 },
+  userSenderName: { color: "rgba(255, 255, 255, 0.9)" },
+  nalaSenderName: { color: "#2E7D32" },
+
+  messageText: { fontSize: 16, color: "#333", marginBottom: 4 },
+  userMessageText: { color: "#fff" },
+
+  timestamp: { fontSize: 10, color: "#4F4F4F", marginTop: 4 },
+  userTimestamp: { color: "rgba(255, 255, 255, 0.7)" },
+
+  typingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
-  userSenderName: {
-    color: 'rgba(255, 255, 255, 0.9)',
+
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#4A8B6F",
+    marginHorizontal: 3,
   },
-  nalaSenderName: {
-    color: '#48935F',
-  },
-  messageText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 4,
-  },
-  userMessageText: {
-    color: '#fff',
-  },
-  timestamp: {
-    fontSize: 10,
-    color: '#0B3D00',
-    marginTop: 4,
-  },
-  userTimestamp: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
+
   inputArea: {
-    flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 2,
-    borderTopColor: 'rgb(154, 205, 191)',
-    gap: 8,
-    marginBottom: 30,
+    flexDirection: "row",
+    padding: 10,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+    alignItems: "flex-end",
+    paddingBottom: 30,
   },
+
   input: {
     flex: 1,
-    borderWidth: 2,
-    borderColor: 'rgb(154, 205, 191)',
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
     borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
     fontSize: 16,
-    backgroundColor: '#F5F9F7',
-    color: '#333',
+    backgroundColor: "#F9FAFB",
+    color: "#333",
+    minHeight: 44,
+    maxHeight: 120,
   },
+
   sendButton: {
-    backgroundColor: 'rgb(211, 104, 140)',
+    backgroundColor: "#4CAF50",
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
   },
-  sendButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  sendButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
+
+  sendButtonDisabled: { backgroundColor: "#C8E6C9" },
+  sendButtonText: { color: "#fff", fontWeight: "bold", fontSize: 20 },
 });

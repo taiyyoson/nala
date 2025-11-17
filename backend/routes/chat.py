@@ -2,6 +2,7 @@ import asyncio
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
+import traceback
 
 from adapters import RequestAdapter, ResponseAdapter
 from config.database import get_db
@@ -11,39 +12,35 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from services import AIService, ConversationService, DatabaseService
 from sqlalchemy.orm import Session
+from session1_manager import SessionBasedRAGChatbot
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 
 # AI service cache: maintains session state per conversation
-# Key: conversation_id, Value: AIService instance
 _ai_service_cache: Dict[str, AIService] = {}
 
 
 def get_or_create_ai_service(
     conversation_id: str, session_number: Optional[int] = None
 ) -> AIService:
+    print(f"🧠 Using conversation {conversation_id}, existing={conversation_id in _ai_service_cache}, session={session_number}")
+
     """
     Get or create an AI service instance for a conversation.
     Maintains session state across messages within the same conversation.
-
-    Args:
-        conversation_id: Unique conversation identifier
-        session_number: Session number (1-4) for structured coaching
-
-    Returns:
-        AIService instance with session state
     """
-    # Check if we already have an AI service for this conversation
+
     if conversation_id in _ai_service_cache:
         existing_service = _ai_service_cache[conversation_id]
-        # Verify session number matches (if provided)
+
+        # If the session number changed, reset the AI service instance
         if (
             session_number is not None
             and existing_service.session_number != session_number
         ):
-            # Session number changed - create new service
             print(
-                f"⚠️ Session number changed for conversation {conversation_id}: {existing_service.session_number} -> {session_number}"
+                f"⚠️ Session number changed for conversation {conversation_id}: "
+                f"{existing_service.session_number} -> {session_number}"
             )
             ai_service = AIService(
                 model=settings.default_llm_model,
@@ -52,9 +49,10 @@ def get_or_create_ai_service(
             )
             _ai_service_cache[conversation_id] = ai_service
             return ai_service
+
         return existing_service
 
-    # Create new AI service for this conversation
+    # Otherwise create a new AI service instance
     ai_service = AIService(
         model=settings.default_llm_model,
         top_k=settings.top_k_sources,
@@ -65,7 +63,7 @@ def get_or_create_ai_service(
 
 
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
+    role: str
     content: str
     timestamp: Optional[datetime] = None
 
@@ -74,7 +72,7 @@ class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
     user_id: Optional[str] = None
-    session_number: Optional[int] = None  # 1-4 for structured coaching sessions
+    session_number: Optional[int] = None  # 1–4 for structured coaching sessions
 
 
 class ChatResponse(BaseModel):
@@ -93,54 +91,55 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
 
-        # Get or create conversation
+        # Retrieve or create conversation
         conv_id = await conv_service.get_or_create_conversation(
             conversation_id=request.conversation_id, user_id=request.user_id
         )
 
         # Get conversation history (for AI context)
         history = await conv_service.get_conversation_history(
-            conversation_id=conv_id, limit=10  # Last 10 messages for context
+            conversation_id=conv_id, limit=10
         )
 
-        # Get or create AI service with session state for this conversation
+        # Get or create AI service instance
         ai_service = get_or_create_ai_service(
             conversation_id=conv_id, session_number=request.session_number
         )
 
-        # DEBUG: Log what's happening
+        print(f"🧩 chatbot object id: {id(ai_service.chatbot)}")
+        if hasattr(ai_service.chatbot, "session_manager"):
+            print(f"🧩 session_manager state: {ai_service.chatbot.session_manager.get_state().value}")
+
+        # DEBUG logs from main
         print(f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}")
         print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
         print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
 
-        # For Session 1: Initialize session with [START_SESSION] if this is the first message
-        # This ensures the session state machine starts properly, just like interactive_session_chat()
+        # **Session 1 Initialization logic preserved**
         if request.session_number == 1 and len(history) == 0:
             print("🎯 INITIALIZING Session 1 with [START_SESSION]")
-            # This is the first message in a Session 1 conversation
-            # Send [START_SESSION] to initialize the session properly
             response, sources, model_name = await ai_service.generate_response(
                 message="[START_SESSION]",
                 conversation_history=[],
                 user_id=request.user_id,
             )
             print(f"📝 Init response (Nala's greeting): {response[:100]}...")
-            # Return Nala's greeting directly - don't process user's message yet
-            # The user hasn't actually said anything meaningful yet, this is just to trigger initialization
         else:
-            # Normal flow: generate response for existing conversation
+            # Normal response generation
             response, sources, model_name = await ai_service.generate_response(
                 message=request.message,
                 conversation_history=history,
                 user_id=request.user_id,
             )
 
-        # Save user message to database
+        # Save user message
         await conv_service.add_message(
-            conversation_id=conv_id, role="user", content=request.message
+            conversation_id=conv_id,
+            role="user",
+            content=request.message,
         )
 
-        # Save assistant response to database
+        # Save assistant response
         msg_data = await conv_service.add_message(
             conversation_id=conv_id,
             role="assistant",
@@ -151,7 +150,12 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             },
         )
 
-        # Format response using adapter
+        # Session state extraction (optional)
+        session_state = None
+        if hasattr(ai_service.chatbot, "session_manager"):
+            session_state = ai_service.chatbot.session_manager.get_state().value
+
+        # Format final response payload
         formatted_response = ResponseAdapter.ai_response_to_chat_response(
             rag_output=(response, sources, model_name),
             conversation_id=conv_id,
@@ -164,8 +168,6 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"Error in send_message: {e}")
-        import traceback
-
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -176,24 +178,21 @@ async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
 
     async def generate_stream():
         try:
-            # Initialize services
             db_service = DatabaseService(db)
             conv_service = ConversationService(db_service)
 
-            # Get or create conversation
+            # Conversation
             conv_id = await conv_service.get_or_create_conversation(
                 conversation_id=request.conversation_id, user_id=request.user_id
             )
 
-            # Get conversation history
             history = await conv_service.get_conversation_history(conv_id, limit=10)
 
-            # Get or create AI service with session state
             ai_service = get_or_create_ai_service(
                 conversation_id=conv_id, session_number=request.session_number
             )
 
-            # Stream response from AI service
+            # Stream chunks
             full_response = ""
             async for chunk in ai_service.stream_response(
                 request.message, history, request.user_id
@@ -201,15 +200,13 @@ async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
                 full_response += chunk
                 yield ResponseAdapter.streaming_chunk_to_sse(chunk, done=False)
 
-            # Final chunk
             yield ResponseAdapter.streaming_chunk_to_sse("", done=True)
 
-            # Save user message to database
+            # Save messages
             await conv_service.add_message(
                 conversation_id=conv_id, role="user", content=request.message
             )
 
-            # Save assistant response to database
             await conv_service.add_message(
                 conversation_id=conv_id,
                 role="assistant",
@@ -233,7 +230,6 @@ async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
 
 @chat_router.get("/conversation/{conversation_id}")
 async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
-    """Retrieve conversation history"""
     try:
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
@@ -244,7 +240,8 @@ async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Conversation not found")
 
         return ResponseAdapter.conversation_to_api_format(
-            conversation_data=conversation, messages=conversation.get("messages")
+            conversation_data=conversation,
+            messages=conversation.get("messages"),
         )
 
     except HTTPException:
@@ -258,7 +255,6 @@ async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
 async def list_conversations(
     user_id: str, limit: int = 50, offset: int = 0, db: Session = Depends(get_db)
 ):
-    """List all conversations for a user"""
     try:
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
@@ -282,7 +278,6 @@ async def list_conversations(
 
 @chat_router.delete("/conversation/{conversation_id}")
 async def delete_conversation(conversation_id: str, db: Session = Depends(get_db)):
-    """Delete a conversation and all its messages"""
     try:
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)

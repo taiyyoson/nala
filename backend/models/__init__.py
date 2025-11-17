@@ -12,4 +12,6 @@ __all__ = [
     "Base",
     "Conversation",
     "Message",
+    "User",
+    "session_progress",
 ]

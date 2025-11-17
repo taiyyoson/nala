@@ -1,4 +1,4 @@
-from openai import OpenAI
+import openai
 from anthropic import Anthropic
 from query import VectorSearch
 import os

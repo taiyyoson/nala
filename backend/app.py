@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from routes.chat import chat_router
 from routes.health import health_router
-
+from routes import user
+from routes import session
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -64,6 +65,8 @@ app.add_middleware(
 # Include routers
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
+app.include_router(user.router, prefix="/api/v1/user")
+app.include_router(session.router, prefix="/api/v1")
 
 
 @app.get("/")

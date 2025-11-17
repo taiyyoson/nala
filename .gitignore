@@ -14,7 +14,7 @@ __pycache__/
 venv/
 env/
 ENV/
-.venv
+.venv/
 
 # IDE
 .vscode/
@@ -26,21 +26,49 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
-__pycache__/
-*.pyc
 
 # Database files
 *.db
 *.sqlite
 *.sqlite3
 
+# Node / Frontend / React Native
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/.next/
+frontend copy/
+
+# Mobile App (Expo / EAS / Android / iOS)
+mobile/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/node_modules/
+mobile/android/
+mobile/ios/
+mobile/build/
+
 # Archive folder (old code kept for reference)
 backend/archive/
 
 # temporary
+# (kept from main—if used for scratch work)
+# temp files go here
 
-# docs
+# Logs and caches
+*.log
+.cache/
+.expo/
+.expo-shared/
+
+# Docs
 backend/docs/
 
+# Firebase credentials
+backend/authentication/firebase-adminsdk.json
 
+# Pre-commit config (ignored on main)
 .pre-commit-config.yaml

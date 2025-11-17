@@ -10,13 +10,14 @@ import sys
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
-# Add AI-backend to Python path
+import openai
+from config.settings import settings
+openai.api_key = settings.openai_api_key
+
 ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
 sys.path.insert(0, str(ai_backend_path))
 
 from query import VectorSearch
-
-# Import RAG system
 from rag_dynamic import UnifiedRAGChatbot
 from session1_manager import SessionBasedRAGChatbot
 

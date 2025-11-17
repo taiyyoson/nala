@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,68 +9,84 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../navigation/AuthStack';
-import { useAuth } from '../contexts/AuthContext';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../navigation/AuthStack";
+import { useAuth } from "../contexts/AuthContext";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../config/firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type SignUpScreenProps = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
+  navigation: NativeStackNavigationProp<AuthStackParamList, "SignUp">;
 };
 
 export default function SignUpScreen({ navigation }: SignUpScreenProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { setLoggedInUser } = useAuth();
+  const { setLoggedInUser, setHasCompletedOnboarding } = useAuth();
 
   const handleSignUp = async () => {
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
-  
-    if (!email.includes('@')) {
-      setError('Please enter a valid email');
+
+    if (!email.includes("@")) {
+      setError("Please enter a valid email");
       return;
     }
-  
+
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError("Password must be at least 6 characters");
       return;
     }
-  
+
     setIsLoading(true);
-    setError('');
-  
-    setTimeout(() => {
-      const mockUser = {
-        uid: 'mock-user-' + Date.now(),
-        email: email,
-        displayName: null,
-      };
-      setLoggedInUser(mockUser);
-      // Navigate to onboarding instead of going straight to MainStack
-      navigation.navigate('Onboarding');
+    setError("");
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log("✅ Firebase sign-up success");
+      console.log("UID:", user.uid);
+
+      setLoggedInUser({
+        uid: user.uid,
+        email: user.email ?? "",
+        displayName: user.displayName ?? "",
+      });
+
+      await AsyncStorage.setItem("hasCompletedOnboarding", "false");
+      setHasCompletedOnboarding(false);
+
+      navigation.replace("Onboarding");
+    } catch (err: any) {
+      console.error("❌ Sign-up error:", err);
+      setError(err.message || "Sign-up failed. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <View style={styles.content}>
           <View style={styles.backButtonContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.backButtonText}>← </Text>
+              <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
           </View>
+
           <Text style={styles.title}>Create Your Account</Text>
 
           <View style={styles.form}>
@@ -98,7 +114,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
                 onChangeText={setPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                <Text style={styles.eyeIcon}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
               </TouchableOpacity>
             </View>
 
@@ -109,16 +125,12 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
               onPress={handleSignUp}
               disabled={isLoading}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.signUpButtonText}>Sign Up</Text>
-              )}
+              {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.signUpButtonText}>Sign Up</Text>}
             </TouchableOpacity>
 
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                 <Text style={styles.loginLink}>Log In</Text>
               </TouchableOpacity>
             </View>
@@ -130,96 +142,37 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 40,
-    marginTop: 90,
-  },
-  form: {
-    width: '100%',
-    maxWidth: 400,
-  },
-  label: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  keyboardView: { flex: 1 },
+  content: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 30 },
+  title: { fontSize: 28, fontWeight: "bold", color: "#000", marginBottom: 40, marginTop: 90 },
+  form: { width: "100%", maxWidth: 400 },
+  label: { fontSize: 14, color: "#333", marginBottom: 8, fontWeight: "500" },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
   },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#000',
-  },
-  eyeIcon: {
-    fontSize: 20,
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
+  input: { flex: 1, paddingVertical: 16, fontSize: 16, color: "#000" },
+  eyeIcon: { fontSize: 20 },
+  errorText: { color: "#FF3B30", fontSize: 14, marginBottom: 16, textAlign: "center" },
   signUpButton: {
-    backgroundColor: '#48935F',
+    backgroundColor: "#48935F",
     paddingVertical: 16,
     borderRadius: 25,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
     marginTop: 10,
   },
-  signUpButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#5B8DEF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  backButtonContainer: {
-    width: '100%',
-    alignItems: 'flex-start',
-    marginTop: -200,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#48935F', 
-    fontWeight: '900',
-  },
+  signUpButtonText: { color: "#FFF", fontSize: 16, fontWeight: "600" },
+  loginContainer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
+  loginText: { color: "#666", fontSize: 14 },
+  loginLink: { color: "#5B8DEF", fontSize: 14, fontWeight: "600" },
+  backButtonContainer: { width: "100%", alignItems: "flex-start", marginTop: -200 },
+  backButtonText: { fontSize: 16, color: "#48935F", fontWeight: "900" },
 });

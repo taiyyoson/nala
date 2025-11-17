@@ -1,253 +1,267 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MainStackParamList } from '../navigation/MainStack';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { MainStackParamList } from "../navigation/MainStack";
+import { useAuth } from "../contexts/AuthContext";
+import { getAuth } from "firebase/auth";
+import { ApiService } from "../services/ApiService";
+import { Lock, CheckCircle2, Calendar, Settings } from "lucide-react-native";
 
 type ChatOverviewScreenNavigationProp = NativeStackNavigationProp<
   MainStackParamList,
-  'ChatOverview'
+  "ChatOverview"
 >;
 
 type Props = {
   navigation: ChatOverviewScreenNavigationProp;
 };
 
-export default function ChatOverviewScreen({ navigation }: Props) {
-  const { setLoggedInUser } = useAuth();
+interface SessionProgress {
+  session_number: number;
+  completed_at?: string | null;
+  unlocked_at?: string | null;
+}
 
-  const weeks = [
-    { id: 1, title: 'Session 1', available: true },
-    { id: 2, title: 'Session 2', available: false },
-    { id: 3, title: 'Session 3', available: false },
-    { id: 4, title: 'Session 4', available: false },
+export default function ChatOverviewScreen({ navigation }: Props) {
+  const { logout } = useAuth();
+  const [progress, setProgress] = useState<SessionProgress[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const sessions = [
+    { id: 1, title: "Getting to know you" },
+    { id: 2, title: "Building habits" },
+    { id: 3, title: "Building habits" },
+    { id: 4, title: "Reviewing progress" },
   ];
 
-  const currentWeek = 1;
-  const totalWeeks = 4;
-  const progress = (currentWeek / totalWeeks) * 100;
+  // 🧩 Fetch real progress from backend
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const user = getAuth().currentUser;
+        if (!user) throw new Error("User not logged in");
 
-  const handleLogout = () => {
-    setLoggedInUser(null);
+        console.log("📊 Fetching session progress for:", user.uid);
+        const data = await ApiService.getUserProgress(user.uid);
+        setProgress(data);
+      } catch (error) {
+        console.error("❌ Failed to fetch progress:", error);
+        Alert.alert("Error", "Couldn't load your session progress.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProgress();
+  }, []);
+
+  // 🟢 Determine if a session is unlocked
+  const isSessionUnlocked = (sessionNumber: number): boolean => {
+    if (sessionNumber === 1) return true;
+    const record = progress.find((p) => p.session_number === sessionNumber - 1);
+    if (!record || !record.unlocked_at) return false;
+
+    const now = new Date();
+    const unlockDate = new Date(record.unlocked_at);
+    return now >= unlockDate;
   };
+
+  // 🟢 Determine if a session is complete
+  const isSessionComplete = (sessionNumber: number): boolean => {
+    const record = progress.find((p) => p.session_number === sessionNumber);
+    return record?.completed_at ? true : false;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color="#4A8B6F" size="large" />
+        <Text style={{ marginTop: 8, color: "#555" }}>Loading your progress...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
+        <TouchableOpacity
           onPress={handleLogout}
+          style={styles.headerIconButton}
           activeOpacity={0.7}
         >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Coaching Program</Text>
-        <View style={styles.placeholder} />
+        <View>
+          <Text style={styles.headerTitle}>Your Journey</Text>
+          <Text style={styles.headerSubtitle}>
+            4-week wellness coaching program
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Settings")}
+          style={styles.headerIconButton}
+        >
+          <Settings color="#fff" size={22} />
+        </TouchableOpacity>
       </View>
 
-      {/* Progress Section */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.progressSection}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressText}>Week {currentWeek} of {totalWeeks}</Text>
-            <Text style={styles.progressPercentage}>{progress}%</Text>
-          </View>
-          <View style={styles.progressBarContainer}>
-            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-          </View>
-        </View>
+      {/* Scrollable Sessions */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {sessions.map((session) => {
+          const unlocked = isSessionUnlocked(session.id);
+          const completed = isSessionComplete(session.id);
 
-        {/* Weekly Sessions */}
-        <View style={styles.weeksContainer}>
-          {weeks.map((week) => (
+          let cardColor = "#E5E7EB"; // Default locked
+          if (completed) cardColor = "#4A8B6F";
+          else if (unlocked) cardColor = "#BF5F83";
+
+          return (
             <TouchableOpacity
-              key={week.id}
-              style={[
-                styles.weekCard,
-                !week.available && styles.weekCardLocked
-              ]}
-              onPress={() => week.available && navigation.navigate('Chat')}
-              disabled={!week.available}
-              activeOpacity={0.7}
+              key={session.id}
+              style={[styles.sessionCard, { backgroundColor: cardColor }]}
+              activeOpacity={unlocked ? 0.9 : 1}
+              disabled={!unlocked}
+              onPress={() => unlocked && navigation.navigate("Chat")}
             >
-              <Text style={[
-                styles.weekTitle,
-                !week.available && styles.weekTitleLocked
-              ]}>
-                {week.title}
+              <View style={styles.iconContainer}>
+                {completed ? (
+                  <CheckCircle2 color="#FFF" size={22} />
+                ) : unlocked ? (
+                  <Calendar color="#FFF" size={22} />
+                ) : (
+                  <Lock color="#6B7280" size={22} />
+                )}
+              </View>
+
+              <View
+                style={[
+                  styles.weekBadge,
+                  {
+                    backgroundColor: unlocked
+                      ? "rgba(255,255,255,0.3)"
+                      : "rgba(0,0,0,0.1)",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.weekBadgeText,
+                    { color: unlocked ? "#FFF" : "#6B7280" },
+                  ]}
+                >
+                  Week {session.id}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.sessionDescription,
+                  {
+                    color: unlocked ? "#FFF" : "#6B7280",
+                    fontWeight: "500", 
+                    fontSize: 16,      
+                  },
+                ]}
+              >
+                {unlocked
+                  ? session.title
+                  : "Complete previous sessions to unlock"}
               </Text>
-              {week.available ? (
-                <Text style={styles.arrowIcon}>→</Text>
-              ) : (
-                <Text style={styles.lockIcon}>🔒</Text>
+
+
+              {unlocked && !completed && (
+                <View style={styles.sessionFooter}>
+                  <Calendar size={14} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.sessionFooterText}>10-min check-in</Text>
+                </View>
               )}
             </TouchableOpacity>
-          ))}
+          );
+        })}
+
+        {/* Encouragement Card */}
+        <View style={styles.motivationCard}>
+          <Text style={styles.motivationText}>
+            💪 Keep it up! Complete your current session to unlock the next one.
+          </Text>
         </View>
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
-          <View style={styles.navButtonActive}>
-            <Text style={styles.navIconActive}>💬</Text>
-            <Text style={styles.navLabelActive}>Chat</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} activeOpacity={0.7}>
-          <Text style={styles.navIcon}>⚙️</Text>
-          <Text style={styles.navLabel}>Settings</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
 
+// ✅ Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F9F7',
-  },
+  container: { flex: 1, backgroundColor: "#F5F9F7" },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    backgroundColor: "#4A8B6F",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: 'rgb(72, 147, 95)',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 24,
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  placeholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  progressSection: {
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  progressText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  progressPercentage: {
-    fontSize: 18,
-    color: '#48935F',
-    fontWeight: '700',
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#D3688C',
-    borderRadius: 4,
-  },
-  weeksContainer: {
-    gap: 16,
-  },
-  weekCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 20,
+    paddingBottom: 24,
     paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgb(154, 205, 191)',
-    shadowColor: 'rgb(72, 147, 95)',
-    shadowOffset: { width: 0, height: 2 },
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTitle: { color: "#FFF", fontSize: 22, fontWeight: "700" },
+  headerSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 13 },
+  backArrow: { fontSize: 24, color: "#FFF", fontWeight: "600" },
+  headerIconButton: { padding: 8, borderRadius: 20 },
+  scrollContent: { padding: 20, gap: 16, paddingBottom: 60 },
+  sessionCard: {
+    borderRadius: 24,
+    padding: 16,
+    minHeight: 120,
+    justifyContent: "flex-start",
+    shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 3,
   },
-  weekCardLocked: {
-    backgroundColor: '#F8F9FA',
-    borderColor: '#E0E0E0',
+  iconContainer: { position: "absolute", top: 16, right: 16 },
+  weekBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
   },
-  weekTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'rgb(72, 147, 95)',
+  weekBadgeText: { fontSize: 12, fontWeight: "500" },
+  sessionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
+  sessionDescription: { fontSize: 14, marginBottom: 8 },
+  sessionFooter: { flexDirection: "row", alignItems: "center", gap: 6 },
+  sessionFooterText: { color: "rgba(255,255,255,0.8)", fontSize: 12 },
+  motivationCard: {
+    backgroundColor: "#FEF3E2",
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
   },
-  weekTitleLocked: {
-    color: '#D1D5DB',
-  },
-  arrowIcon: {
-    fontSize: 20,
-    color: '#F8BA20',
-    fontWeight: '600',
-  },
-  lockIcon: {
-    fontSize: 18,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: 'rgb(154, 205, 191)',
-    gap: 40,
-  },
-  navButton: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  navButtonActive: {
-    backgroundColor: 'rgba(154, 205, 191, 0.2)',
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  navIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  navIconActive: {
-    fontSize: 18,
-  },
-  navLabel: {
+  motivationText: {
+    color: "#4A4A4A",
     fontSize: 13,
-    color: '#9CA3AF',
-    fontWeight: '500',
+    textAlign: "center",
   },
-  navLabelActive: {
-    fontSize: 13,
-    color: 'rgb(72, 147, 95)',
-    fontWeight: '600',
-  },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

@@ -1,61 +1,166 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Target, Calendar, TrendingUp } from 'lucide-react-native';
+import Button from './Button';
+import BackButton from './BackButton';
 
 type Props = {
   goToNextSlide: () => void;
   goToPreviousSlide: () => void;
 };
 
-export default function HowItWorksSlide({ goToNextSlide, goToPreviousSlide }: Props) {
-  const features = [
-    { icon: '🎯', title: 'Set a Clear Goal', desc: 'NALA helps you define your SMART goals.' },
-    { icon: '📅', title: 'Weekly Coaching', desc: 'Regular check-ins and personalized guidance.' },
-    { icon: '📈', title: 'Track Your Progress', desc: 'See tangible progress and stay motivated.' },
-  ];
+const howItWorksSteps = [
+  {
+    Icon: Target,
+    title: 'Set a Clear Goal',
+    description: 'Nala helps you define your SMART goals.',
+    color: '#E297B4',
+  },
+  {
+    Icon: Calendar,
+    title: 'Weekly Coaching',
+    description: 'Nala will be chatting with you once a week for about 10 minutes.',
+    color: '#48935F',
+  },
+  {
+    Icon: TrendingUp,
+    title: 'Track Your Progress',
+    description:
+      'Nala will monitor your progress and problem solve with you when things are difficult.',
+    color: '#F7C948',
+  },
+];
 
+export default function HowItWorksSlide({ goToNextSlide, goToPreviousSlide }: Props) {
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={goToPreviousSlide}><Text style={styles.back}>←</Text></TouchableOpacity>
-        <Text style={styles.step}>Step 2 of 3</Text>
-        <View style={{ width: 40 }} />
+        <BackButton onPress={goToPreviousSlide} />
+        <Text style={styles.stepIndicator}>Step 1 of 3</Text>
+        <View style={styles.placeholder} />
       </View>
 
-      <Text style={styles.title}>How It Works</Text>
-      <Text style={styles.subtitle}>
-      NALA will use strategies to help you achieve healthy behavior, that come from research and are tailored just for you.
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={styles.headline}>How It Works</Text>
 
-      </Text>
+        <Text style={styles.description}>
+          Nala is your digital health coach for a four-week program. Nala uses research-based
+          strategies to help you build healthy habits and connects you to the right resources
+          when needed.
+        </Text>
 
-      {features.map((f, i) => (
-        <View key={i} style={styles.feature}>
-          <Text style={styles.icon}>{f.icon}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.featureTitle}>{f.title}</Text>
-            <Text style={styles.featureDesc}>{f.desc}</Text>
+        {howItWorksSteps.map((step, index) => (
+          <View key={index} style={styles.stepCard}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: `${step.color}33` }]}
+            >
+              <step.Icon size={24} color={step.color} strokeWidth={2} />
+            </View>
+            <View style={styles.stepContent}>
+              <Text style={styles.stepTitle}>{step.title}</Text>
+              <Text style={styles.stepDescription}>{step.description}</Text>
+            </View>
           </View>
+        ))}
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footerContainer}>
+        <View style={styles.footer}>
+          <Button
+            title="Next: The 4-Week Plan"
+            onPress={goToNextSlide}
+            variant="primary"
+            size="large"
+          />
         </View>
-      ))}
-
-      <TouchableOpacity style={styles.button} onPress={goToNextSlide}>
-
-        <Text style={styles.buttonText}>Next: The 4-Week Plan</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  back: { fontSize: 24 },
-  step: { color: '#9ACDAF', fontWeight: '600' },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 12 },
-  subtitle: { fontSize: 16, color: '#666', marginBottom: 20 },
-  feature: { flexDirection: 'row', marginBottom: 24, alignItems: 'flex-start', gap: 12 },
-  icon: { fontSize: 24 },
-  featureTitle: { fontSize: 16, fontWeight: '600', marginBottom: 7, },
-  featureDesc: { fontSize: 14, color: '#666' },
-  button: { backgroundColor: '#D3688C', padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 260 },
-  buttonText: { color: 'white', fontWeight: '600', fontSize: 16 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF', // pure white
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 4,       
+    paddingBottom: 15,
+    marginTop: -55,       
+  },
+  stepIndicator: {
+    fontSize: 14,
+    color: '#48935F',
+    fontWeight: '500',
+  },
+  placeholder: {
+    width: 40,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    justifyContent: 'flex-start',
+    backgroundColor: '#FFFFFF',
+  },
+  headline: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 24,
+    marginBottom: 28,
+  },
+  stepCard: {
+    flexDirection: 'row',
+    gap: 16,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  stepDescription: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 22,
+  },
+  footerContainer: {
+    backgroundColor: '#FFFFFF',
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 28,
+    paddingTop: 16,
+  },
 });
