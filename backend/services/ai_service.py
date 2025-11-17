@@ -37,7 +37,7 @@ class AIService:
 
     def __init__(
         self,
-        model: str = "claude-sonnet-4",
+        model: str = "claude-sonnet-4.5",
         top_k: int = 3,
         session_number: Optional[int] = None,
     ):
@@ -91,11 +91,17 @@ class AIService:
         Returns:
             Tuple of (response_text, retrieved_sources, model_name)
         """
-        # Set conversation history in RAG chatbot
-        if conversation_history and use_history:
-            self.chatbot.conversation_history = conversation_history
-        else:
-            self.chatbot.conversation_history = []
+        # For Session 1: DON'T overwrite conversation history from database
+        # The SessionBasedRAGChatbot maintains its own state internally and
+        # overwriting it breaks the session state machine
+        if self.session_number != 1:
+            # For non-session flows: Set conversation history from database
+            if conversation_history and use_history:
+                self.chatbot.conversation_history = conversation_history
+            else:
+                self.chatbot.conversation_history = []
+        # For Session 1: The chatbot already has the history in its internal state
+        # Don't touch it!
 
         # Generate response using RAG system
         # This internally:

@@ -51,6 +51,13 @@ mobile/android/
 mobile/ios/
 mobile/build/
 
+# Archive folder (old code kept for reference)
+backend/archive/
+
+# temporary
+# (kept from main—if used for scratch work)
+# temp files go here
+
 # Logs and caches
 *.log
 .cache/
@@ -62,3 +69,6 @@ backend/docs/
 
 # Firebase credentials
 backend/authentication/firebase-adminsdk.json
+
+# Pre-commit config (ignored on main)
+.pre-commit-config.yaml
