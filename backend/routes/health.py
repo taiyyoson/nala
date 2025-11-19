@@ -1,4 +1,5 @@
 import os
+import platform
 from datetime import datetime
 
 import psutil
@@ -38,7 +39,7 @@ async def detailed_health_check():
             },
             "environment": {
                 "python_version": f"{psutil.sys.version_info.major}.{psutil.sys.version_info.minor}",
-                "platform": psutil.platform.system(),
+                "platform": platform.system(),
             },
         }
     except Exception as e:
