@@ -1,0 +1,247 @@
+{
+  "state": "end_session",
+  "session_data": {
+    "user_name": "Jade",
+    "previous_goals": [
+      {
+        "goal": "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks",
+        "confidence": 8,
+        "smart_analysis": {
+          "is_smart": false,
+          "analysis": {
+            "specific": {
+              "met": true,
+              "issue": ""
+            },
+            "measurable": {
+              "met": false,
+              "issue": "No metric to track success - doesn't specify how to measure if falling asleep is improving or what 'taking forever' means"
+            },
+            "achievable": {
+              "met": true,
+              "issue": ""
+            },
+            "relevant": {
+              "met": true,
+              "issue": ""
+            },
+            "timebound": {
+              "met": true,
+              "issue": ""
+            },
+            "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'"
+          },
+          "suggestions": "Add a measurable outcome, such as: 'Turn off screens 1 hour before bedtime to fall asleep within 30 minutes (instead of current 60+ minutes) for 4 weeks, tracking nightly in a sleep journal.'",
+          "missing_criteria": [
+            "MEASURABLE"
+          ]
+        },
+        "refinement_attempts": 1
+      }
+    ],
+    "discovery_questions": [],
+    "discovery_responses": [],
+    "discovery_question_index": 0,
+    "stress_level": 10,
+    "goal_completion_status": {},
+    "successes": [],
+    "challenges": [],
+    "path_chosen": "different",
+    "goals_to_keep": [
+      "i think i just take forever to fall asleep i think turn them off an hour before i want to go to sleep and i want to work on this for 4 weeks"
+    ],
+    "goals_to_keep_identified": true,
+    "new_goals": [
+      "Kinda just carve out time to play pokemon go 1 hour for at least one day a week i just need time to unwind and be away from work"
+    ],
+    "goals_completed_count": 0,
+    "current_goal": "Kinda just carve out time to play pokemon go 1 hour for at least one day a week i just need time to unwind and be away from work",
+    "goal_parts": [],
+    "goal_smart_analysis": {
+      "is_smart": true,
+      "analysis": {
+        "specific": {
+          "met": true,
+          "issue": ""
+        },
+        "measurable": {
+          "met": true,
+          "issue": ""
+        },
+        "achievable": {
+          "met": true,
+          "issue": ""
+        },
+        "relevant": {
+          "met": true,
+          "issue": ""
+        },
+        "timebound": {
+          "met": true,
+          "issue": ""
+        },
+        "suggestions": "Your goal is already SMART! To make it even stronger, consider: (1) Specifying which day of the week (e.g., 'every Saturday morning'), (2) Setting a duration for the commitment (e.g., 'for the next 4 weeks'), or (3) Adding a specific outcome you hope to achieve (e.g., 'to reduce stress levels'). But as written, it meets all SMART criteria - you have a clear action (play Pokemon Go), measurable metrics (1 hour, at least once per week), it's achievable, relevant to mental health/stress management, and time-bound with weekly frequency."
+      },
+      "suggestions": "Your goal is already SMART! To make it even stronger, consider: (1) Specifying which day of the week (e.g., 'every Saturday morning'), (2) Setting a duration for the commitment (e.g., 'for the next 4 weeks'), or (3) Adding a specific outcome you hope to achieve (e.g., 'to reduce stress levels'). But as written, it meets all SMART criteria - you have a clear action (play Pokemon Go), measurable metrics (1 hour, at least once per week), it's achievable, relevant to mental health/stress management, and time-bound with weekly frequency.",
+      "missing_criteria": []
+    },
+    "smart_refinement_attempts": 3,
+    "confidence_level": 9,
+    "changes_needed": {},
+    "solutions": {},
+    "challenges_discussed": false,
+    "adjustments_discussed": false,
+    "session_start": "2025-11-17T11:20:51.568973",
+    "turn_count": 17,
+    "last_coach_response": "Perfect, that's a solid plan. Would you like to set another goal for this week?",
+    "tracking_method_discussed": false,
+    "anything_else_asked": false,
+    "confidence_asked_for_same_goal": false,
+    "explored_low_confidence": false,
+    "questions_asked": [
+      "check_in",
+      "greeting",
+      "goal_completion",
+      "stress_level"
+    ],
+    "final_goodbye_given": true
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, welcome back! It's great to see you again for our second session. How has your week been going?"
+    },
+    {
+      "role": "user",
+      "content": "its been going good"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great to hear! So tell me, how did it go with turning off your screens an hour before you wanted to go to sleep this past week?"
+    },
+    {
+      "role": "user",
+      "content": "went terribly"
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate you being honest with me about that. It sounds like it was really challenging. Can you tell me a bit more about what made it so difficult this week?"
+    },
+    {
+      "role": "user",
+      "content": "i was just so busy with needing to study so i stayed up for a while and missed the alarms to turn off  my screens"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds really tough, Jade. Balancing studying with getting good sleep is such a common struggle. So it sounds like the alarms went off, but you were in the middle of studying and couldn't step away at that moment. Is that what happened?"
+    },
+    {
+      "role": "user",
+      "content": "yrsh"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, thank you for clarifying. When you were studying and the alarms went off, what was going through your mind in those moments?"
+    },
+    {
+      "role": "user",
+      "content": "i just needed to study"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes sense. Studying felt more urgent in the moment, especially with everything you had going on. Before we talk more about this, I need to ask: On a scale of 1 to 10, how stressed were you this week?"
+    },
+    {
+      "role": "user",
+      "content": "10"
+    },
+    {
+      "role": "assistant",
+      "content": "I really hear you, Jade. A 10 out of 10 stress level is incredibly high, and it makes total sense why studying felt like the only option in those moments. It sounds like you're carrying a lot right now. What's been contributing most to that stress level this week?"
+    },
+    {
+      "role": "user",
+      "content": "just all the studying ive had to do"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a lot of pressure to be under. When you have that much studying to do, it can feel impossible to make space for anything else, including sleep. Looking ahead to next week, what do you want to focus on? You have three options: stick with the same goal about turning off screens an hour before bed, keep that goal and add a new one, or choose completely new goals. What feels right for you?"
+    },
+    {
+      "role": "user",
+      "content": "i want to scrap my current goal anf just make a new one"
+    },
+    {
+      "role": "assistant",
+      "content": "Okay, I understand. You want to start fresh with a completely new goal for this week. What new goal would you like to work on, Jade?"
+    },
+    {
+      "role": "user",
+      "content": "I want to work on a hobby"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a wonderful way to balance out all that studying. When you say you want to work on a hobby, what specific hobby are you thinking about?"
+    },
+    {
+      "role": "user",
+      "content": "i want to kinda just carve out time to play pokemon go"
+    },
+    {
+      "role": "assistant",
+      "content": "Pokemon Go sounds like a fun way to take a break and get some movement in. When you say carve out time, how much time are you thinking, and how often during the week would you like to play?"
+    },
+    {
+      "role": "user",
+      "content": "1 hour for at least one day a week"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so one hour at least one day per week. Why is making time for Pokemon Go important to you right now, especially with everything else you have going on?"
+    },
+    {
+      "role": "user",
+      "content": "i just need time to unwind and be away from work"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes a lot of sense, especially with your stress level being so high this week. So just to make sure I have this right, your goal is to carve out one hour at least one day a week to play Pokemon Go as a way to unwind and step away from work, is that correct?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "On a scale of 1 to 10, how confident are you that you can achieve this goal?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great confidence! How will you remember to make this happen each week, or how will you track whether you've done it?"
+    },
+    {
+      "role": "user",
+      "content": "I'll mark it on my calendar"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, that's a solid plan. Would you like to set another goal for this week?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Wonderful work today, Jade! You'll be working on turning off screens an hour before bed and carving out time for Pokemon Go once a week. I'll see you next week at Session 3. Take care!"
+    }
+  ]
+}

@@ -5,6 +5,19 @@ import os
 from datetime import datetime
 import re
 
+# Utilities
+from utils.smart_evaluation import evaluate_smart_goal_with_llm, heuristic_smart_check, create_concise_goal
+from utils.session_storage import save_session_data, load_session_data
+from utils.state_prompts import get_session2_prompt
+from utils.state_helpers import (
+    create_state_result,
+    check_affirmative,
+    check_negative,
+    extract_number,
+    check_wants_more,
+    check_done
+)
+from utils.goal_detection import is_likely_goal
 
 class Session2State(Enum):
     """States for Session 2 conversation flow"""
@@ -97,26 +110,8 @@ class Session2Manager:
         self._log_debug(f"Discovery questions loaded: {len(discovery_questions)}")
     
     def _create_concise_goal(self, full_goal: str) -> str:
-        """Create a concise version of the goal for storage"""
-        # Remove filler words and phrases
-        concise = full_goal.lower()
-        
-        filler_phrases = [
-            "i want to", "i would like to", "i'm going to", "i will",
-            "my goal is to", "the goal is to", "i plan to"
-        ]
-        
-        for phrase in filler_phrases:
-            concise = concise.replace(phrase, "")
-        
-        # Clean up spacing
-        concise = " ".join(concise.split())
-        
-        # Capitalize first letter
-        if concise:
-            concise = concise[0].upper() + concise[1:]
-        
-        return concise.strip()
+        """Create a concise version of the goal for storage - NOW USES UTILITY"""
+        return create_concise_goal(full_goal)
     
     def _log_debug(self, message: str):
         if self.debug:
@@ -134,99 +129,24 @@ class Session2Manager:
         self._log_debug("LLM client set")
     
     def evaluate_smart_goal(self, goal: str) -> Dict[str, Any]:
+        """Use LLM to evaluate if a goal is SMART"""
         self._log_debug(f"Evaluating SMART goal: '{goal}'")
         
         if not self.llm_client:
             self._log_debug("No LLM client, using heuristic check")
-            return self._heuristic_smart_check(goal)
+            return heuristic_smart_check(goal)
         
-        evaluation_prompt = f"""Evaluate if this goal is SMART (Specific, Measurable, Achievable, Relevant, Time-bound).
-
-Goal: "{goal}"
-
-STRICT CRITERIA:
-- Specific: Must have a clear, detailed action (not vague like "eat better" or "exercise more")
-- Measurable: Must include numbers, frequency, or quantifiable metrics (e.g., "30 minutes", "3 times", "2000 calories")
-- Achievable: Should be realistic for a typical person
-- Relevant: Related to health/wellness
-- Time-bound: Must specify when/how often (e.g., "daily", "3x per week", "by Friday", "for 2 weeks")
-
-Respond ONLY with a JSON object in this exact format:
-{{
-    "specific": {{"met": true/false, "issue": "reason if not met"}},
-    "measurable": {{"met": true/false, "issue": "reason if not met"}},
-    "achievable": {{"met": true/false, "issue": "reason if not met"}},
-    "relevant": {{"met": true/false, "issue": "reason if not met"}},
-    "timebound": {{"met": true/false, "issue": "reason if not met"}},
-    "suggestions": "specific suggestions to make it SMART"
-}}"""
-
         try:
-            response = self.llm_client.evaluate_goal(evaluation_prompt)
-            response = response.strip()
-            if response.startswith("```json"):
-                response = response[7:]
-            if response.startswith("```"):
-                response = response[3:]
-            if response.endswith("```"):
-                response = response[:-3]
-            response = response.strip()
-            
-            analysis = json.loads(response)
-            is_smart = all(analysis[criterion]["met"] for criterion in ["specific", "measurable", "achievable", "relevant", "timebound"])
-            missing = [criterion.upper() for criterion in ["specific", "measurable", "achievable", "relevant", "timebound"] if not analysis[criterion]["met"]]
-            
-            self._log_debug(f"SMART evaluation result: is_smart={is_smart}, missing={missing}")
-            
-            return {
-                'is_smart': is_smart,
-                'analysis': analysis,
-                'suggestions': analysis.get('suggestions', ''),
-                'missing_criteria': missing
-            }
+            result = evaluate_smart_goal_with_llm(goal, self.llm_client)
+            self._log_debug(f"SMART evaluation result: is_smart={result['is_smart']}, missing={result['missing_criteria']}")
+            return result
         except Exception as e:
             self._log_debug(f"SMART evaluation error: {e}")
-            return self._heuristic_smart_check(goal)
+            return heuristic_smart_check(goal)
     
     def _heuristic_smart_check(self, goal: str) -> Dict[str, Any]:
-        goal_lower = goal.lower()
-        has_numbers = bool(re.search(r'\d+', goal))
-        time_words = ['day', 'week', 'month', 'daily', 'weekly', 'monthly', 'per week', 'per day', 'times', 'every', 'each', 'by', 'for', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'monday']
-        has_timeframe = any(word in goal_lower for word in time_words)
-        
-        # More lenient action checking - look for activity verbs or activity names
-        action_verbs = ['walk', 'run', 'exercise', 'eat', 'drink', 'sleep', 'reduce', 'increase', 'practice', 'meditate', 'stretch', 'play']
-        activity_names = ['pokemon go', 'yoga', 'gym', 'swimming', 'biking', 'hiking']
-        has_action = any(verb in goal_lower for verb in action_verbs) or any(activity in goal_lower for activity in activity_names)
-        
-        vague_words = ['more', 'better', 'less', 'healthier', 'improve']
-        has_vague = any(word in goal_lower for word in vague_words) and not has_numbers
-        
-        # Check if has specific days
-        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-        has_specific_days = any(day in goal_lower for day in days)
-        
-        is_smart = has_numbers and (has_timeframe or has_specific_days) and has_action and not has_vague and len(goal.split()) >= 5
-        missing = []
-        if not has_action or has_vague: 
-            missing.append("SPECIFIC")
-        if not has_numbers: 
-            missing.append("MEASURABLE")
-        if not (has_timeframe or has_specific_days): 
-            missing.append("TIMEBOUND")
-        
-        return {
-            'is_smart': is_smart,
-            'analysis': {
-                'specific': {'met': has_action and not has_vague, 'issue': 'Use specific action verbs or activity names, avoid vague words'},
-                'measurable': {'met': has_numbers, 'issue': 'Include specific numbers or quantities'},
-                'achievable': {'met': True, 'issue': ''},
-                'relevant': {'met': True, 'issue': ''},
-                'timebound': {'met': has_timeframe or has_specific_days, 'issue': 'Specify frequency or deadline'}
-            },
-            'suggestions': 'Make it more specific with numbers and a clear timeframe',
-            'missing_criteria': missing
-        }
+        """Simple heuristic-based SMART check as fallback - NOW USES UTILITY"""
+        return heuristic_smart_check(goal)
     
     def get_state(self) -> Session2State:
         return self.state
@@ -248,11 +168,7 @@ Respond ONLY with a JSON object in this exact format:
         if last_coach_response:
             self.session_data["last_coach_response"] = last_coach_response
         
-        result = {
-            "next_state": None,
-            "context": "",
-            "trigger_rag": True
-        }
+        result = create_state_result()
         
         # CRITICAL: If we're in END_SESSION and goodbye was already given, stay there
         if self.state == Session2State.END_SESSION and self.session_data.get("final_goodbye_given"):
@@ -275,9 +191,8 @@ Respond ONLY with a JSON object in this exact format:
             self._mark_question_asked("check_in")
         
         elif self.state == Session2State.STRESS_LEVEL:
-            numbers = re.findall(r'\d+', user_input)
-            if numbers:
-                stress = int(numbers[0])
+            stress = extract_number(user_input)
+            if stress:
                 self.session_data["stress_level"] = stress
                 self._mark_question_asked("stress_level")
                 
@@ -457,9 +372,7 @@ Respond ONLY with a JSON object in this exact format:
             goal_candidate = user_input.strip()
             
             # Check if this is a substantial goal description (not just "yes" or single words)
-            is_affirmation = user_lower in ["yes", "yeah", "yep", "no", "nope", "ok", "okay"]
-            
-            if not is_affirmation and len(goal_candidate.split()) > 3:
+            if is_likely_goal(goal_candidate):
                 self.session_data["current_goal"] = goal_candidate
                 
                 # Only add to new_goals list if it's not already there
@@ -691,8 +604,8 @@ Respond ONLY with a JSON object in this exact format:
             result["context"] = "Acknowledge tracking. Ask if they want another goal."
         
         elif self.state == Session2State.MORE_GOALS_CHECK:
-            wants_more = any(w in user_lower for w in ["yes", "yeah", "another", "more", "add"])
-            done = any(w in user_lower for w in ["no", "nope", "done", "good", "enough"])
+            wants_more = check_wants_more(user_input)
+            done = check_done(user_input)
             
             if wants_more:
                 self.session_data["current_goal"] = None
@@ -716,229 +629,10 @@ Respond ONLY with a JSON object in this exact format:
     
     def get_system_prompt_addition(self) -> str:
         """Get state-specific system prompt additions"""
-        
-        previous_goals_text = ""
-        if self.session_data.get("previous_goals"):
-            if len(self.session_data["previous_goals"]) == 1:
-                previous_goals_text = f"\nTheir previous goal: \"{self.session_data['previous_goals'][0]['goal']}\""
-            else:
-                previous_goals_text = f"\nTheir previous goals:"
-                for i, g in enumerate(self.session_data["previous_goals"], 1):
-                    previous_goals_text += f"\n  {i}. \"{g['goal']}\""
-        
-        session_context = ""
-        if self.session_data.get("stress_level"):
-            session_context += f"\nStress level: {self.session_data['stress_level']}/10"
-        
-        if self.session_data.get("goals_to_keep"):
-            session_context += f"\nGoals keeping: {', '.join(self.session_data['goals_to_keep'])}"
-        
-        if self.session_data.get("new_goals"):
-            session_context += f"\nNew goals set: {len(self.session_data['new_goals'])}"
-        
-        prompts = {
-            Session2State.GREETINGS: f"""
-Welcome {self.session_data.get('user_name', 'them')} back to Session 2.
-
-Be warm and brief. Just say hi and ask how their week was.
-NO markdown, emojis, or extra questions.
-{previous_goals_text}""",
-            
-            Session2State.CHECK_IN_GOALS: f"""
-Ask about their goal from last week.
-{previous_goals_text}
-
-CRITICAL: Ask ONLY about how it went with their goal. ONE question.
-NO stress questions, NO other topics.
-Example: "How did it go with [goal]?"
-{session_context}""",
-            
-            Session2State.STRESS_LEVEL: f"""
-Ask ONLY about stress level (1-10).
-
-"On a scale of 1 to 10, how stressed were you this week?"
-
-CRITICAL: Do NOT ask about their goals, challenges, or anything else. Just stress level.
-{session_context}""",
-            
-            Session2State.DISCOVERY_QUESTIONS: f"""
-Ask ONE discovery question.
-Available: {', '.join(self.session_data.get('discovery_questions', [])[:3])}
-
-Pick most relevant. Be conversational.
-{session_context}""",
-            
-            Session2State.GOAL_COMPLETION: f"""
-Ask about goal completion.
-
-CRITICAL: Ask this ONCE. Accept their answer. Do NOT ask follow-up questions about details.
-Example: "Did you complete your goal?"
-{session_context}""",
-            
-            Session2State.GOALS_FOR_NEXT_WEEK: f"""
-Ask what they want to focus on next week.
-
-Three options:
-1. Same goal as last week
-2. Keep that goal AND add a new one  
-3. Completely new goals
-
-Be clear and simple.
-{session_context}""",
-            
-            Session2State.SAME_GOALS_SUCCESSES_CHALLENGES: f"""
-They're keeping the same goal.
-
-FIRST response (when you haven't asked yet): Acknowledge their choice briefly (1 sentence), then ask: "What went well this week? What was challenging?"
-
-SECOND response (after they answer): Acknowledge what they shared in 1-2 sentences. DO NOT ask follow-up questions. DO NOT ask about modifying goals. DO NOT explore further. Just acknowledge and validate.
-
-CRITICAL: 
-- NO questions about stress, confidence, modifications, or next steps
-- NO exploring challenges in depth
-- Just brief acknowledgment (1-2 sentences max)
-- If they mention wanting to change something, acknowledge it but let them lead
-{session_context}""",
-            
-            Session2State.SAME_NOT_SUCCESSFUL: f"""
-They had challenges.
-
-Empathize briefly (1-2 sentences). Be encouraging.
-{session_context}""",
-            
-            Session2State.SAME_SUCCESSFUL: f"""
-They succeeded!
-
-Celebrate briefly (1-2 sentences).
-{session_context}""",
-            
-            Session2State.DIFFERENT_WHICH_GOALS: f"""
-They want to keep some goals and add new ones.
-
-FIRST TIME: Ask which of their previous goals they want to keep.
-{previous_goals_text}
-
-AFTER IDENTIFIED: They're describing their new goal idea - transition to asking for specifics.
-
-Be conversational.
-{session_context}""",
-            
-            Session2State.DIFFERENT_KEEPING_AND_NEW: f"""
-They're adding a new goal while keeping previous ones.
-
-Goals they're keeping:
-{chr(10).join(f'  - {g}' for g in self.session_data.get('goals_to_keep', [])) if self.session_data.get('goals_to_keep') else '  - (identifying)'}
-
-If they haven't stated a clear new goal yet: Ask "What new goal would you like to add?"
-
-If they've stated a general idea but it's not SMART yet: Guide them to make it specific with numbers and timeframe.
-
-CRITICAL: Help them turn vague ideas into SMART goals. Ask clarifying questions to get:
-- Specific action
-- Measurable amount (how much, how many, how long)
-- Timeframe (how often, which days)
-{session_context}""",
-            
-            Session2State.JUST_NEW_GOALS: f"""
-Ask about new goal.
-
-"What would you like to focus on?"
-{session_context}""",
-            
-            Session2State.REFINE_GOAL: f"""
-Goal needs refinement to be SMART.
-
-Current goal parts collected: {self.session_data.get('goal_parts', [])}
-Complete goal so far: {' '.join(self.session_data.get('goal_parts', []))}
-Missing criteria: {', '.join((self.session_data.get('goal_smart_analysis') or {}).get('missing_criteria', []))}
-Refinement attempts: {self.session_data.get('smart_refinement_attempts', 0)}/4
-
-CRITICAL: Your job is ONLY to help refine the goal. DO NOT ask about confidence yet.
-
-The system is building the goal piece by piece from their responses.
-
-Ask specific questions to get missing information:
-- If missing SPECIFIC: "What exactly will you do?" (e.g., "play Pokemon Go", "walk")
-- If missing MEASURABLE: "How much/many? How long?" (e.g., "1 hour", "3 times")
-- If missing TIMEBOUND: "How often? Which days? When?" (e.g., "Tuesday, Thursday, Friday", "daily", "3 times a week")
-
-Keep questions simple and focused. One question at a time.
-
-When they give you a piece of info (like "Tuesday Thursday Friday"), acknowledge briefly and check if you need more details.
-
-Once the goal has all SMART criteria, the system will automatically transition to confidence check.
-{session_context}""",
-            
-            Session2State.CONFIDENCE_CHECK: f"""
-Ask about confidence level ONCE, then move on.
-
-Current goal: {self.session_data.get('current_goal')}
-Confidence already captured: {self.session_data.get('confidence_level')}
-
-IF confidence not yet captured:
-  Ask: "On a scale of 1 to 10, how confident are you that you can achieve this goal?"
-  Wait for number.
-
-IF confidence already captured and this is a follow-up response:
-  Acknowledge VERY briefly (1 sentence max).
-  DO NOT explore further.
-  DO NOT ask "what might get in the way?"
-  DO NOT ask follow-up questions about the goal.
-  The system will automatically transition to the next appropriate state.
-
-CRITICAL: Once you have the confidence number, you're done in this state. Just briefly acknowledge and let the system transition.
-{session_context}""",
-            
-            Session2State.LOW_CONFIDENCE: f"""
-Low confidence. Explore what would help.
-{session_context}""",
-            
-            Session2State.HIGH_CONFIDENCE: f"""
-High confidence! Celebrate.
-{session_context}""",
-            
-            Session2State.MAKE_ACHIEVABLE: f"""
-Help make goal more achievable.
-{session_context}""",
-            
-            Session2State.REMEMBER_GOAL: f"""
-Ask how they'll remember/track the goal.
-{session_context}""",
-            
-            Session2State.MORE_GOALS_CHECK: f"""
-Ask if they want to set another goal.
-
-"Would you like to set another goal for this week?"
-
-CRITICAL: 
-- This is a simple YES or NO question
-- If YES → they'll add another goal
-- If NO → session ends
-- Don't ask "anything else" or continue conversation
-- Wait for clear yes/no response
-{session_context}""",
-            
-            Session2State.END_SESSION: f"""
-FINAL GOODBYE FOR SESSION 2.
-
-CRITICAL INSTRUCTIONS:
-- This is the FINAL message of Session 2
-- DO NOT ask any questions
-- DO NOT ask "Is there anything else?"
-- DO NOT prompt for more conversation
-- Give a warm, conclusive goodbye
-
-Your goals for next week:
-{chr(10).join(f'  - {g}' for g in (self.session_data.get('goals_to_keep', []) + self.session_data.get('new_goals', []))) or '  - (continuing previous goals)'}
-
-Say something like:
-"Great work today, {self.session_data.get('user_name', '')}! You'll be working on [briefly mention their goal(s)]. I'll see you next week at Session 3. Take care!"
-
-Keep it to 2-3 sentences maximum. End definitively.
-{session_context}"""
-        }
-        
-        return prompts.get(self.state, f"Current state: {self.state.value}{session_context}")
+        return get_session2_prompt(
+            state_value=self.state.value,
+            session_data=self.session_data
+        )
     
     def get_session_summary(self) -> Dict[str, Any]:
         """Get summary of session data"""
@@ -950,37 +644,22 @@ Keep it to 2-3 sentences maximum. End definitively.
     
     def save_session(self, filename: str = None, conversation_history: list = None):
         """Save session data to JSON file"""
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"session2_{timestamp}.json"
-        
-        # Convert set to list for JSON serialization
-        session_data_copy = self.session_data.copy()
-        if isinstance(session_data_copy.get("questions_asked"), set):
-            session_data_copy["questions_asked"] = list(session_data_copy["questions_asked"])
-        
-        data = {
-            "state": self.state.value,
-            "session_data": session_data_copy,
-            "conversation_history": conversation_history or []
-        }
-        
-        with open(filename, 'w') as f:
-            json.dump(data, f, indent=2)
-        
-        self._log_debug(f"Session saved to {filename}")
-        return filename
+        result = save_session_data(
+            state_value=self.state.value,
+            session_data=self.session_data,
+            conversation_history=conversation_history,
+            filename=filename,
+            session_prefix="session2"
+        )
+        self._log_debug(f"Session saved to {result}")
+        return result
     
     def load_session(self, filename: str):
         """Load session data from JSON file"""
-        with open(filename, 'r') as f:
-            data = json.load(f)
+        data = load_session_data(filename)
         
         self.state = Session2State(data["state"])
         self.session_data = data["session_data"]
-        
-        if isinstance(self.session_data.get("questions_asked"), list):
-            self.session_data["questions_asked"] = set(self.session_data["questions_asked"])
         
         self._log_debug(f"Session loaded from {filename}")
         

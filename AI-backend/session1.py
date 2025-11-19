@@ -5,6 +5,18 @@ import os
 from datetime import datetime
 import re
 
+from utils.smart_evaluation import evaluate_smart_goal_with_llm, heuristic_smart_check
+from utils.session_storage import save_session_data, load_session_data
+from utils.state_prompts import get_session1_prompt
+from utils.program_loader import load_program_info
+from utils.name_extraction import extract_name_from_text
+from utils.state_helpers import (
+    create_state_result, 
+    check_affirmative, 
+    check_negative, 
+    extract_number
+)
+from utils.goal_detection import is_likely_goal
 
 class SessionState(Enum):
     """States for Session 1 conversation flow"""
@@ -54,26 +66,9 @@ class Session1Manager:
             }
         }
         self.program_info_file = program_info_file
-        self.program_info = self._load_program_info()
+        self.program_info = load_program_info(program_info_file)
         self.llm_client = llm_client
         
-    def _load_program_info(self) -> str:
-        """Load program information from text file"""
-        try:
-            if os.path.exists(self.program_info_file):
-                with open(self.program_info_file, 'r') as f:
-                    return f.read()
-            else:
-                return """Default Program Information:
-This is a 4-week health and wellness coaching program designed to help you achieve your personal health goals.
-- Weekly 1-on-1 coaching sessions
-- Personalized goal setting and tracking
-- Evidence-based behavior change strategies
-- Nutrition and exercise guidance
-- Accountability and support throughout your journey"""
-        except Exception as e:
-            return "Program information unavailable."
-    
     def set_llm_client(self, llm_client):
         """Set the LLM client for SMART goal evaluation"""
         self.llm_client = llm_client
@@ -81,100 +76,13 @@ This is a 4-week health and wellness coaching program designed to help you achie
     def evaluate_smart_goal(self, goal: str) -> Dict[str, Any]:
         """Use LLM to evaluate if a goal is SMART"""
         if not self.llm_client:
-            return self._heuristic_smart_check(goal)
+            return heuristic_smart_check(goal)
         
-        evaluation_prompt = f"""Evaluate if this goal is SMART (Specific, Measurable, Achievable, Relevant, Time-bound).
-
-Goal: "{goal}"
-
-Analyze each SMART criterion and respond ONLY with a JSON object in this exact format:
-{{
-    "specific": {{"met": true, "issue": ""}},
-    "measurable": {{"met": false, "issue": "No specific numbers or metrics"}},
-    "achievable": {{"met": true, "issue": ""}},
-    "relevant": {{"met": true, "issue": ""}},
-    "timebound": {{"met": false, "issue": "No deadline or timeframe specified"}},
-    "suggestions": "Add specific amount (e.g., 10 pounds) and timeframe (e.g., in 3 months)"
-}}
-
-Be strict but fair. A goal should have:
-- Specific: Clear, detailed action (not vague like "be healthier")
-- Measurable: Quantifiable metric (numbers, frequency, duration)
-- Achievable: Realistic given typical constraints
-- Relevant: Related to health/wellness
-- Time-bound: Has a deadline or timeframe
-
-IMPORTANT: Respond with ONLY the JSON object, no other text before or after."""
-
-        try:
-            response = self.llm_client.evaluate_goal(evaluation_prompt)
-            
-            # Clean up response
-            response = response.strip()
-            if response.startswith("```json"):
-                response = response[7:]
-            if response.startswith("```"):
-                response = response[3:]
-            if response.endswith("```"):
-                response = response[:-3]
-            response = response.strip()
-            
-            analysis = json.loads(response)
-            
-            is_smart = all(
-                analysis[criterion]["met"] 
-                for criterion in ["specific", "measurable", "achievable", "relevant", "timebound"]
-            )
-            
-            missing = [
-                criterion.upper() 
-                for criterion in ["specific", "measurable", "achievable", "relevant", "timebound"]
-                if not analysis[criterion]["met"]
-            ]
-            
-            return {
-                'is_smart': is_smart,
-                'analysis': analysis,
-                'suggestions': analysis.get('suggestions', ''),
-                'missing_criteria': missing
-            }
-            
-        except json.JSONDecodeError as e:
-            return self._heuristic_smart_check(goal)
-        except Exception as e:
-            return self._heuristic_smart_check(goal)
+        return evaluate_smart_goal_with_llm(goal, self.llm_client)
     
     def _heuristic_smart_check(self, goal: str) -> Dict[str, Any]:
         """Simple heuristic-based SMART check as fallback"""
-        goal_lower = goal.lower()
-        
-        has_numbers = bool(re.search(r'\d+', goal))
-        
-        time_words = ['day', 'week', 'month', 'year', 'daily', 'weekly', 'by', 'until', 'for']
-        has_timeframe = any(word in goal_lower for word in time_words)
-        
-        action_verbs = ['exercise', 'walk', 'run', 'eat', 'drink', 'sleep', 'reduce', 'increase']
-        has_action = any(verb in goal_lower for verb in action_verbs)
-        
-        is_smart = has_numbers and has_timeframe and has_action and len(goal.split()) > 5
-        
-        missing = []
-        if not has_action: missing.append("SPECIFIC")
-        if not has_numbers: missing.append("MEASURABLE")
-        if not has_timeframe: missing.append("TIME-BOUND")
-        
-        return {
-            'is_smart': is_smart,
-            'analysis': {
-                'specific': {'met': has_action, 'issue': 'Goal needs a clear action verb'},
-                'measurable': {'met': has_numbers, 'issue': 'Goal needs specific numbers/metrics'},
-                'achievable': {'met': True, 'issue': ''},
-                'relevant': {'met': True, 'issue': ''},
-                'timebound': {'met': has_timeframe, 'issue': 'Goal needs a timeframe or deadline'}
-            },
-            'suggestions': 'Add specific numbers and a timeframe to make this goal SMART.',
-            'missing_criteria': missing
-        }
+        return heuristic_smart_check(goal)
     
     def get_state(self) -> SessionState:
         return self.state
@@ -184,165 +92,11 @@ IMPORTANT: Respond with ONLY the JSON object, no other text before or after."""
     
     def get_system_prompt_addition(self) -> str:
         """Get state-specific system prompt additions"""
-        prompts = {
-            SessionState.GREETINGS: """
-You are beginning Session 1. Warmly greet the participant and introduce yourself as Nala, their AI health coach.
-
-IMPORTANT: 
-- ASK FOR THEIR NAME explicitly!
-- Be warm and natural
-- NO markdown (no #, **, emojis)
-
-Example: "Hello! I'm Nala, your health and wellness coach. What's your name?"
-
-Be enthusiastic about working with them.""",
-            
-            SessionState.PROGRAM_DETAILS: f"""
-Explain the program details. Here is the program information:
-
-{self.program_info}
-
-IMPORTANT:
-- Keep it conversational
-- NO markdown or emojis
-- After explaining, ask if they have questions
-
-Do NOT ask about goals yet.""",
-            
-            SessionState.QUESTIONS_ABOUT_PROGRAM: """
-Answer questions about the program. After answering, ask if they have more questions.
-NO markdown or emojis.""",
-            
-            SessionState.PROMPT_TALK_ABOUT_SELF: """
-Transition to discovery phase. Explain you'd like to learn more about them.
-
-IMPORTANT: 
-- Do NOT ask about goals yet!
-- NO markdown or emojis
-
-Say something like: "Before we dive into goal setting, I'd love to get to know you better."
-
-Then ask: "Tell me a bit about yourself?" """,
-            
-            SessionState.GETTING_TO_KNOW_YOU: """
-Ask discovery questions ONE AT A TIME in this SPECIFIC ORDER:
-1. Tell me about yourself? (general context)
-2. What does your current exercise routine look like? (frequency, types, duration)
-3. How are your sleep habits? (hours per night, quality)
-4. What are your current eating habits like? (meal patterns, typical foods)
-5. What do you like to do in your free time? (hobbies, interests)
-
-CRITICAL RULES:
-- Check the context to see which questions have been covered
-- NEVER re-ask a question that was already answered
-- Ask questions in the order listed above
-- If user mentions wanting something ("I want to lose weight"), acknowledge it but continue with discovery questions until at least 3 are complete
-- Then you can transition to goal setting
-- NO markdown or emojis
-- ONE question at a time
-- Listen and acknowledge before moving on
-
-The system tracks which questions have been asked. Follow the sequence.""",
-            
-            SessionState.GOALS: """
-Guide them to articulate their goals. Ask open-ended questions:
-- What would you like to achieve?
-- What changes are you hoping to make?
-
-Help them express goals clearly.
-NO markdown or emojis.""",
-            
-            SessionState.CHECK_SMART: """
-The system evaluated the goal against SMART criteria.
-DO NOT ask if they think it's SMART.
-
-If NOT SMART:
-- Provide specific feedback on what's missing
-- Guide them to refine it
-- Be encouraging
-
-If SMART:
-- Celebrate!
-- Confirm they're happy with it
-- Then move to confidence check
-
-NO markdown or emojis.""",
-            
-            SessionState.REFINE_GOAL: """
-Work collaboratively to make the goal SMART:
-- More Specific
-- Measurable with metrics
-- Achievable and realistic
-- Relevant to their life
-- Time-bound with a deadline
-
-CRITICAL: Make sure the goal includes a TIMEFRAME (next week, next month, for 2 weeks, etc.)
-
-NO markdown or emojis.""",
-            
-            SessionState.CONFIDENCE_CHECK: """
-Ask them to rate confidence in achieving this goal (1-10 scale).
-- 1 = Very low confidence
-- 10 = Very high confidence
-
-Frame it positively: "On a scale of 1 to 10, how confident do you feel about achieving this goal?"
-
-NO markdown or emojis.""",
-            
-            SessionState.LOW_CONFIDENCE: """
-They have low confidence (≤7). This is okay!
-Explore what would make it more achievable.
-Ask: "What would make this goal feel more doable?"
-
-NO markdown or emojis.""",
-            
-            SessionState.HIGH_CONFIDENCE: """
-Great confidence (>7)! Celebrate it.
-NO markdown or emojis.""",
-            
-            SessionState.ASK_MORE_GOALS: """
-Ask if they'd like to set another goal for this week.
-
-Be encouraging but not pushy. Something like:
-"That's a great goal! Would you like to set one more goal to work on this week, or would you prefer to focus just on this one?"
-
-NO markdown or emojis.""",
-            
-            SessionState.REMEMBER_GOAL: """
-Help them create a plan for remembering/tracking their goal.
-Ask: "How will you remember to work on your goal?"
-
-Suggest strategies:
-- Phone reminders
-- Writing it down
-- Telling someone
-- Scheduling specific times
-
-After they describe their tracking method, ask: "Is there anything else you'd like to talk about before we wrap up today?"
-
-NO markdown or emojis.""",
-            
-            SessionState.END_SESSION: """
-Wrap up Session 1 warmly. Summarize:
-- Their goal(s)
-- Their confidence level(s)
-- Their tracking plan
-
-If they are missing any of the summary just continue without it. The session will be ending right after this so do not ask questions.
-
-IMPORTANT:
-- Emphasize THEY track their own progress
-- Next session is in 1 week
-- DO NOT promise to check in before then
-- Express enthusiasm about next week
-- Do not ask questions at this point. Only statements.
-- NO markdown or emojis
-
-Example: "I'm excited to hear how your first week goes. Remember to track your progress using [method]. See you next week at Session 2!"
-"""
-        }
-        
-        return prompts.get(self.state, "")
+        return get_session1_prompt(
+            state_value=self.state.value,
+            session_data=self.session_data,
+            program_info=self.program_info
+        )
     
     def process_user_input(self, user_input: str, last_coach_response: str = None, conversation_history: list = None) -> Dict[str, Any]:
         """
@@ -362,11 +116,7 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
         if last_coach_response:
             self.session_data["last_coach_response"] = last_coach_response
         
-        result = {
-            "next_state": None,
-            "context": "",
-            "trigger_rag": True
-        }
+        result = create_state_result()
         
         # State machine logic
         if self.state == SessionState.GREETINGS:
@@ -375,25 +125,11 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
                 result["context"] = "First message. Introduce yourself as Nala and ask for their name."
                 return result
             
-            # Extract name
-            name_found = False
-            
-            if any(word in user_lower for word in ["i'm", "im", "my name is", "call me", "i am"]):
-                words = user_input.split()
-                for i, word in enumerate(words):
-                    if word.lower() in ["i'm", "im", "name", "call", "i", "am"]:
-                        if i + 1 < len(words):
-                            potential_name = words[i + 1].strip('.,!?')
-                            if potential_name.lower() not in ["is", "a", "the", "and", "but", "so"]:
-                                self.session_data["user_name"] = potential_name
-                                name_found = True
-                                break
-            
-            if not name_found and len(user_input.split()) <= 3 and len(user_input) < 30:
-                cleaned_name = user_input.strip('.,!?').strip()
-                if cleaned_name and not any(word in user_lower for word in ["hello", "hi", "hey", "good", "morning", "afternoon"]):
-                    self.session_data["user_name"] = cleaned_name
-            
+           # Extract name
+            name = extract_name_from_text(user_input)
+            if name:
+                self.session_data["user_name"] = name
+
             result["next_state"] = SessionState.PROGRAM_DETAILS
             result["context"] = f"User's name: {self.session_data.get('user_name', 'Not provided')}\n\nExplain program details."
         
@@ -439,7 +175,7 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
                 ]
                 coach_asking_about_questions = any(prompt in coach_lower for prompt in question_prompts)
             
-            if any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "i do"]):
+            if check_affirmative(user_input):
                 if coach_asking_about_questions and any(word in self.session_data.get("last_coach_response", "").lower() for word in ["does that help", "clarify", "answer your question"]):
                     result["next_state"] = SessionState.PROMPT_TALK_ABOUT_SELF
                     result["context"] = "User's question was answered. Transition to discovery phase."
@@ -453,7 +189,7 @@ Example: "I'm excited to hear how your first week goes. Remember to track your p
                     result["trigger_rag"] = False
                     result["context"] = "User has questions. Ask what they'd like to know."
                     
-            elif any(word in user_lower for word in ["no", "nope", "nah", "don't", "dont", "no questions"]):
+            if check_negative(user_input):
                 result["next_state"] = SessionState.PROMPT_TALK_ABOUT_SELF
                 result["context"] = "User has no questions. Transition to discovery phase."
             else:
@@ -573,25 +309,8 @@ Acknowledge their response warmly, then ask:
         
         elif self.state == SessionState.GOALS:
             goal_candidate = user_input.strip()
-            
-            non_goal_phrases = [
-                'no', 'yes', 'maybe', 'i dont know', "i don't know", 'not sure',
-                'just want to stick', 'thats all', "that's all", 'nothing else',
-                'im good', "i'm good", 'no more', 'nope', 'nah'
-            ]
-            
-            situation_phrases = ['i have', 'i am', "i'm", 'my life', 'my schedule']
-            is_situation = any(phrase in user_lower for phrase in situation_phrases)
-            
-            goal_lower = goal_candidate.lower()
-            is_likely_goal = (
-                len(goal_candidate.split()) > 3 and
-                not any(phrase in goal_lower for phrase in non_goal_phrases) and
-                not goal_lower.startswith(('no ', 'yes ', 'maybe ', 'i dont ', "i don't ")) and
-                not (is_situation and 'want' not in goal_lower and 'goal' not in goal_lower and 'like to' not in goal_lower)
-            )
-            
-            if is_likely_goal:
+
+            if is_likely_goal(goal_candidate):
                 self.session_data["current_goal"] = goal_candidate
                 self.session_data["goals"].append(goal_candidate)
                 self.session_data["smart_refinement_attempts"] = 0
@@ -822,8 +541,8 @@ Ask specific question to get the missing piece. What exactly do they need to add
         
         elif self.state == SessionState.CONFIDENCE_CHECK:
             try:
-                numbers = re.findall(r'\d+', user_input)
-                if numbers:
+                confidence = extract_number(user_input)
+                if confidence:
                     confidence = int(numbers[0])
                     self.session_data["confidence_level"] = confidence
                     
@@ -1004,25 +723,17 @@ Provide warm closing with brief summary. Confirm next session is in 1 week."""
     
     def save_session(self, filename: str = None, conversation_history: list = None):
         """Save session data to JSON file"""
-        if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"session1_{timestamp}.json"
-        
-        data = {
-            "state": self.state.value,
-            "session_data": self.session_data,
-            "conversation_history": conversation_history or []
-        }
-        
-        with open(filename, 'w') as f:
-            json.dump(data, f, indent=2)
-        
-        return filename
+        return save_session_data(
+            state_value=self.state.value,
+            session_data=self.session_data,
+            conversation_history=conversation_history,
+            filename=filename,
+            session_prefix="session1"
+        )
     
     def load_session(self, filename: str):
         """Load session data from JSON file"""
-        with open(filename, 'r') as f:
-            data = json.load(f)
+        data = load_session_data(filename)
         
         self.state = SessionState(data["state"])
         self.session_data = data["session_data"]
