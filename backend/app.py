@@ -51,6 +51,7 @@ app = FastAPI(
     description="Backend API for health coaching chatbot with RAG (Retrieval-Augmented Generation)",
     version="1.0.0",
     lifespan=lifespan,
+    redirect_slashes=False,  # Allow both /health and /health/ to work
 )
 
 # Configure CORS for React Native development

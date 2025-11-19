@@ -5,10 +5,11 @@ from datetime import datetime
 import psutil
 from fastapi import APIRouter
 
-health_router = APIRouter(prefix="/health", tags=["health"])
+health_router = APIRouter(tags=["health"])
 
 
-@health_router.get("/")
+@health_router.get("/health")
+@health_router.get("/health/")
 async def health_check():
     """Basic health check endpoint"""
     return {
@@ -18,7 +19,8 @@ async def health_check():
     }
 
 
-@health_router.get("/detailed")
+@health_router.get("/health/detailed")
+@health_router.get("/health/detailed/")
 async def detailed_health_check():
     """Detailed health check with system information"""
     try:
