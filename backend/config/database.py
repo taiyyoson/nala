@@ -35,12 +35,21 @@ class DatabaseConfig:
             # SQLite-specific: disable same thread check for async compatibility
             connect_args = {"check_same_thread": False}
 
-        self.engine = create_engine(
-            database_url,
-            connect_args=connect_args,
-            pool_pre_ping=True,  # Verify connections before using
-            echo=False,  # Set to True for SQL query debugging
-        )
+        engine_kwargs = {
+            'connect_args': connect_args,
+            "pool_pre_ping": True,
+            "echo": False,
+        }
+        
+        if "postgresql" in database_url:
+            engine_kwargs.update({
+                "pool_size": 5,
+                "max_overflow": 10,
+                "pool_timeout": 30,
+                "pool_recycle": 3600
+            })
+        
+        self.engine = create_engine(database_url, **engine_kwargs)
 
         # Create session factory
         self.SessionLocal = sessionmaker(

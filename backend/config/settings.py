@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
 
     # Database
-    database_url: str = "sqlite:///./nala_dev.db"
+    conv_db_url: str = os.getenv("CONV_DATABASE_URL", "sqlite:///./nala_dev.db")
 
     # CORS
     cors_origins: List[str] = ["*"]

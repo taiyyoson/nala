@@ -23,9 +23,9 @@ async def lifespan(app: FastAPI):
     print("=" * 80)
 
     # Initialize database
-    print(f"\n🗄️  Initializing database: {settings.database_url}")
+    print(f"\n🗄️  Initializing database: {settings.conv_db_url}")
     try:
-        init_database(settings.database_url)
+        init_database(settings.conv_db_url)
         print("✓ Database initialized successfully")
     except Exception as e:
         print(f"✗ Database initialization failed: {e}")
