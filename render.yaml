@@ -11,10 +11,9 @@ services:
     region: oregon
     plan: starter
     pythonVersion: "3.11"
-    buildCommand: |
-      pip install --upgrade pip
-      pip install --no-cache-dir -r backend/requirements.txt
-    startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: CONVERSATION_DATABASE_URL
         fromDatabase:
