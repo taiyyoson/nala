@@ -1,6 +1,10 @@
 // src/services/ApiService.ts
 
-const BASE_URL = "http://127.0.0.1:8000";
+// Toggle between local and deployed backend
+const USE_DEPLOYED = true; // Set to false for local development
+const BASE_URL = USE_DEPLOYED
+  ? "https://nala-backend-serv.onrender.com"
+  : "http://127.0.0.1:8000";
 export const API_BASE = `${BASE_URL}/api/v1`;
 
 export class ApiService {

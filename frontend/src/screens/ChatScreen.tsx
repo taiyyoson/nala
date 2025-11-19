@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MainStackParamList } from "../navigation/MainStack";
+import { API_BASE } from "../services/ApiService";
 
 type ChatScreenNavigationProp = NativeStackNavigationProp<
   MainStackParamList,
@@ -97,7 +98,7 @@ const chatAPI = {
       console.log("Sending message:", message);
       console.log("Conversation ID:", conversationId);
 
-      const res = await fetch("http://localhost:8000/api/v1/chat/message", {
+      const res = await fetch(`${API_BASE}/chat/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -128,7 +129,7 @@ const chatAPI = {
 
   testConnection: async (): Promise<boolean> => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/health");
+      const res = await fetch(`${API_BASE}/health`);
       return res.ok;
     } catch {
       return false;
