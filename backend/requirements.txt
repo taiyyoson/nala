@@ -27,6 +27,6 @@ isort==5.12.0
 flake8==6.1.0
 
 # AI backend dependencies (for RAG integration functionality)
-openai==1.12.0
+openai==0.28
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
