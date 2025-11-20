@@ -1,8 +1,8 @@
 import asyncio
 import json
+import traceback
 from datetime import datetime
 from typing import Dict, List, Optional
-import traceback
 
 from adapters import RequestAdapter, ResponseAdapter
 from config.database import get_db
@@ -11,8 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from services import AIService, ConversationService, DatabaseService
-from sqlalchemy.orm import Session
 from session1_manager import SessionBasedRAGChatbot
+from sqlalchemy.orm import Session
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -23,7 +23,9 @@ _ai_service_cache: Dict[str, AIService] = {}
 def get_or_create_ai_service(
     conversation_id: str, session_number: Optional[int] = None
 ) -> AIService:
-    print(f"🧠 Using conversation {conversation_id}, existing={conversation_id in _ai_service_cache}, session={session_number}")
+    print(
+        f"🧠 Using conversation {conversation_id}, existing={conversation_id in _ai_service_cache}, session={session_number}"
+    )
 
     """
     Get or create an AI service instance for a conversation.
@@ -108,10 +110,14 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
 
         print(f"🧩 chatbot object id: {id(ai_service.chatbot)}")
         if hasattr(ai_service.chatbot, "session_manager"):
-            print(f"🧩 session_manager state: {ai_service.chatbot.session_manager.get_state().value}")
+            print(
+                f"🧩 session_manager state: {ai_service.chatbot.session_manager.get_state().value}"
+            )
 
         # DEBUG logs from main
-        print(f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}")
+        print(
+            f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}"
+        )
         print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
         print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
 

@@ -8,8 +8,9 @@ Stores:
 """
 
 from datetime import datetime, timedelta
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
+
 from models.base import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 
 
 class SessionProgress(Base):
@@ -35,9 +36,7 @@ class SessionProgress(Base):
             "completed_at": (
                 self.completed_at.isoformat() if self.completed_at else None
             ),
-            "unlocked_at": (
-                self.unlocked_at.isoformat() if self.unlocked_at else None
-            ),
+            "unlocked_at": (self.unlocked_at.isoformat() if self.unlocked_at else None),
         }
 
     def __repr__(self):

@@ -6,10 +6,10 @@ from config.settings import settings
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from routes import session, user
 from routes.chat import chat_router
 from routes.health import health_router
-from routes import user
-from routes import session
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

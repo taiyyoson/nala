@@ -1,7 +1,7 @@
 # new
-from fastapi import HTTPException, status, Request
-from firebase_admin import auth
 from config.firebase_config import *
+from fastapi import HTTPException, Request, status
+from firebase_admin import auth
 
 
 def verify_token(request: Request):

@@ -12,6 +12,7 @@ from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
 import openai
 from config.settings import settings
+
 openai.api_key = settings.openai_api_key
 
 ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"

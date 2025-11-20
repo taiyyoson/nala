@@ -6,20 +6,19 @@ Provides endpoints to:
 - Retrieve a user's session progress
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from datetime import datetime
+
 from config.database import get_db
+from fastapi import APIRouter, Depends, HTTPException
 from models.session_progress import SessionProgress
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/session", tags=["Session"])
 
 
 @router.post("/complete")
 def mark_session_complete(
-    user_id: str,
-    session_number: int,
-    db: Session = Depends(get_db)
+    user_id: str, session_number: int, db: Session = Depends(get_db)
 ):
     """
     Mark a user's session as complete and set unlock time for next session.
@@ -39,10 +38,7 @@ def mark_session_complete(
 
     if not progress:
         # Create a new record if this session hasn't been tracked yet
-        progress = SessionProgress(
-            user_id=user_id,
-            session_number=session_number
-        )
+        progress = SessionProgress(user_id=user_id, session_number=session_number)
         db.add(progress)
 
     # Mark completion + set unlock time
@@ -51,10 +47,7 @@ def mark_session_complete(
     db.refresh(progress)
 
     print(f"✅ Session {session_number} marked complete for user {user_id}")
-    return {
-        "message": "Session marked complete",
-        "data": progress.to_dict()
-    }
+    return {"message": "Session marked complete", "data": progress.to_dict()}
 
 
 @router.get("/progress/{user_id}")
@@ -75,4 +68,3 @@ def get_user_progress(user_id: str, db: Session = Depends(get_db)):
         return []
 
     return [p.to_dict() for p in progress_list]
-
