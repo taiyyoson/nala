@@ -163,18 +163,6 @@ export default function ChatScreen({ navigation, route }: Props) {
         isLoading: true,
       };
       setMessages([placeholder]);
-const chatAPI = {
-  sendMessage: async (
-    message: string,
-    userId: string,
-    sessionNumber: number,
-    conversationId?: string
-  ) => {
-    try {
-      console.log("📤 Sending message:", message);
-      console.log("👤 User ID:", userId);
-      console.log("📅 Session Number:", sessionNumber);
-      console.log("💬 Conversation ID:", conversationId);
 
       const res = await fetch(`${API_BASE}/chat/message`, {
         method: "POST",
@@ -182,95 +170,12 @@ const chatAPI = {
         body: JSON.stringify({
           message,
           user_id: userId,
-          session_nu4mber: week,
+          session_number: week,
           conversation_id: conversationId || undefined,
-          session_number: sessionNumber,
         }),
       });
 
       const data = await res.json();
-
-      console.log("Backend data:", data);
-
-      return data;
-    } catch (err) {
-      console.error("Error sending message:", err);
-      return {
-        response:
-          "I'm having trouble connecting to the backend. Make sure it's running on port 8000.",
-        conversation_id: conversationId || "",
-      };
-    }
-  },
-
-  testConnection: async (): Promise<boolean> => {
-    try {
-      const res = await fetch(`${API_BASE}/health`);
-      return res.ok;
-    } catch {
-      return false;
-    }
-  },
-};
-
-export default function ChatScreen({ navigation, route }: Props) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
-
-  const [conversationId, setConversationId] = useState<string>("");
-
-  // Get session number from route params (1-4)
-  const sessionNumber = route.params?.sessionNumber ?? 1;
-
-  // Get Firebase user ID
-  const user = getAuth().currentUser;
-  const userId = user?.uid ?? "anonymous_user";
-
-  const hasInitialized = useRef(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  console.log(`🎯 ChatScreen initialized: Session ${sessionNumber}, User ${userId}`);
-
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    const init = async () => {
-      const isConnected = await chatAPI.testConnection();
-      setBackendConnected(isConnected);
-      if (isConnected) sendInitialGreeting();
-    };
-    init();
-  }, []);
-
-  useEffect(() => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [messages]);
-
-  const sendInitialGreeting = async () => {
-    try {
-      setIsLoading(true);
-
-      const nalaPlaceholder: Message = {
-        id: Date.now(),
-        sender: "nala",
-        text: "",
-        timestamp: new Date(),
-        isLoading: true,
-      };
-      setMessages([nalaPlaceholder]);
-
-      const data = await chatAPI.sendMessage(
-        "[START_SESSION]",
-        userId,
-        sessionNumber,
-        conversationId
-      );
-
       if (data.conversation_id) setConversationId(data.conversation_id);
 
       setMessages([{ ...placeholder, text: data.response, isLoading: false }]);
@@ -314,9 +219,8 @@ export default function ChatScreen({ navigation, route }: Props) {
           session_number: week,
         }),
       });
-      const data = await chatAPI.sendMessage(text, userId, sessionNumber, conversationId);
 
-      //const data = await res.json();
+      const data = await res.json();
       if (data.conversation_id) setConversationId(data.conversation_id);
       if (data.session_complete) {
         setSessionComplete(true);
@@ -350,10 +254,7 @@ export default function ChatScreen({ navigation, route }: Props) {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-
-        <View style={styles.headerTitles}>
-          <Text style={styles.title}>Week {sessionNumber} Session</Text>
-        </View>
+        <Text style={styles.headerTitle}>Week {week} Session</Text>
       </View>
 
       {/* 🔹 Banner if locked */}
@@ -520,5 +421,3 @@ const styles = StyleSheet.create({
   sendButtonDisabled: { backgroundColor: "#C8E6C9" },
   sendButtonText: { color: "#fff", fontSize: 20 },
 });
-    
-
