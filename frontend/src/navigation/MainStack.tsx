@@ -10,6 +10,7 @@ export type MainStackParamList = {
     week: number;
     sessionNumber: number; // 🟢 Added for session-aware ChatScreen
   };
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
