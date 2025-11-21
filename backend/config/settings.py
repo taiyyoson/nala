@@ -20,9 +20,8 @@ class Settings(BaseSettings):
     # OpenAI API settings
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
 
-    # Database
-    conv_db_url: str = os.getenv("CONVERSATION_DATABASE_URL", "sqlite:///./nala_dev.db")
-
+    # Database (Pydantic reads CONVERSATION_DATABASE_URL from .env automatically)
+    conversation_database_url: str = os.getenv("CONVERSATION_DATABASE_URL", "")
     # CORS
     cors_origins: List[str] = ["*"]
 
@@ -30,7 +29,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     class Config:
-        env_file = ".env"
+        env_file = "../.env"  # Root .env file
         case_sensitive = False
         extra = "allow"
 
