@@ -22,11 +22,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
-  //  logout 
   const logout = async () => {
     try {
       await signOut(auth);
       setLoggedInUser(null);
+      setHasCompletedOnboarding(false);
       console.log("👋 Logged out");
     } catch (error) {
       console.error("❌ Logout failed:", error);

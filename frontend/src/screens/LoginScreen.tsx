@@ -11,12 +11,12 @@ import {
   Platform,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { CommonActions } from "@react-navigation/native";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
-import { useAuth } from "../contexts/AuthContext";
-import { ApiService } from "../services/ApiService"; // ✅ centralized backend calls
-import { AuthStackParamList } from "../navigation/AuthStack";
+
+import { useAuth } from "../contexts/AuthContext"; // ✅ Correct context
+import { ApiService } from "../services/ApiService";
+import { AuthStackParamList } from "../navigation/AuthStack"; // 🟢 Correct stack
 
 type LoginScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, "Login">;
@@ -29,9 +29,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { setLoggedInUser } = useAuth();
+  const { setLoggedInUser, setHasCompletedOnboarding } = useAuth(); // 🟢 now correctly imported
 
-  // Login handler with onboarding check
   const handleLogin = async () => {
     if (!email || !password) {
       setError("Please fill in all fields");
@@ -42,37 +41,31 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setError("");
 
     try {
-      //  Firebase authentication
+      // 🔐 Firebase login
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       console.log("✅ Firebase login success");
       console.log("UID:", user.uid);
 
-      // Save user in context
       setLoggedInUser({
         uid: user.uid,
         email: user.email ?? "",
         displayName: user.displayName ?? "",
       });
 
-      //  Check onboarding completion from backend
+      // 🔎 Check onboarding status from backend
       const status = await ApiService.getUserStatus(user.uid);
       const onboardingDone = status?.onboarding_completed ?? false;
-
       console.log("🎯 Onboarding completed?", onboardingDone);
 
-      // Navigate based on onboarding status
+      // 🟢 Just set the flag — AppNavigator handles switching stacks
       if (onboardingDone) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: "ChatOverview" as never }],
-          })
-        );
+        setHasCompletedOnboarding(true);
       } else {
         navigation.replace("Onboarding");
       }
+
     } catch (err: any) {
       console.error("❌ Login error:", err.message);
       if (err.code === "auth/user-not-found") setError("No account found for this email.");
@@ -83,7 +76,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     }
   };
 
-  // Forgot password logic
+  // 🔁 Forgot password
   const handleForgotPassword = async () => {
     if (!email) {
       setError("Please enter your email first.");
@@ -91,12 +84,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email, {
-        url: "https://nala-7f047.web.app",
-        handleCodeInApp: false,
-      });
+      await sendPasswordResetEmail(auth, email);
+      console.log("📧 Password reset sent");
     } catch (err: any) {
-      console.error("Password reset error:", err.code, err.message);
+      console.error("Password reset error:", err.message);
       if (err.code === "auth/user-not-found") {
         setError("No user found with this email.");
       } else {
@@ -119,7 +110,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           </View>
 
           <Text style={styles.title}>Welcome back!</Text>
-          <Text style={styles.subtitle}>Log in to continue your journey with NALA.</Text>
+          <Text style={styles.subtitle}>Log in to continue your journey with Nala.</Text>
 
           <View style={styles.form}>
             {/* Email Field */}
@@ -184,7 +175,6 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },

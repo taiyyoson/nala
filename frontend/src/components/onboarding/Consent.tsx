@@ -18,7 +18,11 @@ const consentPoints = [
   "This program is designed to support your wellness journey",
 ];
 
-export default function ConsentSlide({ goToNextSlide, goToPreviousSlide }: Props) {
+import { useAuth } from "../../contexts/AuthContext";
+
+export default function ConsentSlide({ goToPreviousSlide }: Props) {
+  const { setHasCompletedOnboarding } = useAuth();   
+
   const handleConsentContinue = async () => {
     try {
       const user = getAuth().currentUser;
@@ -28,14 +32,19 @@ export default function ConsentSlide({ goToNextSlide, goToPreviousSlide }: Props
       }
 
       await ApiService.completeOnboarding(user.uid);
+      console.log("🚀 Onboarding UPDATED in backend");
 
-      console.log("✅ Onboarding completion sent to backend.");
-      goToNextSlide(); // Continue to chat or dashboard
+      setHasCompletedOnboarding(true);
+
+
+      // AppNavigator will  automatically show MainStack → ChatOverview
     } catch (error) {
       console.error("❌ Failed to update onboarding:", error);
       Alert.alert("Error", "Something went wrong while saving onboarding progress.");
     }
   };
+
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

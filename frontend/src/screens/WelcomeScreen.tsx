@@ -23,9 +23,9 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           style={styles.logoImage}
           resizeMode="contain"
         />
-        <Text style={styles.logo}>NALA</Text>
+        <Text style={styles.logo}>Nala</Text>
+        <Text style={styles.credit}>Based on Examen Tu Salud</Text>
         <Text style={styles.subtitle}>Your personal goal coach awaits.</Text>
-
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.signUpButton}
@@ -40,18 +40,6 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           >
             <Text style={styles.logInButtonText}>Log In</Text>
           </TouchableOpacity>
-
-          <Text style={styles.orText}>Or continue with</Text>
-
-          <View style={styles.socialButtonsContainer}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Text style={styles.socialButtonText}> Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.socialButton}>
-              <Text style={styles.socialButtonText}> Apple</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -70,8 +58,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   logoImage: {
-    width: 100, 
-    height: 100,
+    width: 175, 
+    height: 175,
     marginBottom: 10, 
   },
   logo: {
@@ -81,9 +69,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#666',
-    marginBottom: 60,
+    marginBottom: 70,
+    textAlign: 'center',
+  },
+  credit:{
+    fontSize: 10,
+    color: '#666',
+    marginBottom: 50,
     textAlign: 'center',
   },
   buttonContainer: {

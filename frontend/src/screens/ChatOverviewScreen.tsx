@@ -38,7 +38,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
   const sessions = [
     { id: 1, title: "Getting to know you" },
     { id: 2, title: "Building habits" },
-    { id: 3, title: "Building habits" },
+    { id: 3, title: "Overcoming challenges" },
     { id: 4, title: "Reviewing progress" },
   ];
 
@@ -50,7 +50,10 @@ export default function ChatOverviewScreen({ navigation }: Props) {
         if (!user) throw new Error("User not logged in");
 
         console.log("📊 Fetching session progress for:", user.uid);
+        
         const data = await ApiService.getUserProgress(user.uid);
+        console.log("🔎 Raw progress data:", JSON.stringify(data, null, 2));
+
         setProgress(data);
       } catch (error) {
         console.error("❌ Failed to fetch progress:", error);
@@ -63,21 +66,48 @@ export default function ChatOverviewScreen({ navigation }: Props) {
     fetchProgress();
   }, []);
 
-  // 🟢 Determine if a session is unlocked
+  // 🟢 Determine if session is unlocked
   const isSessionUnlocked = (sessionNumber: number): boolean => {
+    console.log(`🔍 Checking unlock for Session ${sessionNumber}`);
+    const debugCurrent = progress.find((p) => p.session_number === sessionNumber);
+    const debugPrev = progress.find((p) => p.session_number === sessionNumber - 1);
+    console.log("   🔹 Current:", debugCurrent);
+    console.log("   🔹 Previous:", debugPrev);
     if (sessionNumber === 1) return true;
-    const record = progress.find((p) => p.session_number === sessionNumber - 1);
-    if (!record || !record.unlocked_at) return false;
+  
+    //  Check if current session has unlocked_at
+    const current = progress.find((p) => p.session_number === sessionNumber);
+    if (current?.unlocked_at) return new Date() >= new Date(current.unlocked_at);
+  
+    //  Otherwise, use previous session logic
+    const prev = progress.find((p) => p.session_number === sessionNumber - 1);
+    return !!prev?.completed_at;
+  };
+  
 
-    const now = new Date();
-    const unlockDate = new Date(record.unlocked_at);
-    return now >= unlockDate;
+  // 🟢 Determine if session is complete
+  const isSessionComplete = (sessionNumber: number): boolean => {
+    return !!progress.find(
+      (p) => p.session_number === sessionNumber && p.completed_at
+    );
   };
 
-  // 🟢 Determine if a session is complete
-  const isSessionComplete = (sessionNumber: number): boolean => {
-    const record = progress.find((p) => p.session_number === sessionNumber);
-    return record?.completed_at ? true : false;
+  // 🕒 Countdown until unlock
+  const getUnlockCountdown = (sessionNumber: number): string | null => {
+    if (sessionNumber === 1) return null;
+
+    const prevSession = progress.find((p) => p.session_number === sessionNumber - 1);
+    if (!prevSession || !prevSession.unlocked_at) return "Locked";
+
+    const unlockTime = new Date(prevSession.unlocked_at);
+    const now = new Date();
+    const diffDays = Math.ceil((unlockTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 1) return `Unlocks in ${diffDays} days`;
+    if (diffDays === 1) return "Unlocks tomorrow";
+    if (diffDays === 0) return "Unlocks today";
+
+    return "Unlocked";
   };
 
   const handleLogout = async () => {
@@ -110,9 +140,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
         </TouchableOpacity>
         <View>
           <Text style={styles.headerTitle}>Your Journey</Text>
-          <Text style={styles.headerSubtitle}>
-            4-week wellness coaching program
-          </Text>
+          <Text style={styles.headerSubtitle}>4-week wellness coaching program</Text>
         </View>
         <TouchableOpacity
           onPress={() => navigation.navigate("Settings")}
@@ -123,17 +151,14 @@ export default function ChatOverviewScreen({ navigation }: Props) {
       </View>
 
       {/* Scrollable Sessions */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {sessions.map((session) => {
           const unlocked = isSessionUnlocked(session.id);
           const completed = isSessionComplete(session.id);
 
-          let cardColor = "#E5E7EB"; // Default locked
-          if (completed) cardColor = "#4A8B6F";
-          else if (unlocked) cardColor = "#BF5F83";
+          let cardColor = "#E5E7EB"; // Locked
+          if (completed) cardColor = "#4A8B6F"; // Completed (green)
+          else if (unlocked) cardColor = "#BF5F83"; // Unlocked (pink)
 
           return (
             <TouchableOpacity
@@ -141,8 +166,16 @@ export default function ChatOverviewScreen({ navigation }: Props) {
               style={[styles.sessionCard, { backgroundColor: cardColor }]}
               activeOpacity={unlocked ? 0.9 : 1}
               disabled={!unlocked}
-              onPress={() => unlocked && navigation.navigate("Chat")}
+              onPress={() =>
+                unlocked &&
+                navigation.navigate("Chat", {
+                  sessionId: session.id.toString(),
+                  week: session.id,
+                  sessionNumber: session.id, 
+                })
+              }
             >
+              {/* Top-right icon */}
               <View style={styles.iconContainer}>
                 {completed ? (
                   <CheckCircle2 color="#FFF" size={22} />
@@ -153,41 +186,33 @@ export default function ChatOverviewScreen({ navigation }: Props) {
                 )}
               </View>
 
+              {/* Week Badge */}
               <View
                 style={[
                   styles.weekBadge,
-                  {
-                    backgroundColor: unlocked
-                      ? "rgba(255,255,255,0.3)"
-                      : "rgba(0,0,0,0.1)",
-                  },
+                  { backgroundColor: unlocked ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.1)" },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.weekBadgeText,
-                    { color: unlocked ? "#FFF" : "#6B7280" },
-                  ]}
-                >
+                <Text style={[styles.weekBadgeText, { color: unlocked ? "#FFF" : "#6B7280" }]}>
                   Week {session.id}
                 </Text>
               </View>
+
+              {/* Countdown or Title */}
               <Text
                 style={[
                   styles.sessionDescription,
-                  {
-                    color: unlocked ? "#FFF" : "#6B7280",
-                    fontWeight: "500", 
-                    fontSize: 16,      
-                  },
+                  { color: completed || unlocked ? "#FFF" : "#6B7280", fontSize: 16, fontWeight: "500" },
                 ]}
               >
-                {unlocked
+                {completed
+                  ? "Completed"
+                  : unlocked
                   ? session.title
-                  : "Complete previous sessions to unlock"}
+                  : getUnlockCountdown(session.id)}
               </Text>
 
-
+              {/* Footer Details */}
               {unlocked && !completed && (
                 <View style={styles.sessionFooter}>
                   <Calendar size={14} color="rgba(255,255,255,0.8)" />
@@ -200,16 +225,14 @@ export default function ChatOverviewScreen({ navigation }: Props) {
 
         {/* Encouragement Card */}
         <View style={styles.motivationCard}>
-          <Text style={styles.motivationText}>
-            💪 Keep it up! Complete your current session to unlock the next one.
-          </Text>
+          <Text style={styles.motivationText}>💪 Keep it up! Unlock and complete your next session.</Text>
         </View>
       </ScrollView>
     </View>
   );
 }
 
-// ✅ Styles
+// 🎨 Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F9F7" },
   header: {
@@ -248,8 +271,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   weekBadgeText: { fontSize: 12, fontWeight: "500" },
-  sessionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
-  sessionDescription: { fontSize: 14, marginBottom: 8 },
+  sessionDescription: { marginBottom: 8 },
   sessionFooter: { flexDirection: "row", alignItems: "center", gap: 6 },
   sessionFooterText: { color: "rgba(255,255,255,0.8)", fontSize: 12 },
   motivationCard: {
@@ -258,10 +280,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 8,
   },
-  motivationText: {
-    color: "#4A4A4A",
-    fontSize: 13,
-    textAlign: "center",
-  },
+  motivationText: { color: "#4A4A4A", fontSize: 13, textAlign: "center" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

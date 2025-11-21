@@ -85,52 +85,56 @@ class ChatResponse(BaseModel):
 
 @chat_router.post("/message", response_model=ChatResponse)
 async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
-    """Send a message to the health coaching chatbot"""
     try:
-        # Initialize services
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
 
-        # Retrieve or create conversation
         conv_id = await conv_service.get_or_create_conversation(
             conversation_id=request.conversation_id, user_id=request.user_id
         )
 
-        # Get conversation history (for AI context)
         history = await conv_service.get_conversation_history(
             conversation_id=conv_id, limit=10
         )
 
-        # Get or create AI service instance
         ai_service = get_or_create_ai_service(
             conversation_id=conv_id, session_number=request.session_number
         )
 
-        print(f"🧩 chatbot object id: {id(ai_service.chatbot)}")
+        response, sources, model_name = await ai_service.generate_response(
+            message=request.message,
+            conversation_history=history,
+            user_id=request.user_id,
+        )
+
+        # 🟢 Detect end of coaching session 1 via session manager
+        session_complete = False
         if hasattr(ai_service.chatbot, "session_manager"):
-            print(f"🧩 session_manager state: {ai_service.chatbot.session_manager.get_state().value}")
+            if ai_service.chatbot.session_manager.get_state().value == "COMPLETED":
+                session_complete = True
 
-        # DEBUG logs from main
-        print(f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}")
-        print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
-        print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
+                # 🛑 Mark session complete in DB
+                from models.session_progress import SessionProgress
 
-        # **Session 1 Initialization logic preserved**
-        if request.session_number == 1 and len(history) == 0:
-            print("🎯 INITIALIZING Session 1 with [START_SESSION]")
-            response, sources, model_name = await ai_service.generate_response(
-                message="[START_SESSION]",
-                conversation_history=[],
-                user_id=request.user_id,
-            )
-            print(f"📝 Init response (Nala's greeting): {response[:100]}...")
-        else:
-            # Normal response generation
-            response, sources, model_name = await ai_service.generate_response(
-                message=request.message,
-                conversation_history=history,
-                user_id=request.user_id,
-            )
+                session_obj = db.query(SessionProgress).filter_by(
+                    user_id=request.user_id,
+                    session_number=request.session_number,
+                ).first()
+
+                if session_obj:
+                    unlock_time = session_obj.mark_complete(unlock_delay_days=7)
+                else:
+                    # If session record doesn't exist, create new
+                    session_obj = SessionProgress(
+                        user_id=request.user_id,
+                        session_number=request.session_number,
+                        completed_at=datetime.utcnow(),
+                        unlocked_at=None,
+                    )
+                    db.add(session_obj)
+
+                db.commit()
+                db.refresh(session_obj)
 
         # Save user message
         await conv_service.add_message(
@@ -147,28 +151,21 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             metadata={
                 "model": model_name,
                 "sources": ResponseAdapter.format_sources(sources),
+                "session_complete": session_complete,
             },
         )
 
-        # Session state extraction (optional)
-        session_state = None
-        if hasattr(ai_service.chatbot, "session_manager"):
-            session_state = ai_service.chatbot.session_manager.get_state().value
-
-        # Format final response payload
+        # Return completion flag to frontend
         formatted_response = ResponseAdapter.ai_response_to_chat_response(
             rag_output=(response, sources, model_name),
             conversation_id=conv_id,
             message_id=msg_data["message_id"],
         )
+        formatted_response["session_complete"] = session_complete
 
         return ChatResponse(**formatted_response)
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        print(f"Error in send_message: {e}")
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 

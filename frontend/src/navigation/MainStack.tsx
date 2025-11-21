@@ -5,12 +5,15 @@ import ChatScreen from '../screens/ChatScreen';
 
 export type MainStackParamList = {
   ChatOverview: undefined;
-  Chat: undefined;
+  Chat: {
+    sessionId: string;
+    week: number;
+    sessionNumber: number; // 🟢 Added for session-aware ChatScreen
+  };
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
-// This stack is for authenticated users only
 export default function MainStack() {
   return (
     <Stack.Navigator

@@ -16,21 +16,7 @@ router = APIRouter(prefix="/session", tags=["Session"])
 
 
 @router.post("/complete")
-def mark_session_complete(
-    user_id: str,
-    session_number: int,
-    db: Session = Depends(get_db)
-):
-    """
-    Mark a user's session as complete and set unlock time for next session.
-
-    Args:
-        user_id (str): Firebase UID of the user
-        session_number (int): Session number (1–4)
-
-    Returns:
-        dict: SessionProgress record
-    """
+def mark_session_complete(user_id: str, session_number: int, db: Session = Depends(get_db)):
     progress = (
         db.query(SessionProgress)
         .filter_by(user_id=user_id, session_number=session_number)
@@ -38,23 +24,44 @@ def mark_session_complete(
     )
 
     if not progress:
-        # Create a new record if this session hasn't been tracked yet
-        progress = SessionProgress(
-            user_id=user_id,
-            session_number=session_number
-        )
+        progress = SessionProgress(user_id=user_id, session_number=session_number)
         db.add(progress)
 
-    # Mark completion + set unlock time
-    progress.mark_complete()
+    # Step 1: mark session complete
+    unlock_time_for_next = progress.mark_complete(unlock_delay_days=7)
+
+    # Step 2: Unlock the next session
+    next_session_number = session_number + 1
+    next_session_progress = None
+
+    if next_session_number <= 4:
+        next_session_progress = (
+            db.query(SessionProgress)
+            .filter_by(user_id=user_id, session_number=next_session_number)
+            .first()
+        )
+
+        if not next_session_progress:
+            next_session_progress = SessionProgress(
+                user_id=user_id,
+                session_number=next_session_number,
+                unlocked_at=unlock_time_for_next
+            )
+            db.add(next_session_progress)
+        elif not next_session_progress.unlocked_at:
+            next_session_progress.unlocked_at = unlock_time_for_next
+
     db.commit()
     db.refresh(progress)
+    if next_session_progress:
+        db.refresh(next_session_progress)
 
-    print(f"✅ Session {session_number} marked complete for user {user_id}")
     return {
         "message": "Session marked complete",
-        "data": progress.to_dict()
+        "completed_session": progress.to_dict(),
+        "next_session": next_session_progress.to_dict() if next_session_progress else None,
     }
+
 
 
 @router.get("/progress/{user_id}")
