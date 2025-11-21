@@ -7,6 +7,7 @@ Use past tense naming: MessageCreated (not CreateMessage).
 
 from datetime import datetime
 from typing import Dict, Optional
+
 from pydantic import BaseModel
 
 
@@ -16,6 +17,7 @@ class MessageCreatedEvent(BaseModel):
 
     This event represents the initial user input before AI processing.
     """
+
     event_id: str
     timestamp: datetime
     conversation_id: str
@@ -34,6 +36,7 @@ class MessageProcessedEvent(BaseModel):
 
     This event represents the complete message exchange (user + AI response).
     """
+
     event_id: str
     timestamp: datetime
     conversation_id: str

@@ -1,0 +1,212 @@
+{
+  "user_profile": {
+    "uid": "user_20251120140612",
+    "name": "jade",
+    "discovery_questions": {
+      "tell_me_about_yourself": "i would say like 8 hours and pretty good",
+      "exercise_routine": "i eat pretty well",
+      "sleep_habits": "i eat 3 balanced mea;s",
+      "eating_habits": "i like to play video games with my boyfriend",
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "im just weirded out by it and i feel like my sleep would be even better if it wasn't constantly being messed up by waking up all the time",
+        "confidence": 3,
+        "stress": null,
+        "session_created": 1,
+        "status": "active",
+        "created_at": "2025-11-20T14:06:12.632011"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 1,
+    "current_state": "end_session",
+    "timestamp": "2025-11-20T15:31:12.814865",
+    "metadata": {
+      "turn_count": 22,
+      "current_goal": "im just weirded out by it and i feel like my sleep would be even better if it wasn't constantly being messed up by waking up all the time",
+      "program_questions_asked": [],
+      "tracking_method_discussed": false
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach. I'm really glad you're here and excited to work with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Jade! Let me tell you a bit about what we'll be doing together. This is a 4-week health and wellness coaching program where we'll meet once a week, just like this. Each week, we'll work together to set personalized goals that fit your life, explore strategies that actually work for you, and talk through any challenges that come up. Between our weekly sessions, you'll be working on your goals independently, and when we meet each week, we'll discuss how things went and adjust as needed. The program covers things like nutrition, exercise, and building habits that stick, all tailored to what matters most to you.\n\nDoes that sound good, or do you have any questions about how the program works?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Great! Before we dive into goal setting, I'd love to get to know you better. Tell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "im a college student and i work"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Jade. Being a college student and working at the same time is a lot to juggle. What does your current exercise routine look like, if you have one?"
+    },
+    {
+      "role": "user",
+      "content": "i walk 3x a week for like 30 ish min"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're already getting some regular movement in with those walks. How are your sleep habits? How many hours are you typically getting per night, and how would you say the quality is?"
+    },
+    {
+      "role": "user",
+      "content": "i would say like 8 hours and pretty good"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really solid, Jade. Getting consistent sleep like that is such an important foundation for everything else. What are your current eating habits like? What does a typical day of eating look like for you?"
+    },
+    {
+      "role": "user",
+      "content": "i eat pretty well"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm glad to hear you feel good about your eating. Can you tell me a bit more specifically about what a typical day looks like? For example, how many meals do you usually eat, and what kinds of foods do you tend to reach for?"
+    },
+    {
+      "role": "user",
+      "content": "i eat 3 balanced mea;s"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful that you're eating three balanced meals regularly. What do you like to do in your free time when you're not working or taking care of daily responsibilities?"
+    },
+    {
+      "role": "user",
+      "content": "i like to play video games with my boyfriend"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a fun way to connect and unwind together! Now that I have a better sense of your current routine, I'm curious about what brought you to this program. What would you most like to focus on or work toward over these next four weeks?"
+    },
+    {
+      "role": "user",
+      "content": "i want to work on my sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm really glad you want to focus on your sleep, Jade. You mentioned earlier that you're getting about 8 hours and it's pretty good, so I want to make sure I understand what you'd like to improve. What specifically about your sleep would you like to work on? Is it the quality, consistency, falling asleep, staying asleep, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "i end up waking up a lot during the night but normally its weird because i fall back asleep really easily"
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you for clarifying that. So you're waking up multiple times during the night, but you're able to fall back asleep easily each time. Even though you can fall back asleep quickly, how is this affecting you? Do you feel rested in the morning, or are you noticing any impact on your energy or how you feel during the day?"
+    },
+    {
+      "role": "user",
+      "content": "im just weirded out by it and i feel like my sleep would be even better if it wasn't constantly being messed up by waking up all the time"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you, Jade. It makes total sense that frequent wake-ups would feel disruptive, even if you're falling back asleep easily. To help you create a goal that's really actionable and measurable, I need to understand a bit more about what's happening. About how many times would you say you're waking up each night, and do you have any sense of what might be causing it, like needing to use the bathroom, noise, temperature, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "like twice normally. once when my boyfriend wakes up at 3 and normally about an hour before my alarm for that morning"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so you're waking up twice each night - once at 3 AM when your boyfriend wakes up, and once about an hour before your alarm goes off. That's really helpful to know. Now let's turn this into a goal we can actually work with and measure. What would success look like for you over the next week or two? Would you want to reduce those wake-ups to just once a night, or maybe work on not waking when your boyfriend gets up, or something else entirely?"
+    },
+    {
+      "role": "user",
+      "content": "i wnat to just not wake up during the night"
+    },
+    {
+      "role": "assistant",
+      "content": "I totally understand wanting uninterrupted sleep, Jade. That's a great vision to work toward. Let's make this into a specific, measurable goal for the next week. Since you're currently waking up twice each night, what if we focused on reducing it to waking up just once per night for the next 7 nights? That way we can track your progress and see what's working, then build from there in our next session."
+    },
+    {
+      "role": "user",
+      "content": "that sounds good"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, Jade. So your goal for this week is to reduce your nighttime wake-ups from twice to once per night for the next 7 nights. Now I want to get a sense of how you're feeling about this goal. On a scale of 1 to 10, where 1 is very low confidence and 10 is very high confidence, how confident do you feel about achieving this goal?"
+    },
+    {
+      "role": "user",
+      "content": "not great . i just dont know what i should do to meet my goal so mayb elike a 3"
+    },
+    {
+      "role": "assistant",
+      "content": "I really appreciate you being honest about that, Jade. A 3 is totally okay, and it actually helps us figure out what support you need. Let's think about what might help increase that confidence a bit. What do you think would make this goal feel more doable for you? For example, would it help to have some specific strategies to try, or maybe we need to adjust the goal itself?"
+    },
+    {
+      "role": "user",
+      "content": "yeah some specific strategies to tryb"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, let's figure out some strategies together. First, I want to understand a bit more about what's happening when you wake up. When you wake up during the night, do you notice anything specific, like needing to use the bathroom, feeling too hot or cold, or maybe your mind racing with thoughts?"
+    },
+    {
+      "role": "user",
+      "content": "i think just the sounds wake me up"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really helpful to know, Jade. So sounds are disrupting your sleep. What kind of sounds are we talking about - are they coming from inside your home, outside, or maybe a partner or pet?"
+    },
+    {
+      "role": "user",
+      "content": "partner and outside my home mostly"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so you're dealing with sounds from both your partner and outside noise. That gives us some good direction for strategies. Here are a few things you could try: you could use earplugs or try a white noise machine or fan to mask those sounds, you could talk with your partner about what's causing the noise and see if there's anything they can adjust, or you could try moving your sleep space if that's possible. Which of these feels most realistic for you to try first?"
+    },
+    {
+      "role": "user",
+      "content": "lets try earplugs"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, earplugs are a great starting point. Now let's think about how you'll remember to actually use them and track how they're working for you. How will you remind yourself to put them in each night and keep track of whether your sleep is improving?"
+    },
+    {
+      "role": "user",
+      "content": "ill add outting in earplugs to my nightly routine"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a solid plan, Jade. Adding it to your existing routine is a smart way to make it stick. Is there anything else you'd like to talk about before we wrap up today?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, Jade. Let me summarize what we've covered today. Your goal is to improve your sleep quality by reducing those nighttime wake-ups that are bothering you, and you're starting with earplugs as part of your nightly routine. You rated your confidence at a 3 out of 10 for this goal. You'll be tracking your progress by adding the earplugs to your routine each night.\n\nI'm excited to hear how your first week goes with the earplugs and whether you notice any difference in those wake-ups. See you next week at Session 2!"
+    }
+  ]
+}

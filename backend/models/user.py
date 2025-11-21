@@ -5,8 +5,9 @@ Stores user identifiers and onboarding completion flag.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime
+
 from models.base import Base
+from sqlalchemy import Boolean, Column, DateTime, String
 
 
 class User(Base):

@@ -9,6 +9,8 @@ import os
 from dotenv import load_dotenv
 import json
 
+from utils.database import load_session_from_db, list_users, get_user_by_name
+
 load_dotenv()
 
 
@@ -30,7 +32,7 @@ class Session2RAGChatbot(BaseSessionRAGChatbot):
         )
         
         # Session 2 specific setup
-        self.session_manager = Session2Manager(session1_data=session1_data)
+        self.session_manager = Session2Manager(user_profile=session1_data)
         self.session_manager.set_llm_client(self._create_llm_evaluator())
     
     def _get_memory_summary(self):
@@ -127,46 +129,90 @@ def interactive_session2_chat():
     print("Health Coaching Session 2 - Progress Review & Goal Adjustment")
     print("=" * 80)
     
-    # Check if user wants to load Session 1 data
-    print("\nWould you like to load data from Session 1?")
-    load_choice = input("Load Session 1 data? (yes/no): ").strip().lower()
+    print("\nHow would you like to load Session 1 data?")
+    print("  1. From database (select user)")
+    print("  2. From JSON file")
+    print("  3. Start fresh (no previous data)")
+    
+    load_choice = input("Choose (1/2/3): ").strip()
     
     session1_data = None
-    if load_choice in ['yes', 'y']:
-        session1_file = input("Enter Session 1 filename (e.g., session1_20240101_120000.json): ").strip()
+    
+    if load_choice == '1':
+        users = list_users()
+        if users:
+            print("\nAvailable users:")
+            for i, user in enumerate(users, 1):
+                name = user.get('name') or 'Unknown'
+                print(f"  {i}. {name} (UID: {user['uid']}, Session {user['last_session']})")
+            
+            print(f"\n  Or enter a name to search")
+            user_choice = input("\nSelect number or enter name: ").strip()
+            
+            uid = None
+            if user_choice.isdigit() and 1 <= int(user_choice) <= len(users):
+                uid = users[int(user_choice) - 1]['uid']
+            else:
+                # Search by name
+                found = get_user_by_name(user_choice)
+                if found:
+                    uid = found['uid']
+                    print(f"Found user: {found['user_profile'].get('name')}")
+                else:
+                    print(f"No user found with name '{user_choice}'")
+            
+            if uid:
+                db_data = load_session_from_db(uid, 1)
+                if db_data:
+                    session1_data = db_data['user_profile']
+                    print(f"\n✓ Loaded Session 1 data from database")
+                    
+                    if session1_data.get('name'):
+                        print(f"  Participant: {session1_data['name']}")
+                    if session1_data.get('goals'):
+                        print(f"  Previous goals: {len(session1_data['goals'])} goal(s)")
+                        for i, goal_info in enumerate(session1_data['goals'], 1):
+                            if isinstance(goal_info, dict):
+                                print(f"    {i}. {goal_info.get('goal')}")
+                            else:
+                                print(f"    {i}. {goal_info}")
+                else:
+                    print(f"No Session 1 data found for UID: {uid}")
+        else:
+            print("No users found in database.")
+    
+    elif load_choice == '2':
+        # Existing JSON file loading...
+        session1_file = input("Enter Session 1 filename: ").strip()
         if os.path.exists(session1_file):
             try:
                 with open(session1_file, 'r') as f:
                     session1_full_data = json.load(f)
-                    session1_data = session1_full_data.get('session_data', {})
-                print(f"✓ Loaded Session 1 data from {session1_file}")
                 
-                # Show what was loaded
-                if session1_data.get('user_name'):
-                    print(f"  Participant: {session1_data['user_name']}")
-                if session1_data.get('goal_details'):
-                    print(f"  Previous goals: {len(session1_data['goal_details'])} goal(s)")
-                    for i, goal_info in enumerate(session1_data['goal_details'], 1):
-                        print(f"    {i}. {goal_info['goal']}")
+                if 'user_profile' in session1_full_data:
+                    session1_data = session1_full_data['user_profile']
+                else:
+                    raw_data = session1_full_data.get('session_data', {})
+                    session1_data = {
+                        "uid": raw_data.get("uid"),
+                        "name": raw_data.get("user_name"),
+                        "goals": raw_data.get("goal_details", []),
+                        "discovery_questions": raw_data.get("discovery", {})
+                    }
+                print(f"✓ Loaded from file")
             except Exception as e:
                 print(f"Error loading file: {e}")
-                print("Starting Session 2 without previous data...")
-        else:
-            print(f"File not found: {session1_file}")
-            print("Starting Session 2 without previous data...")
     
     print("\n" + "=" * 80)
-    print("Commands:")
-    print("  'status' - Show current session state and data")
-    print("  'save' - Save current session to file")
-    print("  'reset' - Start session over from beginning")
-    print("  'quit' - Exit")
+    print("Commands: 'status', 'save', 'reset', 'quit'")
     print("=" * 80 + "\n")
     
     chatbot = Session2RAGChatbot(
         session1_data=session1_data,
         model='claude-sonnet-4.5'
     )
+    
+    # ... rest of the function stays the same ...
     
     print("Nala: ", end="")
     initial_response, _, _ = chatbot.generate_response("[START_SESSION]")

@@ -4,11 +4,10 @@ User Routes - API endpoints for onboarding status tracking
 Provides endpoints to update and retrieve a user’s onboarding completion state.
 """
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
 from config.database import get_db
+from fastapi import APIRouter, Depends
 from models.user import User
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["User"])
 

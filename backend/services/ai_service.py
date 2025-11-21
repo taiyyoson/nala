@@ -12,6 +12,7 @@ from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
 import openai
 from config.settings import settings
+
 openai.api_key = settings.openai_api_key
 
 ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
@@ -20,6 +21,8 @@ sys.path.insert(0, str(ai_backend_path))
 from query import VectorSearch
 from rag_dynamic import UnifiedRAGChatbot
 from session1_manager import SessionBasedRAGChatbot
+from session2_manager import Session2RAGChatbot
+from session3_manager import Session3RAGChatbot
 
 
 class AIService:
@@ -40,6 +43,7 @@ class AIService:
         model: str = "claude-sonnet-4.5",
         top_k: int = 3,
         session_number: Optional[int] = None,
+        previous_session_data: Optional[Dict] = None,
     ):
         """
         Initialize AI Service
@@ -48,6 +52,7 @@ class AIService:
             model: LLM model to use (e.g., 'gpt-4o-mini', 'claude-sonnet-4')
             top_k: Number of similar coaching examples to retrieve
             session_number: Session number (1-4) for structured coaching, None for general chat
+            previous_session_data: Data from previous session (for sessions 2+)
         """
         self.model = model
         self.top_k = top_k
@@ -61,11 +66,30 @@ class AIService:
                 print(
                     f"✓ AIService initialized with Session 1 structured flow (model: {model})"
                 )
-            case 2 | 3 | 4:
-                # Future sessions - placeholder for now
+            case 2:
+                # Session 2: Progress review and goal adjustment
+                self.chatbot = Session2RAGChatbot(
+                    session1_data=previous_session_data,
+                    model=model,
+                    top_k=top_k
+                )
+                print(
+                    f"✓ AIService initialized with Session 2 structured flow (model: {model})"
+                )
+            case 3:
+                # Session 3: Continued progress and goal refinement
+                self.chatbot = Session3RAGChatbot(
+                    session2_data=previous_session_data,
+                    model=model,
+                    top_k=top_k
+                )
+                print(
+                    f"✓ AIService initialized with Session 3 structured flow (model: {model})"
+                )
+            case 4:
                 self.chatbot = UnifiedRAGChatbot(model=model, top_k=top_k)
                 print(
-                    f"✓ AIService initialized for Session {session_number} (using base RAG, model: {model})"
+                    f"✓ AIService initialized for Session 4 (using base RAG, model: {model})"
                 )
             case _:
                 # Default: General chat without session structure

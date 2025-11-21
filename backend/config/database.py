@@ -36,19 +36,21 @@ class DatabaseConfig:
             connect_args = {"check_same_thread": False}
 
         engine_kwargs = {
-            'connect_args': connect_args,
+            "connect_args": connect_args,
             "pool_pre_ping": True,
             "echo": False,
         }
-        
+
         if "postgresql" in database_url:
-            engine_kwargs.update({
-                "pool_size": 5,
-                "max_overflow": 10,
-                "pool_timeout": 30,
-                "pool_recycle": 3600
-            })
-        
+            engine_kwargs.update(
+                {
+                    "pool_size": 5,
+                    "max_overflow": 10,
+                    "pool_timeout": 30,
+                    "pool_recycle": 3600,
+                }
+            )
+
         self.engine = create_engine(database_url, **engine_kwargs)
 
         # Create session factory

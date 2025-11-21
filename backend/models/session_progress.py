@@ -2,6 +2,9 @@ from sqlalchemy import Column, Integer, String, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 
+from models.base import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+
 Base = declarative_base()
 
 class SessionProgress(Base):
@@ -22,6 +25,17 @@ def mark_complete(self, unlock_delay_days: int = 7):
     Mark this session as completed (only once), and calculate the unlock time
     for the next session. NOTE: Does NOT create or modify next session here;
     that happens in the router.
+    def to_dict(self):
+        """Convert session progress into a JSON-serializable dict."""
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "session_number": self.session_number,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
+            "unlocked_at": (self.unlocked_at.isoformat() if self.unlocked_at else None),
+        }
 
     Args:
         unlock_delay_days (int): Days after completion the next session unlocks.

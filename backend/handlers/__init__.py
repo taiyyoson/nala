@@ -8,8 +8,4 @@ When you're ready to go event-driven, wire these up in your routes.
 from .base_handler import EventHandler
 from .message_handler import MessageCreatedHandler, MessageProcessedHandler
 
-__all__ = [
-    "EventHandler",
-    "MessageCreatedHandler",
-    "MessageProcessedHandler"
-]
+__all__ = ["EventHandler", "MessageCreatedHandler", "MessageProcessedHandler"]

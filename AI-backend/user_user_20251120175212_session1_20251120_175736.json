@@ -1,0 +1,180 @@
+{
+  "user_profile": {
+    "uid": "user_20251120175212",
+    "name": "jade",
+    "discovery_questions": {
+      "tell_me_about_yourself": "I sleep 8 hours a day with good quality sleep",
+      "exercise_routine": "I eat 3 balanced meals a day",
+      "sleep_habits": "I like to play video games with my boyfriend",
+      "eating_habits": null,
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "i want to up the duration im thinking",
+        "confidence": 10,
+        "stress": null,
+        "session_created": 1,
+        "status": "active",
+        "created_at": "2025-11-20T17:52:12.646112"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 1,
+    "current_state": "end_session",
+    "timestamp": "2025-11-20T17:57:36.689624",
+    "metadata": {
+      "turn_count": 18,
+      "current_goal": "i want to up the duration im thinking",
+      "program_questions_asked": [],
+      "tracking_method_discussed": false
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach. I'm really glad you're here and excited to work with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Jade! Let me tell you a bit about how our program works. We'll have four coaching sessions together, meeting once a week for the next four weeks. During our time together, we'll work on setting personalized health goals that matter to you, and I'll support you with practical strategies to help you make lasting changes. Between our weekly sessions, you'll be working on your goals independently, and when we meet each week, we'll discuss your progress and adjust our approach as needed. Does that sound good to you, and do you have any questions about how the program works?"
+    },
+    {
+      "role": "user",
+      "content": "no questions"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! Before we dive into goal setting, I'd love to get to know you better. Tell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "im a college student and i work ]"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Jade. Being a college student and working at the same time can definitely keep you busy! What does your current exercise routine look like, if you have one?"
+    },
+    {
+      "role": "user",
+      "content": "i walk like 3 times a week for 30 min each"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're already getting some regular movement in with those walks! How are your sleep habits? How many hours are you typically getting per night, and how would you say the quality is?"
+    },
+    {
+      "role": "user",
+      "content": "I sleep 8 hours a day with good quality sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "That's excellent, Jade. Getting solid sleep like that is such an important foundation for overall health. What are your current eating habits like? Tell me about your typical meal patterns and the kinds of foods you usually eat."
+    },
+    {
+      "role": "user",
+      "content": "I eat 3 balanced meals a day"
+    },
+    {
+      "role": "assistant",
+      "content": "That's really good to hear, Jade. It sounds like you have some solid healthy habits already in place with your walking, sleep, and balanced meals. What do you like to do in your free time when you're not studying or working?"
+    },
+    {
+      "role": "user",
+      "content": "I like to play video games with my boyfriend"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a fun way to spend time together! Now that I have a better sense of your current routine, I'm curious about what brought you to this coaching program. What are you hoping to work on or achieve over these four weeks together?"
+    },
+    {
+      "role": "user",
+      "content": "i want to work on walking more"
+    },
+    {
+      "role": "assistant",
+      "content": "I love that you want to build on the walking you're already doing! So just to make sure I understand correctly, you mentioned you currently walk three times a week for 30 minutes each time. When you say you want to walk more, what does that look like for you? Are you thinking about walking more days per week, longer durations, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "i want to up the duration im thinking"
+    },
+    {
+      "role": "assistant",
+      "content": "I appreciate you sharing that! To help us create a goal that will really work for you, I need to understand a bit more specifically. When you say you want to increase the duration, how much longer are you thinking about walking each time - for example, would you want to go from 30 minutes to 40 minutes, or 45 minutes, or something different?"
+    },
+    {
+      "role": "user",
+      "content": "I want to go to 40 min"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a great target to work towards, Jade! So if I'm hearing you correctly, you want to increase your walks from 30 minutes to 40 minutes. To make this goal even stronger, let's add a timeframe - are you thinking you'd like to build up to 40-minute walks over the next week, two weeks, or by the end of our four-week program?"
+    },
+    {
+      "role": "user",
+      "content": "one week for now"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so your goal is to walk for 40 minutes, three times a week, over the next week. That's a 10-minute increase from what you're doing now, which is definitely doable! Just to make sure this feels realistic for you - does adding 10 minutes to each walk feel achievable given your current schedule and energy levels?"
+    },
+    {
+      "role": "user",
+      "content": "yeah i think its possible"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great to hear, Jade! Now I'd like to understand how confident you're feeling about achieving this goal. On a scale of 1 to 10, where 1 means you have very low confidence and 10 means you feel extremely confident, how would you rate your confidence in walking for 40 minutes, three times this week?"
+    },
+    {
+      "role": "user",
+      "content": "10"
+    },
+    {
+      "role": "assistant",
+      "content": "That's amazing confidence, Jade! It sounds like you're really ready to make this happen. Since you're feeling so confident about this goal, I'm curious - are there any other health or wellness areas you'd like to work on during our time together, or would you like to focus solely on building your walking routine for now?"
+    },
+    {
+      "role": "user",
+      "content": "just the one goal for todya"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds perfect, Jade! Focusing on one solid goal is a great approach. Since we won't be in touch until our next session in a week, what method will you use to keep track of your walks - maybe a calendar, a journal, or an app on your phone?"
+    },
+    {
+      "role": "user",
+      "content": "adding events into myt calender"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a smart way to stay organized and accountable, Jade! Before we wrap up today's session, is there anything else you'd like to discuss or any questions you have about your walking goal for this week?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, Jade! You've set a clear goal today about increasing your walking duration, and you have a solid plan to track it in your calendar. I'm looking forward to hearing how your week goes when we meet again next week at our second session. Best of luck with your walks, and I'll see you then!"
+    },
+    {
+      "role": "user",
+      "content": "is this the end ?"
+    },
+    {
+      "role": "assistant",
+      "content": "Yes, this is the end of our first session today, Jade. We'll meet again next week for Session 2, where we can talk about how your walking went and continue working together. Have a great week!"
+    }
+  ]
+}

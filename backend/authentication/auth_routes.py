@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, Request
-from .auth_service import verify_token
 import firebase_admin
+from fastapi import APIRouter, Depends, HTTPException, Request
 from firebase_admin import auth
-from fastapi import Request, HTTPException
+
+from .auth_service import verify_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
