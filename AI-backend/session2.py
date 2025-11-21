@@ -7,7 +7,7 @@ import re
 
 # Utilities
 from utils.smart_evaluation import evaluate_smart_goal_with_llm, heuristic_smart_check, create_concise_goal
-from utils.session_storage import save_session_data, load_session_data
+from utils.unified_storage import save_unified_session, get_active_goals, extract_user_profile
 from utils.state_prompts import get_session2_prompt
 from utils.state_helpers import (
     create_state_result,
@@ -30,9 +30,9 @@ class Session2State(Enum):
     
     # Path 1: Same goals as last week
     SAME_GOALS_SUCCESSES_CHALLENGES = "same_goals_successes_challenges"
-    SAME_ANYTHING_TO_CHANGE = "same_anything_to_change"  # NEW: Ask if anything needs changing
-    SAME_WHAT_CONCERNS = "same_what_concerns"  # NEW: Ask what concerns/solutions
-    SAME_EXPLORE_SOLUTIONS = "same_explore_solutions"  # NEW: Explore solutions to concerns
+    SAME_ANYTHING_TO_CHANGE = "same_anything_to_change"
+    SAME_WHAT_CONCERNS = "same_what_concerns"
+    SAME_EXPLORE_SOLUTIONS = "same_explore_solutions"
     SAME_NOT_SUCCESSFUL = "same_not_successful"
     SAME_SUCCESSFUL = "same_successful"
     
@@ -57,23 +57,40 @@ class Session2State(Enum):
 class Session2Manager:
     """Manages conversation flow for Session 2"""
     
-    def __init__(self, session1_data: Dict = None, llm_client=None, debug=True):
+    def __init__(self, user_profile: Dict = None, llm_client=None, debug=True):
         self.debug = debug
         self.state = Session2State.GREETINGS
         
-        user_name = session1_data.get("user_name") if session1_data else None
+        # Extract from unified profile
+        self.uid = user_profile.get("uid") if user_profile else None
+        user_name = user_profile.get("name") if user_profile else None
         if user_name:
             user_name = user_name.title()
         
+        # Get active goals from previous session
+        previous_goals = []
+        discovery_info = {}
+        if user_profile:
+            # Get active goals
+            all_goals = user_profile.get("goals", [])
+            active_goals = get_active_goals(all_goals)
+            previous_goals = [{
+                "goal": g["goal"],
+                "confidence": g["confidence"],
+                "session_created": g.get("session_created", 1)
+            } for g in active_goals]
+            
+            # Get discovery info
+            discovery_info = user_profile.get("discovery_questions", {})
+        
+        # Extract discovery questions (placeholder - can be expanded)
         discovery_questions = []
-        if session1_data and session1_data.get("goal_details"):
-            for goal_info in session1_data["goal_details"]:
-                if goal_info.get("discovery_questions"):
-                    discovery_questions.extend(goal_info["discovery_questions"])
         
         self.session_data = {
+            "uid": self.uid,
             "user_name": user_name,
-            "previous_goals": session1_data.get("goal_details", []) if session1_data else [],
+            "previous_goals": previous_goals,
+            "discovery_info": discovery_info,  # Store for later use
             "discovery_questions": discovery_questions,
             "discovery_responses": [],
             "discovery_question_index": 0,
@@ -87,7 +104,7 @@ class Session2Manager:
             "new_goals": [],
             "goals_completed_count": 0,
             "current_goal": None,
-            "goal_parts": [],  # NEW: Accumulate goal pieces during refinement
+            "goal_parts": [],
             "goal_smart_analysis": None,
             "smart_refinement_attempts": 0,
             "confidence_level": None,
@@ -103,14 +120,14 @@ class Session2Manager:
             "confidence_asked_for_same_goal": False,
             "explored_low_confidence": False,
             "questions_asked": set(),
-            "final_goodbye_given": False  # NEW: Track if goodbye was given
+            "final_goodbye_given": False
         }
         self.llm_client = llm_client
-        self._log_debug(f"Session initialized with user: {user_name}")
-        self._log_debug(f"Discovery questions loaded: {len(discovery_questions)}")
+        self._log_debug(f"Session 2 initialized with user: {user_name}, UID: {self.uid}")
+        self._log_debug(f"Previous goals loaded: {len(previous_goals)}")
     
     def _create_concise_goal(self, full_goal: str) -> str:
-        """Create a concise version of the goal for storage - NOW USES UTILITY"""
+        """Create a concise version of the goal for storage"""
         return create_concise_goal(full_goal)
     
     def _log_debug(self, message: str):
@@ -143,10 +160,6 @@ class Session2Manager:
         except Exception as e:
             self._log_debug(f"SMART evaluation error: {e}")
             return heuristic_smart_check(goal)
-    
-    def _heuristic_smart_check(self, goal: str) -> Dict[str, Any]:
-        """Simple heuristic-based SMART check as fallback - NOW USES UTILITY"""
-        return heuristic_smart_check(goal)
     
     def get_state(self) -> Session2State:
         return self.state
@@ -643,24 +656,133 @@ class Session2Manager:
         }
     
     def save_session(self, filename: str = None, conversation_history: list = None):
-        """Save session data to JSON file"""
-        result = save_session_data(
-            state_value=self.state.value,
-            session_data=self.session_data,
+        """Save session using unified storage format"""
+        self._log_debug("Saving Session 2 with unified format")
+        
+        # Build complete goals list
+        all_goals = []
+        
+        # Add previous goals with updated status
+        for prev_goal in self.session_data.get("previous_goals", []):
+            goal_entry = {
+                "goal": prev_goal["goal"],
+                "confidence": prev_goal.get("confidence"),
+                "stress": self.session_data.get("stress_level"),
+                "session_created": prev_goal.get("session_created", 1),
+                "created_at": None  # From previous session
+            }
+            
+            # Determine status based on path chosen
+            path = self.session_data.get("path_chosen")
+            goals_to_keep = self.session_data.get("goals_to_keep", [])
+            
+            if path == "new":
+                # All previous goals are dropped
+                goal_entry["status"] = "dropped"
+            elif path == "same":
+                # All previous goals are kept active
+                goal_entry["status"] = "active"
+            elif path == "different":
+                # Only kept goals are active
+                if prev_goal["goal"] in goals_to_keep:
+                    goal_entry["status"] = "active"
+                else:
+                    goal_entry["status"] = "dropped"
+            else:
+                # Default to active if path not clear
+                goal_entry["status"] = "active"
+            
+            all_goals.append(goal_entry)
+        
+        # Add new goals from this session
+        for new_goal in self.session_data.get("new_goals", []):
+            goal_entry = {
+                "goal": new_goal,
+                "confidence": self.session_data.get("confidence_level"),
+                "stress": self.session_data.get("stress_level"),
+                "session_created": 2,
+                "status": "active",
+                "created_at": self.session_data.get("session_start")
+            }
+            all_goals.append(goal_entry)
+        
+        # Preserve discovery info from Session 1
+        discovery = self.session_data.get("discovery_info", {})
+        
+        # Prepare session metadata
+        session_metadata = {
+            "turn_count": self.session_data.get("turn_count"),
+            "stress_level": self.session_data.get("stress_level"),
+            "path_chosen": self.session_data.get("path_chosen"),
+            "goals_to_keep": self.session_data.get("goals_to_keep", []),
+            "new_goals": self.session_data.get("new_goals", []),
+            "challenges": self.session_data.get("challenges", []),
+            "successes": self.session_data.get("successes", [])
+        }
+        
+        # Save in unified format
+        filename = save_unified_session(
+            uid=self.uid,
+            user_name=self.session_data.get("user_name"),
+            session_number=2,
+            current_state=self.state.value,
+            discovery=discovery,
+            goals=all_goals,
+            session_metadata=session_metadata,
             conversation_history=conversation_history,
-            filename=filename,
-            session_prefix="session2"
+            filename=filename
         )
-        self._log_debug(f"Session saved to {result}")
-        return result
+        
+        self._log_debug(f"Session 2 saved to {filename}")
+        return filename
     
     def load_session(self, filename: str):
-        """Load session data from JSON file"""
-        data = load_session_data(filename)
+        """Load session data from unified format"""
+        from utils.unified_storage import load_unified_session
         
-        self.state = Session2State(data["state"])
-        self.session_data = data["session_data"]
+        data = load_unified_session(filename)
         
-        self._log_debug(f"Session loaded from {filename}")
+        # Extract user profile
+        profile = data.get("user_profile", {})
+        session_info = data.get("session_info", {})
         
-        return data.get("conversation_history", [])
+        # Restore state
+        self.state = Session2State(session_info.get("current_state", "greetings"))
+        self.uid = profile.get("uid")
+        
+        # Restore session data
+        self.session_data["uid"] = self.uid
+        self.session_data["user_name"] = profile.get("name")
+        
+        # Restore discovery info
+        self.session_data["discovery_info"] = profile.get("discovery_questions", {})
+        
+        # Restore goals
+        all_goals = profile.get("goals", [])
+        
+        # Separate previous goals (from Session 1) and new goals (from Session 2)
+        self.session_data["previous_goals"] = []
+        self.session_data["new_goals"] = []
+        
+        for goal in all_goals:
+            if goal.get("session_created") == 1:
+                self.session_data["previous_goals"].append({
+                    "goal": goal.get("goal"),
+                    "confidence": goal.get("confidence"),
+                    "session_created": 1
+                })
+            elif goal.get("session_created") == 2:
+                self.session_data["new_goals"].append(goal.get("goal"))
+        
+        # Restore metadata
+        metadata = session_info.get("metadata", {})
+        self.session_data["turn_count"] = metadata.get("turn_count", 0)
+        self.session_data["stress_level"] = metadata.get("stress_level")
+        self.session_data["path_chosen"] = metadata.get("path_chosen")
+        self.session_data["goals_to_keep"] = metadata.get("goals_to_keep", [])
+        self.session_data["challenges"] = metadata.get("challenges", [])
+        self.session_data["successes"] = metadata.get("successes", [])
+        
+        self._log_debug(f"Session 2 loaded from {filename}")
+        
+        return data.get("chat_history", [])

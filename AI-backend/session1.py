@@ -5,8 +5,9 @@ import os
 from datetime import datetime
 import re
 
+from utils.database import save_session_to_db
 from utils.smart_evaluation import evaluate_smart_goal_with_llm, heuristic_smart_check
-from utils.session_storage import save_session_data, load_session_data
+from utils.unified_storage import save_unified_session, convert_session1_to_unified
 from utils.state_prompts import get_session1_prompt
 from utils.program_loader import load_program_info
 from utils.name_extraction import extract_name_from_text
@@ -41,9 +42,15 @@ class SessionState(Enum):
 class Session1Manager:
     """Manages conversation flow for Session 1"""
     
-    def __init__(self, program_info_file: str = "program_info.txt", llm_client=None):
+    def __init__(self, program_info_file: str = "program_info.txt", llm_client=None, uid: str = None, debug=True):
+        self.debug = debug
         self.state = SessionState.GREETINGS
+        
+        # Generate or use provided UID
+        self.uid = uid or f"user_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
         self.session_data = {
+            "uid": self.uid,
             "user_name": None,
             "program_questions_asked": [],
             "goals": [],
@@ -68,17 +75,32 @@ class Session1Manager:
         self.program_info_file = program_info_file
         self.program_info = load_program_info(program_info_file)
         self.llm_client = llm_client
+        self._log_debug(f"Session 1 initialized with UID: {self.uid}")
         
+    def _log_debug(self, message: str):
+        if self.debug:
+            print(f"[DEBUG] {message}", flush=True)
+    
     def set_llm_client(self, llm_client):
         """Set the LLM client for SMART goal evaluation"""
         self.llm_client = llm_client
+        self._log_debug("LLM client set")
     
     def evaluate_smart_goal(self, goal: str) -> Dict[str, Any]:
         """Use LLM to evaluate if a goal is SMART"""
+        self._log_debug(f"Evaluating SMART goal: '{goal}'")
+        
         if not self.llm_client:
+            self._log_debug("No LLM client, using heuristic check")
             return heuristic_smart_check(goal)
         
-        return evaluate_smart_goal_with_llm(goal, self.llm_client)
+        try:
+            result = evaluate_smart_goal_with_llm(goal, self.llm_client)
+            self._log_debug(f"SMART evaluation result: is_smart={result['is_smart']}, missing={result['missing_criteria']}")
+            return result
+        except Exception as e:
+            self._log_debug(f"SMART evaluation error: {e}")
+            return heuristic_smart_check(goal)
     
     def _heuristic_smart_check(self, goal: str) -> Dict[str, Any]:
         """Simple heuristic-based SMART check as fallback"""
@@ -88,7 +110,9 @@ class Session1Manager:
         return self.state
     
     def set_state(self, new_state: SessionState):
+        old_state = self.state
         self.state = new_state
+        self._log_debug(f"STATE TRANSITION: {old_state.value} -> {new_state.value}")
     
     def get_system_prompt_addition(self) -> str:
         """Get state-specific system prompt additions"""
@@ -112,6 +136,9 @@ class Session1Manager:
         """
         user_lower = user_input.lower().strip()
         self.session_data["turn_count"] += 1
+        
+        self._log_debug(f"Processing input in state: {self.state.value}")
+        self._log_debug(f"User input: {user_input[:100]}...")
         
         if last_coach_response:
             self.session_data["last_coach_response"] = last_coach_response
@@ -453,7 +480,7 @@ Guide them to make it more SMART. Be specific about what's missing."""
             ]
             
             goal_lower = goal_candidate.lower()
-            is_likely_goal = (
+            looks_like_goal = (
                 len(goal_candidate.split()) > 3 and
                 not any(phrase in goal_lower for phrase in non_goal_phrases) and
                 not goal_lower.startswith(('no ', 'yes ', 'maybe '))
@@ -480,7 +507,7 @@ Acknowledge their tracking plan and ask if there's anything else before wrapping
                     result["context"] = f"""Goal accepted: "{self.session_data['current_goal']}"
 Ask for confidence level (1-10 scale)."""
             
-            elif is_likely_goal:
+            elif looks_like_goal:
                 is_question = any(indicator in goal_candidate.lower() for indicator in ['?', 'how about', 'what if', 'maybe', 'would', 'could']) or goal_candidate.endswith('?')
                 
                 if is_question:
@@ -540,32 +567,33 @@ Ask specific question to get the missing piece. What exactly do they need to add
                     result["context"] = "Ask user to refine their goal."
         
         elif self.state == SessionState.CONFIDENCE_CHECK:
-            try:
-                confidence = extract_number(user_input)
-                if confidence:
-                    confidence = int(numbers[0])
-                    self.session_data["confidence_level"] = confidence
-                    
-                    if self.session_data["goal_details"]:
-                        self.session_data["goal_details"][-1]["confidence"] = confidence
-                    
-                    if confidence <= 7:
-                        result["next_state"] = SessionState.LOW_CONFIDENCE
-                    else:
-                        result["next_state"] = SessionState.HIGH_CONFIDENCE
+            confidence = extract_number(user_input)
+            if confidence:
+                self.session_data["confidence_level"] = confidence
+                
+                if self.session_data["goal_details"]:
+                    self.session_data["goal_details"][-1]["confidence"] = confidence
+                
+                if confidence <= 7:
+                    result["next_state"] = SessionState.LOW_CONFIDENCE
+                    result["context"] = f"Low confidence ({confidence}/10). Explore what would help increase it."
                 else:
-                    result["context"] = "Ask for numeric confidence (1-10)"
-            except:
+                    result["next_state"] = SessionState.HIGH_CONFIDENCE
+                    result["context"] = f"High confidence ({confidence}/10). Move to asking about more goals."
+            else:
                 result["context"] = "Ask for numeric confidence (1-10)"
         
         elif self.state == SessionState.LOW_CONFIDENCE:
             if "rework" in user_lower or "change" in user_lower or "different" in user_lower:
                 result["next_state"] = SessionState.GOALS
+                result["context"] = "User wants to rework goal. Ask what they'd like to focus on instead."
             else:
                 result["next_state"] = SessionState.ASK_MORE_GOALS
+                result["context"] = "Acknowledge concerns. Move to asking about more goals."
         
         elif self.state == SessionState.HIGH_CONFIDENCE:
             result["next_state"] = SessionState.ASK_MORE_GOALS
+            result["context"] = "High confidence confirmed. Ask if they want to set another goal."
         
         elif self.state == SessionState.ASK_MORE_GOALS:
             wants_more = any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "another", "one more", "i'd like", "i want"])
@@ -674,6 +702,9 @@ Provide warm closing with brief summary. Confirm next session is in 1 week."""
                 result["next_state"] = SessionState.GOALS
                 result["context"] = "ERROR: No goals stored. Let's make sure we have a clear goal before ending."
         
+        if result["next_state"]:
+            self._log_debug(f"Next state will be: {result['next_state'].value}")
+        
         return result
     
     def _store_completed_goal(self, confidence: int = None):
@@ -712,6 +743,7 @@ Provide warm closing with brief summary. Confirm next session is in 1 week."""
                     "refinement_attempts": self.session_data.get("smart_refinement_attempts", 0)
                 }
                 self.session_data["goal_details"].append(goal_entry)
+                self._log_debug(f"Stored new goal: {current_goal}")
     
     def get_session_summary(self) -> Dict[str, Any]:
         """Get summary of session data"""
@@ -722,20 +754,124 @@ Provide warm closing with brief summary. Confirm next session is in 1 week."""
         }
     
     def save_session(self, filename: str = None, conversation_history: list = None):
-        """Save session data to JSON file"""
-        return save_session_data(
-            state_value=self.state.value,
-            session_data=self.session_data,
+        """Save session using unified storage format and database"""
+        self._log_debug("Saving session with unified format")
+        
+        # Prepare discovery data
+        discovery = {
+            "general_about": self.session_data["discovery"].get("general_about"),
+            "current_exercise": self.session_data["discovery"].get("current_exercise"),
+            "current_sleep": self.session_data["discovery"].get("current_sleep"),
+            "current_eating": self.session_data["discovery"].get("current_eating"),
+            "free_time_activities": self.session_data["discovery"].get("free_time_activities")
+        }
+        
+        # Prepare goals list
+        goals = []
+        for goal_detail in self.session_data.get("goal_details", []):
+            goals.append({
+                "goal": goal_detail.get("goal"),
+                "confidence": goal_detail.get("confidence"),
+                "stress": None,
+                "session_created": 1,
+                "status": "active",
+                "created_at": self.session_data.get("session_start")
+            })
+        
+        # Prepare session metadata
+        session_metadata = {
+            "turn_count": self.session_data.get("turn_count"),
+            "current_goal": self.session_data.get("current_goal"),
+            "program_questions_asked": self.session_data.get("program_questions_asked", []),
+            "tracking_method_discussed": self.session_data.get("tracking_method_discussed", False)
+        }
+        
+        # Build full data structure for database
+        full_data = {
+            "user_profile": {
+                "uid": self.uid,
+                "name": self.session_data.get("user_name"),
+                "goals": goals,
+                "discovery_questions": discovery
+            },
+            "session_info": {
+                "session_number": 1,
+                "current_state": self.state.value,
+                "metadata": session_metadata
+            },
+            "chat_history": conversation_history or []
+        }
+        
+        # Save to PostgreSQL database
+        if save_session_to_db(self.uid, 1, full_data):
+            self._log_debug(f"Session saved to database for UID: {self.uid}")
+        else:
+            self._log_debug("Warning: Failed to save to database")
+        
+        # Also save to file (backup/legacy support)
+        filename = save_unified_session(
+            uid=self.uid,
+            user_name=self.session_data.get("user_name"),
+            session_number=1,
+            current_state=self.state.value,
+            discovery=discovery,
+            goals=goals,
+            session_metadata=session_metadata,
             conversation_history=conversation_history,
-            filename=filename,
-            session_prefix="session1"
+            filename=filename
         )
+        
+        self._log_debug(f"Session saved to {filename}")
+        return filename
     
     def load_session(self, filename: str):
-        """Load session data from JSON file"""
-        data = load_session_data(filename)
+        """Load session data from unified format"""
+        from utils.unified_storage import load_unified_session
         
-        self.state = SessionState(data["state"])
-        self.session_data = data["session_data"]
+        data = load_unified_session(filename)
         
-        return data.get("conversation_history", [])
+        # Extract user profile
+        profile = data.get("user_profile", {})
+        session_info = data.get("session_info", {})
+        
+        # Restore state
+        self.state = SessionState(session_info.get("current_state", "greetings"))
+        self.uid = profile.get("uid")
+        
+        # Restore session data
+        self.session_data["uid"] = self.uid
+        self.session_data["user_name"] = profile.get("name")
+        
+        # Restore discovery
+        discovery_data = profile.get("discovery_questions", {})
+        self.session_data["discovery"] = {
+            "general_about": discovery_data.get("tell_me_about_yourself"),
+            "current_exercise": discovery_data.get("exercise_routine"),
+            "current_sleep": discovery_data.get("sleep_habits"),
+            "current_eating": discovery_data.get("eating_habits"),
+            "free_time_activities": discovery_data.get("free_time"),
+            "questions_asked": []
+        }
+        
+        # Restore goals
+        goals = profile.get("goals", [])
+        self.session_data["goal_details"] = []
+        for goal in goals:
+            if goal.get("session_created") == 1:
+                self.session_data["goal_details"].append({
+                    "goal": goal.get("goal"),
+                    "confidence": goal.get("confidence"),
+                    "smart_analysis": None,
+                    "refinement_attempts": 0
+                })
+        
+        # Restore metadata
+        metadata = session_info.get("metadata", {})
+        self.session_data["turn_count"] = metadata.get("turn_count", 0)
+        self.session_data["current_goal"] = metadata.get("current_goal")
+        self.session_data["program_questions_asked"] = metadata.get("program_questions_asked", [])
+        self.session_data["tracking_method_discussed"] = metadata.get("tracking_method_discussed", False)
+        
+        self._log_debug(f"Session loaded from {filename}")
+        
+        return data.get("chat_history", [])
