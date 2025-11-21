@@ -178,60 +178,63 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@chat_router.post("/stream")
-async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
-    """Stream chatbot response for real-time chat experience"""
-
-    async def generate_stream():
-        try:
-            db_service = DatabaseService(db)
-            conv_service = ConversationService(db_service)
-
-            # Conversation
-            conv_id = await conv_service.get_or_create_conversation(
-                conversation_id=request.conversation_id, user_id=request.user_id
-            )
-
-            history = await conv_service.get_conversation_history(conv_id, limit=10)
-
-            ai_service = get_or_create_ai_service(
-                conversation_id=conv_id, session_number=request.session_number
-            )
-
-            # Stream chunks
-            full_response = ""
-            async for chunk in ai_service.stream_response(
-                request.message, history, request.user_id
-            ):
-                full_response += chunk
-                yield ResponseAdapter.streaming_chunk_to_sse(chunk, done=False)
-
-            yield ResponseAdapter.streaming_chunk_to_sse("", done=True)
-
-            # Save messages
-            await conv_service.add_message(
-                conversation_id=conv_id, role="user", content=request.message
-            )
-
-            await conv_service.add_message(
-                conversation_id=conv_id,
-                role="assistant",
-                content=full_response.strip(),
-            )
-
-        except Exception as e:
-            error_chunk = ResponseAdapter.error_to_api_response(e, 500)
-            yield f"data: {json.dumps(error_chunk)}\n\n"
-
-    return StreamingResponse(
-        generate_stream(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+# NOTE: Streaming endpoint commented out - not currently used by frontend
+# Uncomment if you want to implement real-time streaming chat UI
+#
+# @chat_router.post("/stream")
+# async def stream_message(request: ChatRequest, db: Session = Depends(get_db)):
+#     """Stream chatbot response for real-time chat experience"""
+#
+#     async def generate_stream():
+#         try:
+#             db_service = DatabaseService(db)
+#             conv_service = ConversationService(db_service)
+#
+#             # Conversation
+#             conv_id = await conv_service.get_or_create_conversation(
+#                 conversation_id=request.conversation_id, user_id=request.user_id
+#             )
+#
+#             history = await conv_service.get_conversation_history(conv_id, limit=10)
+#
+#             ai_service = get_or_create_ai_service(
+#                 conversation_id=conv_id, session_number=request.session_number
+#             )
+#
+#             # Stream chunks
+#             full_response = ""
+#             async for chunk in ai_service.stream_response(
+#                 request.message, history, request.user_id
+#             ):
+#                 full_response += chunk
+#                 yield ResponseAdapter.streaming_chunk_to_sse(chunk, done=False)
+#
+#             yield ResponseAdapter.streaming_chunk_to_sse("", done=True)
+#
+#             # Save messages
+#             await conv_service.add_message(
+#                 conversation_id=conv_id, role="user", content=request.message
+#             )
+#
+#             await conv_service.add_message(
+#                 conversation_id=conv_id,
+#                 role="assistant",
+#                 content=full_response.strip(),
+#             )
+#
+#         except Exception as e:
+#             error_chunk = ResponseAdapter.error_to_api_response(e, 500)
+#             yield f"data: {json.dumps(error_chunk)}\n\n"
+#
+#     return StreamingResponse(
+#         generate_stream(),
+#         media_type="text/event-stream",
+#         headers={
+#             "Cache-Control": "no-cache",
+#             "Connection": "keep-alive",
+#             "X-Accel-Buffering": "no",
+#         },
+#     )
 
 
 @chat_router.get("/conversation/{conversation_id}")

@@ -21,10 +21,12 @@ class Conversation(Base, TimestampMixin):
         user_id: ID of user who owns this conversation
         title: Conversation title (auto-generated or user-provided)
         message_count: Cached count of messages
-        extra_data: JSON field for additional data (model preferences, tags, etc.)
+        extra_data: JSON field for additional data (session_number, model preferences, tags, etc.)
         messages: Relationship to Message model
         created_at: Timestamp of creation
         updated_at: Timestamp of last update
+
+    Note: session_number is stored in extra_data['session_number'] (1-4)
     """
 
     __tablename__ = "conversations"
@@ -56,6 +58,7 @@ class Conversation(Base, TimestampMixin):
             "title": self.title or "Untitled Conversation",
             "message_count": self.message_count,
             "metadata": self.extra_data or {},
+            "session_number": (self.extra_data or {}).get("session_number"),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
