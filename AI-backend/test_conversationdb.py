@@ -4,11 +4,11 @@ from utils.database import init_database, save_session_to_db, load_session_from_
 # Check connection string exists
 db_url = os.getenv("CONVERSATION_DATABASE_URL")
 if not db_url:
-    print("❌ DATABASE_URL not set!")
-    print("Set it with: export DATABASE_URL='postgresql://...'")
+    print("❌ CONVERSATION_DATABASE_URL not set!")
+    print("Set it with: export CONVERSATION_DATABASE_URL='postgresql://...'")
     exit(1)
 
-print(f"✓ DATABASE_URL is set")
+print(f"✓ CONVERSATION_DATABASE_URL is set")
 
 # Try to initialize
 print("\nInitializing database...")

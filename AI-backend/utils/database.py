@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, List
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Render provides DATABASE_URL in this format:
+# PostgreSQL connection URL in this format:
 # postgresql://user:password@host:port/database
 DATABASE_URL = os.getenv("CONVERSATION_DATABASE_URL")
 
@@ -13,7 +13,7 @@ DATABASE_URL = os.getenv("CONVERSATION_DATABASE_URL")
 def get_connection():
     """Get a database connection"""
     if not DATABASE_URL:
-        raise ValueError("DATABASE_URL environment variable not set")
+        raise ValueError("CONVERSATION_DATABASE_URL environment variable not set")
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 
