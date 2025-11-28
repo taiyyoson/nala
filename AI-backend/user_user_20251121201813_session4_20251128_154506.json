@@ -1,0 +1,152 @@
+{
+  "user_profile": {
+    "uid": "user_20251121201813",
+    "name": "Jade (Full Test)",
+    "discovery_questions": {
+      "tell_me_about_yourself": "i sleep 5 hours of not great sleep",
+      "exercise_routine": "i eat 3 balanced meals",
+      "sleep_habits": "i like to play video games",
+      "eating_habits": "yes",
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "it would mean waking up feeling more refreshed i think turn off screens at 11 and be in bed by 11:30 . i think 3 days is realistic for me two weeks seems good",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 1,
+        "created_at": null,
+        "status": "active"
+      },
+      {
+        "goal": "Walking around my neighborhood sounds good 30 min sounds doable 2x a week im thinking friday and saturday",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 2,
+        "created_at": null,
+        "status": "active"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 4,
+    "current_state": "end_session",
+    "timestamp": "2025-11-28T15:45:06.496051",
+    "metadata": {
+      "turn_count": 13,
+      "stress_level": null,
+      "goals_achieved": true,
+      "what_happened": "more time",
+      "path_chosen": "current",
+      "new_goals": [],
+      "confidence_level": 10,
+      "tracking_method": null
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, welcome back to our final session together! I'm so glad we get to wrap up your journey today.\n\nBefore we dive in, how have the past couple of weeks been for you overall?"
+    },
+    {
+      "role": "user",
+      "content": "good"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great to hear! Let me remind you of the two goals you set during our last session:\n\nFirst, you wanted to turn off screens at 11 and be in bed by 11:30 at least 3 days a week to wake up feeling more refreshed. Second, you planned to walk around your neighborhood for 30 minutes twice a week, on Fridays and Saturdays.\n\nHow did achieving these goals go this last week?"
+    },
+    {
+      "role": "user",
+      "content": "great actually"
+    },
+    {
+      "role": "assistant",
+      "content": "That's fantastic! I'm so curious to hear more about what made it work so well for you this week.\n\nWhat do you think was the key to your success?"
+    },
+    {
+      "role": "user",
+      "content": "more time"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful that having more time made such a difference for you! It sounds like something shifted in your schedule or how you managed your time.\n\nCan you tell me a bit more about what changed that gave you more time?"
+    },
+    {
+      "role": "user",
+      "content": "my classes are ramping down"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes so much sense! Having your classes ramp down really freed up space for you to focus on these healthy habits. It sounds like the timing worked out perfectly.\n\nNow that you've had success with both goals, what feels most important for you to continue or build on moving forward?"
+    },
+    {
+      "role": "user",
+      "content": "i actually want to up my sleep goal to 4 days"
+    },
+    {
+      "role": "assistant",
+      "content": "I love that you want to build on your success! Going from 3 days to 4 days feels like a natural next step since you've been doing so well with it.\n\nSince this is our final session together, I'm thinking about how you'll keep this going on your own. What's your plan for maintaining this sleep routine after our program ends, especially when your schedule gets busy again?"
+    },
+    {
+      "role": "user",
+      "content": "just to keep pushing forward and to remember that its to prioritixe me"
+    },
+    {
+      "role": "assistant",
+      "content": "I really hear your commitment to prioritizing yourself, and that's such an important foundation. You've shown you can do this when you have the time and motivation.\n\nLet me ask you this though - when classes ramp back up or life gets hectic again, what specific thing will you do to make sure you still prioritize yourself and stick with that 4-day sleep goal?"
+    },
+    {
+      "role": "user",
+      "content": "ill sit down to manage my time and my goals more effectively"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a solid strategy. Time management has clearly worked for you during this program when your classes ramped down.\n\nWhat successes have you had in the past that you can draw on, maybe times when you've managed to stick with something healthy even when life got really busy?"
+    },
+    {
+      "role": "user",
+      "content": "i chose my goals over the extra 10 mins of studying so i could put myself first"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a powerful example of prioritizing yourself over the pressure to do more. You literally chose your wellbeing over academic stress, and that takes real strength.\n\nHow can you remind yourself of that moment when you're facing similar choices in the future, like when you're tempted to stay up past 11 or skip a walk?"
+    },
+    {
+      "role": "user",
+      "content": "ill look back on the feeling i felt after prioritixing myself"
+    },
+    {
+      "role": "assistant",
+      "content": "That feeling of taking care of yourself is such a powerful motivator to hold onto.\n\nBefore we wrap up, is there anything else you want to talk about or any questions you have about keeping these habits going?"
+    },
+    {
+      "role": "user",
+      "content": "not that i can think of"
+    },
+    {
+      "role": "assistant",
+      "content": "It's been wonderful working with you, Jade. You've made real progress with your sleep and walking goals, and you've learned to prioritize yourself even when things get busy. I'm confident you have the tools and awareness to keep this going.\n\nI wish you all the best as you continue taking care of yourself."
+    },
+    {
+      "role": "user",
+      "content": "bye"
+    },
+    {
+      "role": "assistant",
+      "content": "Bye, Jade. Take care of yourself."
+    },
+    {
+      "role": "user",
+      "content": "bye"
+    },
+    {
+      "role": "assistant",
+      "content": "Goodbye, Jade. Best wishes!"
+    }
+  ]
+}

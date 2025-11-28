@@ -212,8 +212,6 @@ def interactive_session2_chat():
         model='claude-sonnet-4.5'
     )
     
-    # ... rest of the function stays the same ...
-    
     print("Nala: ", end="")
     initial_response, _, _ = chatbot.generate_response("[START_SESSION]")
     print("\n")

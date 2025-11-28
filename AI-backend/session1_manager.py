@@ -137,7 +137,6 @@ class SessionBasedRAGChatbot(BaseSessionRAGChatbot):
         self.conversation_history = []
         print("✓ Session reset to beginning")
 
-
 def interactive_session_chat():
     """Interactive chat with session management"""
     print("=" * 80)

@@ -1,0 +1,160 @@
+{
+  "user_profile": {
+    "uid": "user_20251121201813",
+    "name": "Jade (Full Test)",
+    "discovery_questions": {
+      "tell_me_about_yourself": "i sleep 5 hours of not great sleep",
+      "exercise_routine": "i eat 3 balanced meals",
+      "sleep_habits": "i like to play video games",
+      "eating_habits": "yes",
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "it would mean waking up feeling more refreshed i think turn off screens at 11 and be in bed by 11:30 . i think 3 days is realistic for me two weeks seems good",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 1,
+        "created_at": null,
+        "status": "active"
+      },
+      {
+        "goal": "Walking around my neighborhood sounds good 30 min sounds doable 2x a week im thinking friday and saturday",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 2,
+        "created_at": null,
+        "status": "active"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 4,
+    "current_state": "end_session",
+    "timestamp": "2025-11-28T15:09:19.997997",
+    "metadata": {
+      "turn_count": 14,
+      "stress_level": null,
+      "goals_achieved": true,
+      "what_happened": "i want to adjust my goals a bit",
+      "path_chosen": "current",
+      "new_goals": [],
+      "confidence_level": 10,
+      "tracking_method": "i have my reminders of course and im thinking about downloading a motivation app"
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Jade, welcome to our final session together! I'm so glad we get to wrap up your journey today.\n\nBefore we dive in, I'd love to hear how the past week went with your two goals - the screen time routine and your neighborhood walks. What happened?"
+    },
+    {
+      "role": "user",
+      "content": "i was able to do my goals, and it was great"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful to hear, Jade! I'm really happy for you.\n\nCan you tell me a bit more about what made it feel great for you? What did you notice or feel different when you were able to stick with both goals?"
+    },
+    {
+      "role": "user",
+      "content": "i just feel much more refreshed"
+    },
+    {
+      "role": "assistant",
+      "content": "That's such a meaningful shift, feeling more refreshed. It sounds like both the screen time routine and the walks really made a difference for you.\n\nNow I'd like to check in on your overall stress level. On a scale of 1 to 10, where 1 is completely calm and 10 is extremely stressed, where would you say you are right now?"
+    },
+    {
+      "role": "user",
+      "content": "1"
+    },
+    {
+      "role": "assistant",
+      "content": "Wow, that's amazing, Jade! Going from where you started to feeling completely calm is a huge accomplishment.\n\nWhat do you think has been the biggest factor in helping you get to this place of feeling so calm?"
+    },
+    {
+      "role": "user",
+      "content": "i just have less homework and its been great"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes so much sense. Having less homework has definitely lifted a big weight off your shoulders.\n\nSince you're feeling so much calmer now and you were successful with your goals this past week, what would you like to focus on moving forward? Are you thinking about continuing with the same goals, adjusting them, or maybe working on something new?"
+    },
+    {
+      "role": "user",
+      "content": "i want to adjust my goals a bit"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a great idea. It's really smart to adjust goals as things change in your life.\n\nWhat adjustments are you thinking about making to your sleep routine or walking goals?"
+    },
+    {
+      "role": "user",
+      "content": "i want to add an extra day to my sleep goal"
+    },
+    {
+      "role": "assistant",
+      "content": "So just to make sure I understand correctly, you want to turn off screens at 11 and be in bed by 11:30 for 4 days a week instead of 3 days, is that right?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful. You've already been successful with 3 days, so adding one more day feels like a natural next step.\n\nOn a scale of 1 to 10, how confident do you feel about achieving this goal of doing your sleep routine 4 days a week over the next two weeks?"
+    },
+    {
+      "role": "user",
+      "content": "10"
+    },
+    {
+      "role": "assistant",
+      "content": "That's fantastic confidence. It sounds like you're really ready for this.\n\nNow let's talk about your walking goal. Do you want to keep that the same at 30 minutes twice a week on Fridays and Saturdays, or would you like to adjust that one too?"
+    },
+    {
+      "role": "user",
+      "content": "yes"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so you're keeping your walking goal at 30 minutes twice a week on Fridays and Saturdays.\n\nHow will you remember to work on these goals?"
+    },
+    {
+      "role": "user",
+      "content": "i have my reminders"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, your reminders are already working for you. How will you keep these goals going after our program ends?"
+    },
+    {
+      "role": "user",
+      "content": "i have my reminders of course and im thinking about downloading a motivation app"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a solid plan. Using your reminders plus a motivation app should help you stay on track even after we finish.\n\nDo you have any final questions or anything else you'd like to discuss?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Jade, it's been wonderful working with you these past four weeks. You've made real progress with your sleep routine and walking goals, and I'm proud of how you've built systems to support yourself. Keep using those reminders and that motivation app, and remember that you have everything you need to keep moving forward. I'm wishing you all the best on your health journey."
+    },
+    {
+      "role": "user",
+      "content": "bye"
+    },
+    {
+      "role": "assistant",
+      "content": "Take care, Jade. Best of luck with everything!"
+    }
+  ]
+}

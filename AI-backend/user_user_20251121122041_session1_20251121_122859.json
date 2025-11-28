@@ -1,0 +1,196 @@
+{
+  "user_profile": {
+    "uid": "user_20251121122041",
+    "name": "jade",
+    "discovery_questions": {
+      "tell_me_about_yourself": "i sleep 9 hours of pretty good sleep",
+      "exercise_routine": "i eat 3 balanced meals",
+      "sleep_habits": "i liek to play video games",
+      "eating_habits": null,
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "i want to start 30 min walks starting this week",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 1,
+        "status": "active",
+        "created_at": "2025-11-21T12:20:41.246364"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 1,
+    "current_state": "end_session",
+    "timestamp": "2025-11-21T12:28:59.957733",
+    "metadata": {
+      "turn_count": 20,
+      "current_goal": "i want to start 30 min walks starting this week",
+      "program_questions_asked": [],
+      "tracking_method_discussed": true
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach. I'm really glad you're here and excited to work with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "Great to meet you, Jade! Let me tell you a bit about our program. We'll be meeting once a week for four sessions total. Each week we'll work together to set personalized goals, explore what's working for you and what's not, and build strategies that fit your life. Between our weekly sessions, you'll be working on your goals independently, and then when we meet each week, we'll discuss your progress and adjust as needed. The focus is really on helping you create sustainable changes that work for you.\n\nDo you have any questions about how the program works?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! Before we dive into goal setting, I'd love to get to know you better. Tell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "im a college student and i work full time"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a really full plate, balancing college and full-time work. I can imagine your schedule is pretty packed. What does your current exercise routine look like?"
+    },
+    {
+      "role": "user",
+      "content": "i walk 3x a week for 20 min"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're already getting out for walks regularly. Walking three times a week is a solid foundation to build on. How are your sleep habits - how many hours are you typically getting each night, and how would you describe the quality?"
+    },
+    {
+      "role": "user",
+      "content": "i sleep 9 hours of pretty good sleep"
+    },
+    {
+      "role": "assistant",
+      "content": "Nine hours of good quality sleep is excellent, especially with such a busy schedule. That's really impressive that you're prioritizing that. What are your current eating habits like - what does a typical day of meals look like for you?"
+    },
+    {
+      "role": "user",
+      "content": "i eat 3 balanced meals"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful that you're managing three balanced meals with everything you have going on. It sounds like you've got some really solid habits already in place with your sleep, meals, and regular walks. What do you like to do in your free time when you're not working or studying?"
+    },
+    {
+      "role": "user",
+      "content": "i liek to play video games"
+    },
+    {
+      "role": "assistant",
+      "content": "Video games are a great way to unwind! Now that I have a better sense of your current routine, I'm curious - what brought you to this coaching program? What would you like to work on or achieve over these four weeks?"
+    },
+    {
+      "role": "user",
+      "content": "i want to up the length of my walks to 30 min"
+    },
+    {
+      "role": "assistant",
+      "content": "I love that goal, Jade! Increasing your walks from 20 to 30 minutes is a really achievable next step since you're already walking consistently three times a week. Let's make this goal even more specific so we can track your success. When you picture yourself doing these 30 minute walks, are you thinking about doing them three times a week like you do now, or would you want to change the frequency too?"
+    },
+    {
+      "role": "user",
+      "content": "3x a week"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so your goal is to walk for 30 minutes, three times a week. That's a clear and measurable goal we can work with. Now let's think about the timeline - when would you like to be consistently doing these 30 minute walks by? Are you thinking by the end of our four weeks together, or do you have a different timeframe in mind?"
+    },
+    {
+      "role": "user",
+      "content": "i want to start 30 min walks starting this week"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you wanting to jump right in, which shows great motivation! Let me just clarify the timeline to make sure we're on the same page. When you say starting this week, are you planning to do all three 30-minute walks every week for the next four weeks, or are you thinking of gradually building up to that?"
+    },
+    {
+      "role": "user",
+      "content": "all 30 min walks"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, so you're planning to do three 30-minute walks each week for the next four weeks. That's a clear commitment! Since you're already doing 20 minutes three times a week, adding that extra 10 minutes should feel pretty manageable. What days of the week work best for you to fit in these walks?"
+    },
+    {
+      "role": "user",
+      "content": "T TH F"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so your goal is to walk for 30 minutes on Tuesdays, Thursdays, and Fridays for the next four weeks. That's specific, measurable, and has a clear timeline. Before we finalize this, I want to make sure it feels achievable for you. What might get in the way of completing these walks on those days?"
+    },
+    {
+      "role": "user",
+      "content": "i think just being busy but the walks are good stress relievers for me"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really valuable insight that walks help relieve your stress, especially when you're busy. It sounds like you've got good motivation to stick with this. On a scale of 1 to 10, how confident do you feel about achieving this goal of walking 30 minutes on Tuesdays, Thursdays, and Fridays for the next four weeks?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's excellent confidence! It sounds like you've really thought this through and you're ready to make it happen. Since you mentioned being busy might get in the way, what specific time of day on Tuesdays, Thursdays, and Fridays will you do your walks?"
+    },
+    {
+      "role": "user",
+      "content": "12 pm"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so you'll walk at noon on Tuesdays, Thursdays, and Fridays. That makes your goal really concrete and easier to follow through on. Would you like to set another goal to work on this week, or would you prefer to focus just on this walking goal?"
+    },
+    {
+      "role": "user",
+      "content": "no more goals"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a solid plan to focus on one goal and do it well. Now let's think about how you'll remember to do these walks at noon on your three days. How will you remind yourself to work on your walking goal?"
+    },
+    {
+      "role": "user",
+      "content": "i will set a reminder"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a great strategy. Will you set that reminder on your phone, or do you have another way you prefer to set reminders?"
+    },
+    {
+      "role": "user",
+      "content": "phone"
+    },
+    {
+      "role": "assistant",
+      "content": "Excellent, having that phone reminder at noon will help keep you on track. Is there anything else you'd like to talk about before we wrap up today?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Wonderful, Jade. So to recap, your goal is to start 30 minute walks this week, and you're feeling really confident at a 9 out of 10 about making it happen. You'll be setting phone reminders to help you remember. I'm excited to hear how your first week goes with those walks. Remember to track your progress using your phone reminders and maybe note when you complete each walk. See you next week at Session 2."
+    }
+  ]
+}
