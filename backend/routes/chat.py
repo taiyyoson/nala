@@ -62,6 +62,7 @@ def get_or_create_ai_service(
                 top_k=settings.top_k_sources,
                 session_number=session_number,
                 previous_session_data=previous_session_data,
+                user_id=user_id,
             )
             _ai_service_cache[conversation_id] = ai_service
             return ai_service
@@ -77,6 +78,7 @@ def get_or_create_ai_service(
         top_k=settings.top_k_sources,
         session_number=session_number,
         previous_session_data=previous_session_data,
+        user_id=user_id,
     )
     _ai_service_cache[conversation_id] = ai_service
     return ai_service
@@ -115,72 +117,21 @@ def _save_session_on_completion(
 ) -> bool:
     """
     Save session data to database when session reaches END_SESSION state.
+    Delegates to the session manager's save_session() method which handles
+    all the complex data structure building and goal status transitions.
     """
     print(f"💾 Saving Session {session_number} data for user {user_id}...")
 
     try:
-        session_manager = ai_service.chatbot.session_manager
-        session_data = session_manager.session_data
-
-        if session_number == 1:
-            discovery = {
-                "general_about": session_data.get("discovery", {}).get("general_about"),
-                "current_exercise": session_data.get("discovery", {}).get("current_exercise"),
-                "current_sleep": session_data.get("discovery", {}).get("current_sleep"),
-                "current_eating": session_data.get("discovery", {}).get("current_eating"),
-                "free_time_activities": session_data.get("discovery", {}).get("free_time_activities"),
-            }
-
-            goals = []
-            for goal_detail in session_data.get("goal_details", []):
-                goals.append({
-                    "goal": goal_detail.get("goal"),
-                    "confidence": goal_detail.get("confidence"),
-                    "stress": None,
-                    "session_created": 1,
-                    "status": "active",
-                    "created_at": session_data.get("session_start"),
-                })
-
-            user_profile = {
-                "uid": user_id,
-                "name": session_data.get("user_name"),
-                "goals": goals,
-                "discovery_questions": discovery,
-            }
-        else:
-            user_profile = {
-                "uid": user_id,
-                "name": session_data.get("user_name"),
-                "goals": session_data.get("new_goals", []) or session_data.get("goals_to_keep", []),
-                "previous_goals": session_data.get("previous_goals", []),
-                "stress_level": session_data.get("stress_level"),
-                "successes": session_data.get("successes", []),
-                "challenges": session_data.get("challenges", []),
-                "path_chosen": session_data.get("path_chosen"),
-            }
-
-        session_info = {
-            "session_number": session_number,
-            "current_state": session_manager.get_state().value,
-            "metadata": {
-                "turn_count": session_data.get("turn_count"),
-                "current_goal": session_data.get("current_goal"),
-            },
-        }
-
-        full_data = {
-            "user_profile": user_profile,
-            "session_info": session_info,
-            "chat_history": conversation_history or [],
-        }
-
-        success = save_session_to_db(user_id, session_number, full_data)
-        if success:
-            print(f"✅ Session {session_number} saved successfully for user {user_id}")
-        else:
-            print(f"❌ Failed to save Session {session_number} for user {user_id}")
-        return success
+        # The session manager's save_session() method handles:
+        # - Building the complete unified data structure
+        # - Calling save_session_to_db() with proper format
+        # - Saving to file as backup
+        # - Handling goal status transitions (active/dropped)
+        # - Preserving discovery data across all sessions
+        ai_service.chatbot.save_session()
+        print(f"✅ Session {session_number} saved successfully for user {user_id}")
+        return True
 
     except Exception as e:
         print(f"❌ Error saving session: {e}")
