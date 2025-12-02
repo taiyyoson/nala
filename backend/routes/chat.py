@@ -6,16 +6,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from utils.database import load_session_from_db, save_session_to_db
 from adapters import RequestAdapter, ResponseAdapter
 from config.database import get_db
 from config.settings import settings
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from models.session_progress import SessionProgress
 from pydantic import BaseModel
 from services import AIService, ConversationService, DatabaseService
 from sqlalchemy.orm import Session
-from models.session_progress import SessionProgress
+from utils.database import load_session_from_db, save_session_to_db
 
 # Add AI-backend to path for session database utilities
 _ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
@@ -99,8 +99,10 @@ def _load_previous_session_data(
     try:
         prev_session = load_session_from_db(user_id, prev_session_num)
         if prev_session:
-            print(f"✅ Loaded previous session data: {list(prev_session.get('user_profile', {}).keys())}")
-            return prev_session.get('user_profile')
+            print(
+                f"✅ Loaded previous session data: {list(prev_session.get('user_profile', {}).keys())}"
+            )
+            return prev_session.get("user_profile")
         else:
             print(f"⚠️ No Session {prev_session_num} data found for user {user_id}")
             return None
@@ -181,7 +183,9 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
             user_id=request.user_id,
         )
 
-        print(f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}")
+        print(
+            f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}"
+        )
         print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
         print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
 
@@ -203,10 +207,14 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
 
                 # Mark session complete in session_progress table
                 if request.user_id and request.session_number:
-                    session_obj = db.query(SessionProgress).filter_by(
-                        user_id=request.user_id,
-                        session_number=request.session_number,
-                    ).first()
+                    session_obj = (
+                        db.query(SessionProgress)
+                        .filter_by(
+                            user_id=request.user_id,
+                            session_number=request.session_number,
+                        )
+                        .first()
+                    )
 
                     if session_obj:
                         session_obj.mark_complete()

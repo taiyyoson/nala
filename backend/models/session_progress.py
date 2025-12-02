@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime, timedelta
 
 from models.base import Base
+from sqlalchemy import Column, DateTime, Integer, String, func
+from sqlalchemy.ext.declarative import declarative_base
+
 
 class SessionProgress(Base):
     __tablename__ = "session_progress"
@@ -28,10 +29,8 @@ class SessionProgress(Base):
         if not self.completed_at:
             self.completed_at = now
 
-
         self.unlocked_at = now + timedelta(days=unlock_delay_days)
         return self.unlocked_at
-
 
     def to_dict(self):
         """
@@ -45,16 +44,18 @@ class SessionProgress(Base):
             "id": self.id,
             "user_id": self.user_id,
             "session_number": self.session_number,
-            "unlocked_at": (
-                self.unlocked_at.isoformat() if self.unlocked_at else None
-            ),
+            "unlocked_at": (self.unlocked_at.isoformat() if self.unlocked_at else None),
             "completed_at": (
                 self.completed_at.isoformat() if self.completed_at else None
             ),
             "created_at": (
-                self.created_at.isoformat() if hasattr(self, "created_at") and self.created_at else None
+                self.created_at.isoformat()
+                if hasattr(self, "created_at") and self.created_at
+                else None
             ),
             "updated_at": (
-                self.updated_at.isoformat() if hasattr(self, "updated_at") and self.updated_at else None
+                self.updated_at.isoformat()
+                if hasattr(self, "updated_at") and self.updated_at
+                else None
             ),
         }

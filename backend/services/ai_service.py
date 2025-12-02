@@ -62,20 +62,19 @@ class AIService:
         self.session_number = session_number
         self.user_id = user_id
 
-
         match session_number:
             case 1:
                 # Session 1: Goal setting and introduction
-                self.chatbot = SessionBasedRAGChatbot(model=model, top_k=top_k, uid=user_id)
+                self.chatbot = SessionBasedRAGChatbot(
+                    model=model, top_k=top_k, uid=user_id
+                )
                 print(
                     f"✓ AIService initialized with Session 1 structured flow (model: {model}, uid: {user_id})"
                 )
             case 2:
                 # Session 2: Progress review and goal adjustment
                 self.chatbot = Session2RAGChatbot(
-                    session1_data=previous_session_data,
-                    model=model,
-                    top_k=top_k
+                    session1_data=previous_session_data, model=model, top_k=top_k
                 )
                 print(
                     f"✓ AIService initialized with Session 2 structured flow (model: {model})"
@@ -83,9 +82,7 @@ class AIService:
             case 3:
                 # Session 3: Continued progress and goal refinement
                 self.chatbot = Session3RAGChatbot(
-                    user_profile=previous_session_data,
-                    model=model,
-                    top_k=top_k
+                    user_profile=previous_session_data, model=model, top_k=top_k
                 )
                 print(
                     f"✓ AIService initialized with Session 3 structured flow (model: {model})"
@@ -93,9 +90,7 @@ class AIService:
             case 4:
                 # Session 4: Final check-in and long-term planning
                 self.chatbot = Session4RAGChatbot(
-                    session3_data=previous_session_data,
-                    model=model,
-                    top_k=top_k
+                    session3_data=previous_session_data, model=model, top_k=top_k
                 )
                 print(
                     f"✓ AIService initialized with Session 4 structured flow (model: {model})"
@@ -167,7 +162,6 @@ class AIService:
         response, sources, model = await self.generate_response(
             message, conversation_history, user_id
         )
-
 
         words = response.split()
         for i, word in enumerate(words):
