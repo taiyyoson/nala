@@ -11,7 +11,7 @@ export type MainStackParamList = {
     week: number;
     sessionNumber: number;
   };
-  Settings: undefined; 
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();

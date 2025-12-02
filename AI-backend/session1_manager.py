@@ -18,19 +18,19 @@ class SessionBasedRAGChatbot(BaseSessionRAGChatbot):
     """
     
     def __init__(self, model='claude-sonnet-4.5', top_k=3, program_info_file='program_info.txt',
-                 recent_messages=6, relevant_history_count=4, validate_constraints=True):
+                 recent_messages=6, relevant_history_count=4, validate_constraints=True, uid=None):
         # Initialize base class
         super().__init__(
-            model=model, 
+            model=model,
             top_k=top_k,
             recent_messages=recent_messages,
             relevant_history_count=relevant_history_count,
             validate_constraints=validate_constraints
         )
-        
+
         # Session 1 specific setup
         self.program_info_file = program_info_file
-        self.session_manager = Session1Manager(program_info_file=program_info_file)
+        self.session_manager = Session1Manager(program_info_file=program_info_file, uid=uid)
         self.session_manager.set_llm_client(self._create_llm_evaluator())
     
     def _get_memory_summary(self):
@@ -136,7 +136,6 @@ class SessionBasedRAGChatbot(BaseSessionRAGChatbot):
         self.session_manager.set_llm_client(self._create_llm_evaluator())
         self.conversation_history = []
         print("✓ Session reset to beginning")
-
 
 def interactive_session_chat():
     """Interactive chat with session management"""

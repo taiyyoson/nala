@@ -6,10 +6,14 @@ Testing comments are commented out
 
 import os
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file
+_root_dir = Path(__file__).parent.parent
+_env_file = _root_dir / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file)
 
 def check_requirements():
     """Check if all requirements are met before starting"""

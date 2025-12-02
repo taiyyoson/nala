@@ -1,0 +1,196 @@
+{
+  "user_profile": {
+    "uid": "user_20251121104815",
+    "name": "jade",
+    "discovery_questions": {
+      "tell_me_about_yourself": "i get 9 hours of sleep pretty good",
+      "exercise_routine": "i eat 3 balanced meals",
+      "sleep_habits": "i like to play video games",
+      "eating_habits": null,
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "ok i can live with that 3x a week and lets increment by 10 mins i will be walking in the park i want to work up to this by the end of the program",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 1,
+        "status": "active",
+        "created_at": "2025-11-21T10:48:15.882043"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 1,
+    "current_state": "end_session",
+    "timestamp": "2025-11-21T11:09:12.708841",
+    "metadata": {
+      "turn_count": 20,
+      "current_goal": "ok i can live with that 3x a week and lets increment by 10 mins i will be walking in the park i want to work up to this by the end of the program",
+      "program_questions_asked": [],
+      "tracking_method_discussed": true
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach. I'm really looking forward to working with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "jade"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Jade! I'm excited to support you on your wellness journey.\n\nLet me tell you a bit about our program. We'll meet once a week for the next four weeks, so we'll have four sessions total. During our time together, we'll work on setting personalized health goals that matter to you, create strategies that fit your lifestyle, and track your progress along the way. Between our weekly sessions, you'll be working on your goals independently, and when we meet each week, we'll discuss how things went and adjust as needed.\n\nDo you have any questions about how the program works before we dive in?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! Before we dive into goal setting, I'd love to get to know you better.\n\nTell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "im a college student and i work full time"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a really full schedule, balancing college and full-time work. I can imagine that takes a lot of energy and time management.\n\nWhat does your current exercise routine look like, if you have one?"
+    },
+    {
+      "role": "user",
+      "content": "i walk 3x a week for 20 min"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you've built walking into your routine three times a week. Even with your busy schedule, you're making time for movement.\n\nHow are your sleep habits? How many hours are you typically getting per night, and how would you describe the quality?"
+    },
+    {
+      "role": "user",
+      "content": "i get 9 hours of sleep pretty good"
+    },
+    {
+      "role": "assistant",
+      "content": "Nine hours of good quality sleep is excellent, especially with such a demanding schedule. That's really serving you well.\n\nWhat are your current eating habits like? For example, how many meals do you typically eat in a day, and what does your food intake usually look like?"
+    },
+    {
+      "role": "user",
+      "content": "i eat 3 balanced meals"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful that you're eating three balanced meals a day. It sounds like you've established some solid healthy habits despite your busy schedule.\n\nWhat do you like to do in your free time when you're not working or studying?"
+    },
+    {
+      "role": "user",
+      "content": "i like to play video games"
+    },
+    {
+      "role": "assistant",
+      "content": "Video games are a great way to unwind and relax. Now that I have a better sense of your current routine, I'd love to hear what brought you to this coaching program.\n\nWhat specific health or wellness goal would you like to work on over these next four weeks?"
+    },
+    {
+      "role": "user",
+      "content": "i want to up the amount i walk"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a great goal, Jade! You're already walking three times a week for 20 minutes, so you have a solid foundation to build on.\n\nWhen you say you want to up the amount you walk, what does that look like for you? Are you thinking about walking more days per week, walking for longer periods of time, or maybe both?"
+    },
+    {
+      "role": "user",
+      "content": "i want to walk for longer periods of time"
+    },
+    {
+      "role": "assistant",
+      "content": "I love that you want to build on what's already working for you. Let's make this goal really clear and actionable so you can track your progress.\n\nWhen you think about walking for longer periods of time, what specific amount of time would feel like a meaningful achievement for you by the end of our four weeks together?"
+    },
+    {
+      "role": "user",
+      "content": "i want to walk for anhour"
+    },
+    {
+      "role": "assistant",
+      "content": "Walking for an hour is a solid target to work toward! Right now you're at 20 minutes three times a week, so that's a nice progression.\n\nLet's think about the timeline and how you'll build up to that. Would you like to reach that one hour walk by the end of our four weeks, or would you prefer to work up to it more gradually over a longer period?"
+    },
+    {
+      "role": "user",
+      "content": "i want to start now"
+    },
+    {
+      "role": "assistant",
+      "content": "I really appreciate your enthusiasm, Jade! Starting with motivation like this is fantastic.\n\nJust to make sure I understand correctly, are you saying you want to jump from 20 minutes straight to an hour right away, or do you want to start working toward that hour goal now by gradually increasing your time each week?"
+    },
+    {
+      "role": "user",
+      "content": "right away"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear how motivated you are, and that's amazing! I want to make sure we set you up for success though.\n\nGoing from 20 minutes straight to 60 minutes all at once can be really tough on your body and might lead to soreness or burnout. What if we created a plan where you start increasing your walking time this week, but build up gradually so you can reach that hour sustainably? For example, maybe adding 10-15 minutes each week so you hit your hour goal by week four?"
+    },
+    {
+      "role": "user",
+      "content": "ok i can live with that"
+    },
+    {
+      "role": "assistant",
+      "content": "Great, I'm glad we found an approach that works for you! Now let's make this goal really clear and specific so you know exactly what success looks like.\n\nCan you tell me specifically how many days per week you want to walk, and what your walking time will be each week as you build up to that hour?"
+    },
+    {
+      "role": "user",
+      "content": "3x a week and lets increment by 10 mins"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, so we're talking about walking three times a week, adding 10 minutes each week. That's a solid plan!\n\nNow let me make sure I understand what activity we're talking about specifically. When you say walking, where will you be doing this? Will it be outside in your neighborhood, at a gym on a treadmill, at a park, or somewhere else?"
+    },
+    {
+      "role": "user",
+      "content": "i will be walking in the park"
+    },
+    {
+      "role": "assistant",
+      "content": "Wonderful! Walking in the park is such a nice way to get fresh air and movement. So just to make sure I have this right, you'll be walking in the park three times a week, starting at 30 minutes this week and adding 10 minutes each week until you reach an hour.\n\nNow here's an important piece - when exactly do you want to achieve this goal? Are we talking about reaching that 60-minute walk by the end of our four-week program, or do you have a different timeframe in mind?"
+    },
+    {
+      "role": "user",
+      "content": "i want to work up to this by the end of the program"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect! So your goal is to walk in the park three times a week, starting at 30 minutes and adding 10 minutes each week until you reach 60 minutes by the end of our four-week program. That's a really well-structured goal, Jade!\n\nOn a scale of 1 to 10, how confident do you feel about achieving this goal?"
+    },
+    {
+      "role": "user",
+      "content": "9"
+    },
+    {
+      "role": "assistant",
+      "content": "That's fantastic confidence, Jade! A 9 out of 10 shows you really believe in yourself and this plan, which is such a strong foundation for success.\n\nSince you're feeling so confident about your walking goal, I'm curious about other areas of your wellness. Is there another health or wellness goal you'd like to work on during our program, maybe something related to nutrition, sleep, stress management, or another area that matters to you?"
+    },
+    {
+      "role": "user",
+      "content": "i just want to focus on the one for now"
+    },
+    {
+      "role": "assistant",
+      "content": "That makes total sense, Jade. Focusing on one goal gives you the best chance to really make it a habit and see success. Your walking goal is solid and meaningful, so let's put all your energy there.\n\nBetween now and when we meet next week, you'll be on your own to track your progress and stay accountable to yourself. What's your plan for remembering to do your three 30-minute walks this week?"
+    },
+    {
+      "role": "user",
+      "content": "I will set a reminder in my phone"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a great plan, Jade. Setting phone reminders is a practical way to keep yourself on track.\n\nLet me recap what we've covered today. Your goal is to walk in the park three times a week, starting with 30 minutes and adding 10 minutes each week to reach 60 minutes by the end of the program. You're feeling really confident at a 9 out of 10, and you'll be using phone reminders to help you stay consistent. You'll track your progress on your own this week, and I'm excited to hear how it goes when we meet again next week for Session 2. You've got this, Jade!"
+    }
+  ]
+}

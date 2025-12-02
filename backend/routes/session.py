@@ -22,11 +22,7 @@ _ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
 if str(_ai_backend_path) not in sys.path:
     sys.path.insert(0, str(_ai_backend_path))
 
-from utils.database import (
-    load_session_from_db,
-    get_latest_session_for_user,
-    list_users,
-)
+from utils.database import get_latest_session_for_user, list_users, load_session_from_db
 
 router = APIRouter(prefix="/session", tags=["Session"])
 
@@ -74,7 +70,7 @@ def mark_session_complete(
             next_session_progress = SessionProgress(
                 user_id=user_id,
                 session_number=next_session_number,
-                unlocked_at=unlock_time_for_next
+                unlocked_at=unlock_time_for_next,
             )
             db.add(next_session_progress)
         elif not next_session_progress.unlocked_at:
@@ -88,9 +84,10 @@ def mark_session_complete(
     return {
         "message": "Session marked complete",
         "completed_session": progress.to_dict(),
-        "next_session": next_session_progress.to_dict() if next_session_progress else None,
+        "next_session": next_session_progress.to_dict()
+        if next_session_progress
+        else None,
     }
-
 
 
 @router.get("/progress/{user_id}")

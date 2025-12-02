@@ -18,6 +18,7 @@ from utils.state_helpers import (
     check_done
 )
 from utils.goal_detection import is_likely_goal
+from utils.database import save_session_to_db
 
 class Session2State(Enum):
     """States for Session 2 conversation flow"""
@@ -656,7 +657,7 @@ class Session2Manager:
         }
     
     def save_session(self, filename: str = None, conversation_history: list = None):
-        """Save session using unified storage format"""
+        """Save session using unified storage format and database"""
         self._log_debug("Saving Session 2 with unified format")
         
         # Build complete goals list
@@ -677,19 +678,15 @@ class Session2Manager:
             goals_to_keep = self.session_data.get("goals_to_keep", [])
             
             if path == "new":
-                # All previous goals are dropped
                 goal_entry["status"] = "dropped"
             elif path == "same":
-                # All previous goals are kept active
                 goal_entry["status"] = "active"
             elif path == "different":
-                # Only kept goals are active
                 if prev_goal["goal"] in goals_to_keep:
                     goal_entry["status"] = "active"
                 else:
                     goal_entry["status"] = "dropped"
             else:
-                # Default to active if path not clear
                 goal_entry["status"] = "active"
             
             all_goals.append(goal_entry)
@@ -720,7 +717,31 @@ class Session2Manager:
             "successes": self.session_data.get("successes", [])
         }
         
-        # Save in unified format
+        # Build full data structure for database
+        full_data = {
+            "user_profile": {
+                "uid": self.uid,
+                "name": self.session_data.get("user_name"),
+                "goals": all_goals,
+                "discovery_questions": discovery
+            },
+            "session_info": {
+                "session_number": 2,
+                "current_state": self.state.value,
+                "metadata": session_metadata
+            },
+            "chat_history": conversation_history or []
+        }
+        
+        # Save to PostgreSQL database
+        from utils.database import save_session_to_db
+        
+        if save_session_to_db(self.uid, 2, full_data):
+            self._log_debug(f"Session 2 saved to database for UID: {self.uid}")
+        else:
+            self._log_debug("Warning: Failed to save Session 2 to database")
+        
+        # Also save to file (backup/legacy support)
         filename = save_unified_session(
             uid=self.uid,
             user_name=self.session_data.get("user_name"),

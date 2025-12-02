@@ -18,6 +18,15 @@ from utils.state_helpers import (
     extract_number
 )
 from utils.goal_detection import is_likely_goal
+from utils.goal_parser import (
+    is_goal_statement,
+    extract_goal_from_text,
+    enhance_goal_with_details,
+    store_goal,
+    format_goals_summary,
+    extract_refined_goal_from_coach_response,
+    check_coach_goal_acceptance
+)
 
 class SessionState(Enum):
     """States for Session 1 conversation flow"""
@@ -253,12 +262,11 @@ class Session1Manager:
             
             user_response = user_input.strip()
             
-            goal_keywords = ["want to", "goal is", "goal:", "would like to", "hoping to", "trying to", "plan to", "i want", "my goal"]
-            user_stating_goal = any(phrase in user_lower for phrase in goal_keywords)
-            
+            # Use utility to check for goal statement
+            goal_text = extract_goal_from_text(user_input)
             min_discovery_complete = len(asked) >= 3
             
-            if user_stating_goal and len(user_input.split()) > 4 and min_discovery_complete:
+            if goal_text and min_discovery_complete:
                 result["next_state"] = SessionState.GOALS
                 result["context"] = f"""User stated a goal after discovery!
 Discovery info:
@@ -383,121 +391,89 @@ Guide them to make it more SMART. Be specific about what's missing."""
         elif self.state == SessionState.REFINE_GOAL:
             goal_candidate = user_input.strip()
             
-            # Check if coach is refining/specifying the goal
+            # First, check if coach summarized a refined goal in their last response
+            refined_from_coach = None
             if self.session_data.get("last_coach_response"):
-                coach_response = self.session_data["last_coach_response"]
-                coach_lower = coach_response.lower()
-                
-                refined_goal_indicators = [
-                    "so you're thinking",
-                    "okay, so",
-                    "perfect, so",
-                    "so your goal is",
-                    "that sounds like",
-                    "let me make sure i understand",
-                    "so monday"
-                ]
-                
-                is_coach_summarizing = any(indicator in coach_lower for indicator in refined_goal_indicators)
-                
-                if is_coach_summarizing:
-                    hours_match = re.search(r'(\d+)\s*hours?', coach_lower)
-                    hours = hours_match.group(1) if hours_match else None
-                    
-                    freq_match = re.search(r'(\d+)\s*(times?|days?|nights?)\s*(per |a |this |each )?week', coach_lower)
-                    frequency = freq_match.group(1) if freq_match else None
-                    
-                    days_mentioned = []
-                    day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-                    
-                    for day in day_names:
-                        if day in user_lower:
-                            days_mentioned.append(day.capitalize())
-                    
-                    if not days_mentioned:
-                        for day in day_names:
-                            if day in coach_lower:
-                                days_mentioned.append(day.capitalize())
-                    
-                    if hours and (frequency or days_mentioned):
-                        if days_mentioned and len(days_mentioned) >= 2:
-                            if len(days_mentioned) == 2:
-                                days_str = f"{days_mentioned[0]} and {days_mentioned[1]}"
-                            else:
-                                days_str = ', '.join(days_mentioned[:-1]) + f", and {days_mentioned[-1]}"
-                            refined_goal = f"Get {hours} hours of sleep on {days_str} each week"
-                        elif frequency:
-                            refined_goal = f"Get {hours} hours of sleep {frequency} nights per week"
-                        else:
-                            refined_goal = None
-                        
-                        if refined_goal:
-                            self.session_data["current_goal"] = refined_goal
-                            self.session_data["smart_refinement_attempts"] += 1
-                            
-                            if self.session_data["goals"]:
-                                self.session_data["goals"][-1] = refined_goal
-                            
-                            smart_eval = self.evaluate_smart_goal(refined_goal)
-                            self.session_data["goal_smart_analysis"] = smart_eval
-                            
-                            if smart_eval["is_smart"]:
-                                self._store_completed_goal(confidence=None)
-                                result["next_state"] = SessionState.CONFIDENCE_CHECK
-                                result["context"] = f"Refined goal is SMART: '{refined_goal}'\nAsk for confidence level (1-10 scale)."
-                                return result
-                            else:
-                                result["context"] = f"Goal refined to: '{refined_goal}' but still needs work.\nContinue helping them make it more specific."
-                                return result
+                refined_from_coach = extract_refined_goal_from_coach_response(
+                    self.session_data["last_coach_response"],
+                    user_input
+                )
+                if refined_from_coach:
+                    self._log_debug(f"Extracted refined goal from coach: '{refined_from_coach}'")
             
-            # Check if coach accepted goal
+            # Check if user is confirming the coach's refined goal
+            user_confirming = any(phrase in user_lower for phrase in [
+                'yes', 'yeah', 'yep', 'correct', 'right', 'that\'s right', 
+                'thats right', 'exactly', 'perfect', 'sounds good'
+            ])
+            
+            # If coach stated a refined goal and user confirmed it, use that
+            if refined_from_coach and user_confirming and len(user_input.split()) <= 3:
+                self._log_debug(f"User confirmed coach's refined goal: '{refined_from_coach}'")
+                self.session_data["current_goal"] = refined_from_coach
+                self.session_data["smart_refinement_attempts"] += 1
+                
+                if self.session_data["goals"]:
+                    self.session_data["goals"][-1] = refined_from_coach
+                
+                smart_eval = self.evaluate_smart_goal(refined_from_coach)
+                self.session_data["goal_smart_analysis"] = smart_eval
+                
+                if smart_eval["is_smart"]:
+                    self._store_completed_goal(confidence=None)
+                    result["next_state"] = SessionState.CONFIDENCE_CHECK
+                    result["context"] = f"Refined goal is SMART: '{refined_from_coach}'\nAsk for confidence level (1-10 scale)."
+                else:
+                    result["context"] = f"Goal refined to: '{refined_from_coach}' but still needs work.\nContinue helping them make it more specific."
+                return result
+            
+            # Use utility to extract refined goal from coach response (for auto-extraction)
+            if self.session_data.get("last_coach_response") and not user_confirming:
+                refined_goal = extract_refined_goal_from_coach_response(
+                    self.session_data["last_coach_response"],
+                    user_input
+                )
+                
+                if refined_goal:
+                    self._log_debug(f"Auto-extracted refined goal: '{refined_goal}'")
+                    self.session_data["current_goal"] = refined_goal
+                    self.session_data["smart_refinement_attempts"] += 1
+                    
+                    if self.session_data["goals"]:
+                        self.session_data["goals"][-1] = refined_goal
+                    
+                    smart_eval = self.evaluate_smart_goal(refined_goal)
+                    self.session_data["goal_smart_analysis"] = smart_eval
+                    
+                    if smart_eval["is_smart"]:
+                        self._store_completed_goal(confidence=None)
+                        result["next_state"] = SessionState.CONFIDENCE_CHECK
+                        result["context"] = f"Refined goal is SMART: '{refined_goal}'\nAsk for confidence level (1-10 scale)."
+                        return result
+                    else:
+                        result["context"] = f"Goal refined to: '{refined_goal}' but still needs work.\nContinue helping them make it more specific."
+                        return result
+            
+            # Use utility to check if coach accepted goal
             coach_accepted = False
             if self.session_data.get("last_coach_response"):
-                coach_response_lower = self.session_data["last_coach_response"].lower()
-                
-                coach_acceptance_patterns = [
-                    r"you've got a clear.*goal",
-                    r"that's a solid goal",
-                    r"solid starting point",
-                    r"fantastic.*goal",
-                    r"excellent.*goal", 
-                    r"perfect.*goal",
-                    r"great goal",
-                    r"this is going to",
-                    r"you're all set",
-                    r"how will you remind",
-                    r"how will you track",
-                    r"what.*remind yourself",
-                    r"on a scale.*confident"
-                ]
-                
-                coach_accepted = any(re.search(pattern, coach_response_lower) for pattern in coach_acceptance_patterns)
+                coach_accepted = check_coach_goal_acceptance(self.session_data["last_coach_response"])
             
-            non_goal_phrases = [
-                'no', 'yes', 'maybe', 'i dont know', "i don't know", 'not sure',
-                'just want to stick', 'thats all', "that's all", 'nothing else',
-                'im good', "i'm good", 'no more', 'nope', 'nah', 'keep it'
-            ]
-            
-            goal_lower = goal_candidate.lower()
-            looks_like_goal = (
-                len(goal_candidate.split()) > 3 and
-                not any(phrase in goal_lower for phrase in non_goal_phrases) and
-                not goal_lower.startswith(('no ', 'yes ', 'maybe '))
-            )
+            # Use utility to validate goal statement
+            looks_like_goal = is_goal_statement(goal_candidate)
             
             moving_forward_phrases = [
                 'notes', 'calendar', 'reminder', 'app', 'track', 'write down',
                 'thanks', 'thank you', 'sounds good', 'perfect', 'great',
                 'see you', 'bye', 'goodbye', 'todo list', 'planner'
             ]
-            is_moving_forward = any(phrase in goal_lower for phrase in moving_forward_phrases)
+            is_moving_forward = any(phrase in user_lower for phrase in moving_forward_phrases)
             
             if ((is_moving_forward or coach_accepted) and self.session_data["current_goal"]):
                 if not self.session_data["goal_details"]:
                     self._store_completed_goal(confidence=8)
                 
-                if is_moving_forward and any(phrase in goal_lower for phrase in ['todo', 'calendar', 'reminder', 'track', 'note']):
+                if is_moving_forward and any(phrase in user_lower for phrase in ['todo', 'calendar', 'reminder', 'track', 'note']):
                     result["next_state"] = SessionState.REMEMBER_GOAL
                     result["context"] = f"""User described tracking method: "{user_input}"
 Goal: "{self.session_data['current_goal']}"
@@ -514,17 +490,11 @@ Ask for confidence level (1-10 scale)."""
                     result["context"] = "User asking a question. Answer and help them finalize the goal statement."
                     return result
                 
+                # Use utility to enhance goal with details
                 current_goal = self.session_data.get("current_goal", "")
-                
-                time_indicators = ['week', 'month', 'day', 'by', 'within', 'in']
-                number_indicators = re.findall(r'\d+', goal_candidate)
-                
-                if any(ind in goal_lower for ind in time_indicators) or number_indicators:
-                    if current_goal:
-                        enhanced_goal = f"{current_goal} {goal_candidate}"
-                        self.session_data["current_goal"] = enhanced_goal
-                    else:
-                        self.session_data["current_goal"] = goal_candidate
+                if current_goal:
+                    enhanced = enhance_goal_with_details(current_goal, goal_candidate)
+                    self.session_data["current_goal"] = enhanced
                 else:
                     self.session_data["current_goal"] = goal_candidate
                 
@@ -537,6 +507,23 @@ Ask for confidence level (1-10 scale)."""
                 self.session_data["goal_smart_analysis"] = smart_eval
                 
                 if smart_eval["is_smart"]:
+                    # Clean up the goal with LLM before storing
+                    if self.llm_client:
+                        context = {
+                            "confidence": self.session_data.get("confidence_level"),
+                            "discovery": self.session_data.get("discovery", {})
+                        }
+                        from utils.goal_parser import reword_goal_with_llm
+                        cleaned_goal = reword_goal_with_llm(
+                            self.session_data["current_goal"], 
+                            self.llm_client, 
+                            context
+                        )
+                        self._log_debug(f"Cleaned assembled goal from '{self.session_data['current_goal']}' to '{cleaned_goal}'")
+                        self.session_data["current_goal"] = cleaned_goal
+                        if self.session_data["goals"]:
+                            self.session_data["goals"][-1] = cleaned_goal
+                    
                     self._store_completed_goal(confidence=None)
                     result["next_state"] = SessionState.CONFIDENCE_CHECK
                     result["context"] = f"Refined goal is SMART: '{self.session_data['current_goal']}'\nAsk for confidence level."
@@ -545,6 +532,23 @@ Ask for confidence level (1-10 scale)."""
                     attempts = self.session_data["smart_refinement_attempts"]
                     
                     if attempts >= 4:
+                        # Clean up the goal with LLM before storing
+                        if self.llm_client:
+                            context = {
+                                "confidence": self.session_data.get("confidence_level"),
+                                "discovery": self.session_data.get("discovery", {})
+                            }
+                            from utils.goal_parser import reword_goal_with_llm
+                            cleaned_goal = reword_goal_with_llm(
+                                self.session_data["current_goal"], 
+                                self.llm_client, 
+                                context
+                            )
+                            self._log_debug(f"Cleaned assembled goal from '{self.session_data['current_goal']}' to '{cleaned_goal}'")
+                            self.session_data["current_goal"] = cleaned_goal
+                            if self.session_data["goals"]:
+                                self.session_data["goals"][-1] = cleaned_goal
+                        
                         self._store_completed_goal(confidence=None)
                         result["next_state"] = SessionState.CONFIDENCE_CHECK
                         result["context"] = f"After {attempts} attempts, move forward with: '{self.session_data['current_goal']}'\nAsk for confidence."
@@ -556,7 +560,7 @@ Still missing: {missing}
 
 Ask specific question to get the missing piece. What exactly do they need to add?"""
             else:
-                if any(phrase in goal_lower for phrase in ['stick with', 'keep', 'thats all', "that's all"]):
+                if any(phrase in user_lower for phrase in ['stick with', 'keep', 'thats all', "that's all"]):
                     if self.session_data["current_goal"]:
                         self._store_completed_goal(confidence=None)
                         result["next_state"] = SessionState.CONFIDENCE_CHECK
@@ -599,6 +603,17 @@ Ask specific question to get the missing piece. What exactly do they need to add
             wants_more = any(word in user_lower for word in ["yes", "yeah", "yep", "sure", "another", "one more", "i'd like", "i want"])
             no_more = any(word in user_lower for word in ["no", "nope", "just", "only", "focus on", "stick with", "that's all", "thats all"])
             
+            # Check if user mentioned tracking method
+            tracking_methods = ['calendar', 'reminder', 'app', 'note', 'journal', 'planner', 'todo', 'phone', 'alarm', 'schedule', 'write', 'set']
+            user_described_tracking = any(method in user_lower for method in tracking_methods)
+            
+            if user_described_tracking:
+                self.session_data["tracking_method_discussed"] = True
+                result["next_state"] = SessionState.END_SESSION
+                result["context"] = f"""User described tracking method: "{user_input}"
+Acknowledge their plan and provide warm closing. Confirm next session is in 1 week."""
+                return result
+            
             coach_wrapped_up = False
             if self.session_data.get("last_coach_response"):
                 coach_lower = self.session_data["last_coach_response"].lower()
@@ -610,18 +625,32 @@ Ask specific question to get the missing piece. What exactly do they need to add
                 ]
                 coach_wrapped_up = any(phrase in coach_lower for phrase in wrapping_phrases)
             
+            # Check if coach asked about tracking
+            coach_asked_tracking = False
+            if self.session_data.get("last_coach_response"):
+                coach_lower = self.session_data["last_coach_response"].lower()
+                tracking_questions = [
+                    'how will you keep track',
+                    'how will you track',
+                    'how will you remember',
+                    'remind yourself',
+                    'system or reminder'
+                ]
+                coach_asked_tracking = any(phrase in coach_lower for phrase in tracking_questions)
+            
             user_confirming_end = user_lower in ['are we done', 'is that it', 'are we finished', 'ok', 'thanks', 'thank you']
             
-            if wants_more:
+            if wants_more and "focus" not in user_lower:
                 result["next_state"] = SessionState.GOALS
                 result["context"] = "Great! Ask about their next goal."
             elif coach_wrapped_up and (no_more or user_confirming_end):
                 result["next_state"] = SessionState.END_SESSION
                 result["context"] = "Session complete. Confirm and close warmly."
-            elif no_more:
+            elif no_more or "focus" in user_lower:
+                # Check if tracking was already discussed
                 tracking_discussed = self.session_data.get("tracking_method_discussed", False)
                 
-                if conversation_history:
+                if not tracking_discussed and conversation_history:
                     for msg in conversation_history[-10:]:
                         if msg.get('role') == 'assistant':
                             content = msg.get('content', '').lower()
@@ -630,7 +659,11 @@ Ask specific question to get the missing piece. What exactly do they need to add
                                 self.session_data["tracking_method_discussed"] = True
                                 break
                 
-                if tracking_discussed or coach_wrapped_up:
+                # If coach just asked about tracking and user said no to more goals, wrap up
+                if coach_asked_tracking and no_more:
+                    result["next_state"] = SessionState.END_SESSION
+                    result["context"] = "User confirmed no more goals after tracking question. Provide brief warm closing."
+                elif tracking_discussed or coach_wrapped_up:
                     result["next_state"] = SessionState.END_SESSION
                     result["context"] = "No more goals and tracking discussed. Wrap up session."
                 else:
@@ -708,49 +741,43 @@ Provide warm closing with brief summary. Confirm next session is in 1 week."""
         return result
     
     def _store_completed_goal(self, confidence: int = None):
-        """Store a completed goal with its details"""
-        if self.session_data["current_goal"]:
-            current_goal = self.session_data["current_goal"]
-            
-            is_question = '?' in current_goal or any(phrase in current_goal.lower() for phrase in ['how about', 'what if', 'maybe we', 'could we'])
-            is_too_short = len(current_goal.split()) < 4
-            
-            if is_question or is_too_short:
-                return
-            
-            existing_goals = [g["goal"] for g in self.session_data["goal_details"]]
-            
-            similar_exists = False
-            for existing in existing_goals:
-                if existing[:50] == current_goal[:50]:
-                    similar_exists = True
-                    for goal_entry in self.session_data["goal_details"]:
-                        if goal_entry["goal"][:50] == current_goal[:50]:
-                            if len(current_goal) > len(goal_entry["goal"]):
-                                goal_entry["goal"] = current_goal
-                                goal_entry["smart_analysis"] = self.session_data.get("goal_smart_analysis")
-                                goal_entry["refinement_attempts"] = self.session_data.get("smart_refinement_attempts", 0)
-                            if confidence is not None:
-                                goal_entry["confidence"] = confidence
-                            break
-                    break
-            
-            if not similar_exists and current_goal not in existing_goals:
-                goal_entry = {
-                    "goal": current_goal,
-                    "confidence": confidence,
-                    "smart_analysis": self.session_data.get("goal_smart_analysis"),
-                    "refinement_attempts": self.session_data.get("smart_refinement_attempts", 0)
-                }
-                self.session_data["goal_details"].append(goal_entry)
-                self._log_debug(f"Stored new goal: {current_goal}")
+        """Store a completed goal with its details using utility function"""
+        if not self.session_data["current_goal"]:
+            return
+        
+        # Prepare context for goal rewording
+        context = {
+            "confidence": confidence or self.session_data.get("confidence_level"),
+            "discovery": self.session_data.get("discovery", {})
+        }
+        
+        # Use the utility function to store the goal (with LLM rewording)
+        was_stored = store_goal(
+            goal_text=self.session_data["current_goal"],
+            existing_goals=self.session_data["goal_details"],
+            confidence=confidence,
+            smart_analysis=self.session_data.get("goal_smart_analysis"),
+            refinement_attempts=self.session_data.get("smart_refinement_attempts", 0),
+            session_number=1,
+            similarity_threshold=50,
+            llm_client=self.llm_client,  # Pass LLM client for rewording
+            context=context
+        )
+        
+        if was_stored:
+            # Update current_goal with the reworded version
+            if self.session_data["goal_details"]:
+                self.session_data["current_goal"] = self.session_data["goal_details"][-1]["goal"]
+                self._log_debug(f"Stored reworded goal: {self.session_data['current_goal']}")
+
     
     def get_session_summary(self) -> Dict[str, Any]:
         """Get summary of session data"""
         return {
             "current_state": self.state.value,
             "session_data": self.session_data,
-            "duration_turns": self.session_data["turn_count"]
+            "duration_turns": self.session_data["turn_count"],
+            "goals_summary": format_goals_summary(self.session_data["goal_details"])
         }
     
     def save_session(self, filename: str = None, conversation_history: list = None):
