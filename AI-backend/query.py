@@ -1,10 +1,14 @@
 import openai
 import psycopg2
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from root .env file
+_root_dir = Path(__file__).parent.parent
+_env_file = _root_dir / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file)
 
 class VectorSearch:
     """Vector search module for coaching conversations database"""

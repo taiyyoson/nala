@@ -23,6 +23,7 @@ from rag_dynamic import UnifiedRAGChatbot
 from session1_manager import SessionBasedRAGChatbot
 from session2_manager import Session2RAGChatbot
 from session3_manager import Session3RAGChatbot
+from session4_manager import Session4RAGChatbot
 
 
 class AIService:
@@ -44,6 +45,7 @@ class AIService:
         top_k: int = 3,
         session_number: Optional[int] = None,
         previous_session_data: Optional[Dict] = None,
+        user_id: Optional[str] = None,
     ):
         """
         Initialize AI Service
@@ -53,25 +55,26 @@ class AIService:
             top_k: Number of similar coaching examples to retrieve
             session_number: Session number (1-4) for structured coaching, None for general chat
             previous_session_data: Data from previous session (for sessions 2+)
+            user_id: User ID for session persistence
         """
         self.model = model
         self.top_k = top_k
         self.session_number = session_number
+        self.user_id = user_id
 
-        # Initialize appropriate chatbot based on session
         match session_number:
             case 1:
                 # Session 1: Goal setting and introduction
-                self.chatbot = SessionBasedRAGChatbot(model=model, top_k=top_k)
+                self.chatbot = SessionBasedRAGChatbot(
+                    model=model, top_k=top_k, uid=user_id
+                )
                 print(
-                    f"✓ AIService initialized with Session 1 structured flow (model: {model})"
+                    f"✓ AIService initialized with Session 1 structured flow (model: {model}, uid: {user_id})"
                 )
             case 2:
                 # Session 2: Progress review and goal adjustment
                 self.chatbot = Session2RAGChatbot(
-                    session1_data=previous_session_data,
-                    model=model,
-                    top_k=top_k
+                    session1_data=previous_session_data, model=model, top_k=top_k
                 )
                 print(
                     f"✓ AIService initialized with Session 2 structured flow (model: {model})"
@@ -79,17 +82,18 @@ class AIService:
             case 3:
                 # Session 3: Continued progress and goal refinement
                 self.chatbot = Session3RAGChatbot(
-                    session2_data=previous_session_data,
-                    model=model,
-                    top_k=top_k
+                    user_profile=previous_session_data, model=model, top_k=top_k
                 )
                 print(
                     f"✓ AIService initialized with Session 3 structured flow (model: {model})"
                 )
             case 4:
-                self.chatbot = UnifiedRAGChatbot(model=model, top_k=top_k)
+                # Session 4: Final check-in and long-term planning
+                self.chatbot = Session4RAGChatbot(
+                    session3_data=previous_session_data, model=model, top_k=top_k
+                )
                 print(
-                    f"✓ AIService initialized for Session 4 (using base RAG, model: {model})"
+                    f"✓ AIService initialized with Session 4 structured flow (model: {model})"
                 )
             case _:
                 # Default: General chat without session structure
@@ -115,17 +119,12 @@ class AIService:
         Returns:
             Tuple of (response_text, retrieved_sources, model_name)
         """
-        # For Session 1: DON'T overwrite conversation history from database
-        # The SessionBasedRAGChatbot maintains its own state internally and
-        # overwriting it breaks the session state machine
-        if self.session_number != 1:
-            # For non-session flows: Set conversation history from database
+
+        if self.session_number not in [1, 2, 3, 4]:
             if conversation_history and use_history:
                 self.chatbot.conversation_history = conversation_history
             else:
                 self.chatbot.conversation_history = []
-        # For Session 1: The chatbot already has the history in its internal state
-        # Don't touch it!
 
         # Generate response using RAG system
         # This internally:
@@ -159,12 +158,11 @@ class AIService:
         Note: This is a placeholder. The current RAG system doesn't support streaming.
               For MVP, we generate the full response and yield it word-by-word.
         """
-        # Generate full response
+
         response, sources, model = await self.generate_response(
             message, conversation_history, user_id
         )
 
-        # Simulate streaming by yielding words
         words = response.split()
         for i, word in enumerate(words):
             yield word + " "

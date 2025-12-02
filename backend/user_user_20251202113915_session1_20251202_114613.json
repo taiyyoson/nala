@@ -1,0 +1,172 @@
+{
+  "user_profile": {
+    "uid": "user_20251202113915",
+    "name": "Taiyo",
+    "discovery_questions": {
+      "tell_me_about_yourself": "about an hour, doing a push-pull-legs workout lift split",
+      "exercise_routine": "i'm not getting enough sleep - only 3-4 hours and decent quality",
+      "sleep_habits": "3 meals a day - good healthy foods that I cook",
+      "eating_habits": "maybe 3 eggs and a bagel for breakfast, two sandwiches and some chips for lunch, and typically something heavier for dinner, with a good balance of protein, vegetables, carbs, and other important nutrients",
+      "free_time": "I like to scroll on social media to unwind"
+    },
+    "goals": [
+      {
+        "goal": "improving my sleep - that is, getting more sleep per night to aim for hitting this consistenly by the end of the four weeks  I want to see if i can hit that schedule for 3 nights out of the week",
+        "confidence": 8,
+        "stress": null,
+        "session_created": 1,
+        "status": "active",
+        "created_at": "2025-12-02T11:39:15.235183"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 1,
+    "current_state": "end_session",
+    "timestamp": "2025-12-02T11:46:13.855928",
+    "metadata": {
+      "turn_count": 17,
+      "current_goal": "improving my sleep - that is, getting more sleep per night to aim for hitting this consistenly by the end of the four weeks  I want to see if i can hit that schedule for 3 nights out of the week",
+      "program_questions_asked": [],
+      "tracking_method_discussed": true
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm Nala, your health and wellness coach. I'm really glad you're here and excited to work with you over the next four weeks. What's your name?"
+    },
+    {
+      "role": "user",
+      "content": "Taiyo"
+    },
+    {
+      "role": "assistant",
+      "content": "It's wonderful to meet you, Taiyo! Let me tell you a bit about how our program works. We'll have four weekly sessions together, one each week, where we'll focus on your personal health goals. During our time together, we'll work on setting goals that feel right for you, develop strategies that fit your lifestyle, and track your progress along the way. Between our weekly sessions, you'll be working on the goals we set together, and I'll encourage you to find ways to track your progress that work for you, whether that's journaling, using an app, or whatever feels natural. Then when we meet each week, we'll talk about how things went and adjust as needed. Does that sound good to you, or do you have any questions about how the program works?"
+    },
+    {
+      "role": "user",
+      "content": "nope"
+    },
+    {
+      "role": "assistant",
+      "content": "Great! Before we dive into goal setting, I'd love to get to know you better. Tell me a bit about yourself?"
+    },
+    {
+      "role": "user",
+      "content": "Hey! I'm a senior at USF in a 4+1 program, so I'm working on both my bachelor's and master's in computer science at the same time. I'm pretty active and like to keep busy. I'm really into coding and working on technical projects\u2014right now I'm building an AI health coaching chatbot and diving deep into systems design and algorithms. When I'm not grinding through coursework or coding, you'll probably find me analyzing fantasy football matchups or strategizing my lineup for the week. I also enjoy staying physically active\u2014whether that's hitting the gym, going for runs around San Francisco, or just exploring the city. I like to balance the screen time with getting outside and moving around. Even with a full course load, I'm always down to learn new things, whether it's a new tech stack, a better workout routine, or just picking up random skills along the way."
+    },
+    {
+      "role": "assistant",
+      "content": "Wow, Taiyo, that's impressive! Balancing a 4+1 program in computer science while building an AI chatbot and staying active takes a lot of discipline. It sounds like you've got a good mix of mental and physical activity in your life, and I love that you're intentional about balancing screen time with movement. Since you mentioned you're pretty active and enjoy hitting the gym and going for runs, what does your current exercise routine look like in terms of how often you're working out and what types of activities you're doing?"
+    },
+    {
+      "role": "user",
+      "content": "I work out 5 days a week in the gym, but I also try to play soccer, spikeball, and volleyball"
+    },
+    {
+      "role": "assistant",
+      "content": "That's fantastic, Taiyo! You're really consistent with five gym sessions a week, plus all those fun sports on top of it. When you're at the gym those five days, what does a typical workout look like for you, and how long do you usually spend there?"
+    },
+    {
+      "role": "user",
+      "content": "about an hour, doing a push-pull-legs workout lift split"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a solid routine, Taiyo! An hour of push-pull-legs five days a week shows great commitment to strength training, and mixing in those sports adds variety and keeps things fun. Now let's shift gears a bit. How are your sleep habits? How many hours are you typically getting per night, and how would you describe the quality of your sleep?"
+    },
+    {
+      "role": "user",
+      "content": "i'm not getting enough sleep - only 3-4 hours and decent quality"
+    },
+    {
+      "role": "assistant",
+      "content": "I really appreciate you being honest about that, Taiyo. Three to four hours is significantly below what your body needs, especially with everything you're juggling between your intense academic program, all that physical activity, and building projects. Even though you say the quality is decent, that amount of sleep can really impact your energy, focus, recovery from workouts, and overall well being. What are your current eating habits like? How many meals are you typically eating per day, and what does your diet generally look like?"
+    },
+    {
+      "role": "user",
+      "content": "3 meals a day - good healthy foods that I cook"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you're cooking your own meals and focusing on healthy foods, Taiyo! It sounds like you're taking good care of your nutrition. Just to make sure I understand correctly, you're eating three meals a day with foods you prepare yourself. Can you walk me through what a typical day of eating looks like for you? What kinds of foods are you usually including in those meals?"
+    },
+    {
+      "role": "user",
+      "content": "maybe 3 eggs and a bagel for breakfast, two sandwiches and some chips for lunch, and typically something heavier for dinner, with a good balance of protein, vegetables, carbs, and other important nutrients"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like you have a good foundation with your meals, Taiyo, and it's clear you're thinking about getting a balance of nutrients. I appreciate you walking me through a typical day. Now I'd love to learn a bit more about you outside of your routine. What do you like to do in your free time?"
+    },
+    {
+      "role": "user",
+      "content": "I like to scroll on social media to unwind"
+    },
+    {
+      "role": "assistant",
+      "content": "Thanks for sharing that, Taiyo. Social media can definitely feel like a way to decompress after a busy day. Now that I have a better picture of your daily life, let me ask you this. What specific health or wellness goal would you like to focus on during our time together?"
+    },
+    {
+      "role": "user",
+      "content": "improving my sleep - that is, getting more sleep per night"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm really glad you want to focus on sleep, Taiyo, because getting only three to four hours a night is really tough on your body and mind, especially with everything you're doing. Let me help you make this goal more specific so we can actually measure your progress and set you up for success. When you say you want to get more sleep per night, how many hours are you aiming for, and how many nights per week do you want to hit that target?"
+    },
+    {
+      "role": "user",
+      "content": "I want to get 8 hours of sleep per night everynight, but this also means going to bed at the same time and waking up at the same time. 11pm - 7am"
+    },
+    {
+      "role": "assistant",
+      "content": "That's a really solid and specific goal, Taiyo. So just to make sure I have this right, you want to sleep from 11pm to 7am every night, which gives you eight hours of sleep with a consistent schedule. Now to make this a complete SMART goal, we need to add a timeframe. How long do you want to commit to this sleep schedule? For example, are you thinking for the next week, the next month, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "to aim for hitting this consistenly by the end of the four weeks  I want to see if i can hit that schedule for 3 nights out of the week"
+    },
+    {
+      "role": "assistant",
+      "content": "I hear you wanting to build up to this gradually, which is really smart. So you're aiming to hit the 11pm to 7am schedule for three nights per week by the end of our four weeks together. That's a measurable target we can track. But let me clarify something. When you say three nights per week, do you mean you want to start with three nights this coming week, or do you want to gradually build up over the four weeks until you're consistently hitting three nights in that final week?"
+    },
+    {
+      "role": "user",
+      "content": "no start this coming week, and build up to this sleep schedule everynight by the end of the four weeks"
+    },
+    {
+      "role": "assistant",
+      "content": "Got it, thank you for clarifying. So your goal is to start with three nights of 11pm to 7am sleep this week, and then gradually increase until you're hitting that schedule every night by the end of our four weeks together. That's a really achievable way to build this habit. Now I'm curious, what do you think is the biggest challenge that's keeping you from getting to bed at 11pm right now?"
+    },
+    {
+      "role": "user",
+      "content": "my social media addicition, and probably not setting reminders"
+    },
+    {
+      "role": "assistant",
+      "content": "Those are both really common barriers, and it's great that you can identify them so clearly. Social media is designed to keep us scrolling, so recognizing that pull is an important first step. Since you mentioned not setting reminders, let's talk about how you'll actually remember to work on your sleep goal this week. What kind of system do you think would work best for you to track when you're hitting that 11pm bedtime?"
+    },
+    {
+      "role": "user",
+      "content": "I'll set a routine on my clock app, and set reminders on my calendar app"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a solid plan, using both your clock and calendar apps to keep you on track. Having those reminders will definitely help you stick to that 11pm bedtime, especially when you're tempted to keep scrolling. Is there anything else you'd like to talk about before we wrap up today?"
+    },
+    {
+      "role": "user",
+      "content": "no"
+    },
+    {
+      "role": "assistant",
+      "content": "Perfect, Taiyo. Let me summarize what we covered today. Your goal is to start with three nights of 11pm to 7am sleep this week, gradually building up to hitting that schedule every night by the end of our four weeks. You're feeling pretty confident at an 8 out of 10, and you'll be tracking your progress using reminders on your clock and calendar apps. I'm excited to hear how your first week goes with your new sleep routine. Remember to track which nights you hit that 11pm bedtime using your apps. See you next week at Session 2!"
+    }
+  ]
+}
