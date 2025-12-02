@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#F5F9F7" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     backgroundColor: "#4A8B6F",

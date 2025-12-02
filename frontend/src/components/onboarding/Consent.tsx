@@ -31,7 +31,7 @@ export default function ConsentSlide({ goToPreviousSlide }: Props) {
         return;
       }
 
-      await ApiService.completeOnboarding(user.uid);
+      //await ApiService.completeOnboarding(user.uid); TESTING
       console.log("🚀 Onboarding UPDATED in backend");
 
       setHasCompletedOnboarding(true);

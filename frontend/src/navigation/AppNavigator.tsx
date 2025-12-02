@@ -4,6 +4,9 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
 
+// ⭐ Add this:
+import { TextSizeProvider } from '../contexts/TextSizeContext';
+
 function AppContent() {
   const { loggedInUser, hasCompletedOnboarding } = useAuth();
 
@@ -17,7 +20,9 @@ function AppContent() {
 export default function AppNavigator() {
   return (
     <AuthProvider>
-      <AppContent />
+      <TextSizeProvider>
+        <AppContent />
+      </TextSizeProvider>
     </AuthProvider>
   );
 }

@@ -13,7 +13,8 @@ import { MainStackParamList } from "../navigation/MainStack";
 import { useAuth } from "../contexts/AuthContext";
 import { getAuth } from "firebase/auth";
 import { ApiService } from "../services/ApiService";
-import { Lock, CheckCircle2, Calendar, Settings } from "lucide-react-native";
+import { Lock, CheckCircle2, Calendar, MessageCircleQuestionMark } from "lucide-react-native";
+import { useTextSize } from "../contexts/TextSizeContext";
 
 type ChatOverviewScreenNavigationProp = NativeStackNavigationProp<
   MainStackParamList,
@@ -34,6 +35,8 @@ export default function ChatOverviewScreen({ navigation }: Props) {
   const { logout } = useAuth();
   const [progress, setProgress] = useState<SessionProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const { size } = useTextSize();
+  const fontScale = size === "small" ? 14 : size === "medium" ? 16 : 20;
 
   const sessions = [
     { id: 1, title: "Getting to know you" },
@@ -42,7 +45,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
     { id: 4, title: "Reviewing progress" },
   ];
 
-  // 🧩 Fetch real progress from backend
+  // Fetch real progress from backend
   useEffect(() => {
     const fetchProgress = async () => {
       try {
@@ -66,7 +69,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
     fetchProgress();
   }, []);
 
-  // 🟢 Determine if session is unlocked
+  // Determine if session is unlocked
   const isSessionUnlocked = (sessionNumber: number): boolean => {
     console.log(`🔍 Checking unlock for Session ${sessionNumber}`);
     const debugCurrent = progress.find((p) => p.session_number === sessionNumber);
@@ -85,14 +88,14 @@ export default function ChatOverviewScreen({ navigation }: Props) {
   };
   
 
-  // 🟢 Determine if session is complete
+  // Determine if session is complete
   const isSessionComplete = (sessionNumber: number): boolean => {
     return !!progress.find(
       (p) => p.session_number === sessionNumber && p.completed_at
     );
   };
 
-  // 🕒 Countdown until unlock
+  //  Countdown until unlock
   const getUnlockCountdown = (sessionNumber: number): string | null => {
     if (sessionNumber === 1) return null;
 
@@ -139,14 +142,20 @@ export default function ChatOverviewScreen({ navigation }: Props) {
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>Your Journey</Text>
-          <Text style={styles.headerSubtitle}>4-week wellness coaching program</Text>
-        </View>
+        <Text style={[styles.headerTitle, { fontSize: fontScale + 4 }]}>
+          Your Journey
+        </Text>
+
+        <Text style={[styles.headerSubtitle, { fontSize: fontScale - 2 }]}>
+          4-week wellness coaching program
+        </Text>
+      </View>
+
         <TouchableOpacity
           onPress={() => navigation.navigate("Settings")}
           style={styles.headerIconButton}
         >
-          <Settings color="#fff" size={22} />
+          <MessageCircleQuestionMark color="#fff" size={22} />
         </TouchableOpacity>
       </View>
 
@@ -193,30 +202,49 @@ export default function ChatOverviewScreen({ navigation }: Props) {
                   { backgroundColor: unlocked ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.1)" },
                 ]}
               >
-                <Text style={[styles.weekBadgeText, { color: unlocked ? "#FFF" : "#6B7280" }]}>
-                  Week {session.id}
-                </Text>
+              <Text
+                style={[
+                  styles.weekBadgeText,
+                  { color: unlocked ? "#FFF" : "#6B7280", fontSize: fontScale - 2},
+                ]}
+              >
+                Week {session.id}
+              </Text>
+
               </View>
 
               {/* Countdown or Title */}
               <Text
-                style={[
-                  styles.sessionDescription,
-                  { color: completed || unlocked ? "#FFF" : "#6B7280", fontSize: 16, fontWeight: "500" },
-                ]}
-              >
-                {completed
-                  ? "Completed"
-                  : unlocked
-                  ? session.title
-                  : getUnlockCountdown(session.id)}
-              </Text>
+              style={[
+                styles.sessionDescription,
+                {
+                  color: completed || unlocked ? "#FFF" : "#6B7280",
+                  fontSize: fontScale,
+                  fontWeight: "500",
+                },
+              ]}
+            >
+              {completed
+                ? "Completed"
+                : unlocked
+                ? session.title
+                : getUnlockCountdown(session.id)}
+            </Text>
+
 
               {/* Footer Details */}
               {unlocked && !completed && (
                 <View style={styles.sessionFooter}>
                   <Calendar size={14} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.sessionFooterText}>10-min check-in</Text>
+                <Text
+                style={[
+                  styles.sessionFooterText,
+                  { fontSize: fontScale - 4 },
+                ]}
+              >
+                10-min check-in
+              </Text>
+
                 </View>
               )}
             </TouchableOpacity>
@@ -225,14 +253,21 @@ export default function ChatOverviewScreen({ navigation }: Props) {
 
         {/* Encouragement Card */}
         <View style={styles.motivationCard}>
-          <Text style={styles.motivationText}>💪 Keep it up! Unlock and complete your next session.</Text>
+        <Text
+          style={[
+            styles.motivationText,
+            { fontSize: fontScale - 2 },
+          ]}
+        >
+          💪 Keep it up! Unlock and complete your next session.
+        </Text>
         </View>
       </ScrollView>
     </View>
   );
 }
 
-// 🎨 Styles
+// Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F9F7" },
   header: {
