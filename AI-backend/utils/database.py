@@ -2,8 +2,16 @@ import json
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional, List
+from pathlib import Path
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+
+# Load environment variables from root .env file
+_root_dir = Path(__file__).parent.parent.parent
+_env_file = _root_dir / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file)
 
 # PostgreSQL connection URL in this format:
 # postgresql://user:password@host:port/database
