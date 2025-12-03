@@ -1,0 +1,160 @@
+{
+  "user_profile": {
+    "uid": "user_20251121201813",
+    "name": "Jade (Full Test)",
+    "discovery_questions": {
+      "tell_me_about_yourself": "i sleep 5 hours of not great sleep",
+      "exercise_routine": "i eat 3 balanced meals",
+      "sleep_habits": "i like to play video games",
+      "eating_habits": "yes",
+      "free_time": null
+    },
+    "goals": [
+      {
+        "goal": "it would mean waking up feeling more refreshed i think turn off screens at 11 and be in bed by 11:30 . i think 3 days is realistic for me two weeks seems good",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 1,
+        "created_at": null,
+        "status": "active"
+      },
+      {
+        "goal": "Walking around my neighborhood sounds good 30 min sounds doable 2x a week im thinking friday and saturday",
+        "confidence": 9,
+        "stress": null,
+        "session_created": 2,
+        "created_at": null,
+        "status": "active"
+      }
+    ]
+  },
+  "session_info": {
+    "session_number": 4,
+    "current_state": "end_session",
+    "timestamp": "2025-12-01T11:56:26.391004",
+    "metadata": {
+      "turn_count": 14,
+      "stress_level": null,
+      "goals_achieved": true,
+      "what_happened": "Combination of everything and I had more time to focus on my goals.",
+      "path_chosen": "current",
+      "new_goals": [],
+      "confidence_level": 4,
+      "tracking_method": null
+    }
+  },
+  "chat_history": [
+    {
+      "role": "user",
+      "content": "[START_SESSION]"
+    },
+    {
+      "role": "assistant",
+      "content": "Welcome back, Jade! It's so great to see you for our final session together. I'd love to hear how the past week went with your sleep routine and those neighborhood walks you planned for Fridays and Saturdays."
+    },
+    {
+      "role": "user",
+      "content": "it went great last week!"
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful to hear! I'm so glad it went well. Can you tell me a bit more about what went great - was it the sleep routine, the walks, or both?"
+    },
+    {
+      "role": "user",
+      "content": "It was both. I just feel more refreshed and ready to take on the day"
+    },
+    {
+      "role": "assistant",
+      "content": "That's amazing, Jade! Feeling more refreshed and ready for the day is such a great outcome. What do you think made the biggest difference for you - was it the earlier bedtime, turning off screens, the walks, or maybe a combination of everything?"
+    },
+    {
+      "role": "user",
+      "content": "Combination of everything and I had more time to focus on my goals."
+    },
+    {
+      "role": "assistant",
+      "content": "That's wonderful! It sounds like having that extra time and combining the sleep routine with the walks really worked well for you. Now that you've had this success and you're feeling more refreshed and energized, what do you think could make things even better going forward?"
+    },
+    {
+      "role": "user",
+      "content": "I want to adjust my sleep goal a bit"
+    },
+    {
+      "role": "assistant",
+      "content": "Of course! What adjustment are you thinking about making to your sleep goal?"
+    },
+    {
+      "role": "user",
+      "content": "I want to go up to 4 days a week"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a great step up from where you started! So you want to turn off screens at 11 and be in bed by 11:30 four days a week now. What days of the week do you think would work best for you?"
+    },
+    {
+      "role": "user",
+      "content": "M-Th sounds great to me"
+    },
+    {
+      "role": "assistant",
+      "content": "Monday through Thursday sounds like a solid plan. Since this is our final session together, I'm curious - after the program ends, what will help you stick with this routine on your own?"
+    },
+    {
+      "role": "user",
+      "content": "I have my reminders"
+    },
+    {
+      "role": "assistant",
+      "content": "That's great that you have your reminders set up. You mentioned earlier that your confidence is at a 4 out of 10 right now. What successes have you had in the past that you can draw on to boost that confidence?"
+    },
+    {
+      "role": "user",
+      "content": "I did my goals, which means a lot to me"
+    },
+    {
+      "role": "assistant",
+      "content": "That's huge, Jade! You set out to do something challenging and you followed through. That shows you have what it takes. When you think about continuing this four-day sleep routine after our sessions end, what do you think might get in the way?"
+    },
+    {
+      "role": "user",
+      "content": "Time"
+    },
+    {
+      "role": "assistant",
+      "content": "Time is a real challenge. When you say time might get in the way, what specifically are you thinking about - is it finding time to wind down, or something else competing with your bedtime routine?"
+    },
+    {
+      "role": "user",
+      "content": "Finding time to do it with finals coming up"
+    },
+    {
+      "role": "assistant",
+      "content": "Finals are definitely intense and can throw off routines. Since you successfully did your goals this past period, what strategies helped you make time for them even when things got busy?"
+    },
+    {
+      "role": "user",
+      "content": "I had my reminders to remind me to do my goals and overall just knowing I want to accomplish something has been helping."
+    },
+    {
+      "role": "assistant",
+      "content": "Those reminders and your internal motivation have been working really well for you. How could you adapt those same strategies during finals - maybe setting reminders at different times or adjusting what counts as success on your busiest nights?"
+    },
+    {
+      "role": "user",
+      "content": "Absolutely, being realistic about my time and maybe just doing my goals on the days i can"
+    },
+    {
+      "role": "assistant",
+      "content": "That sounds like a really smart and sustainable approach - doing your goals when you can rather than putting pressure on yourself during an already stressful time. So for the next two weeks with finals happening, what would feel realistic to you in terms of how many days you could aim for your sleep routine?"
+    },
+    {
+      "role": "user",
+      "content": "i want to try for 4 and if not do however many i can"
+    },
+    {
+      "role": "assistant",
+      "content": "Four days sounds like a solid goal to work toward, and I like that you're giving yourself flexibility to do what you can manage. And what about your walks - how many times do you think you could realistically fit those in over the next two weeks with finals?"
+    }
+  ]
+}
