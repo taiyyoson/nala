@@ -1,5 +1,5 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ChatOverviewScreen from '../screens/ChatOverviewScreen';
 import ChatScreen from '../screens/ChatScreen';
 import { SettingsPage } from "../screens/Settings";
@@ -14,7 +14,7 @@ export type MainStackParamList = {
   Settings: undefined;
 };
 
-const Stack = createNativeStackNavigator<MainStackParamList>();
+const Stack = createNativeStackNavigator();
 
 export default function MainStack() {
   return (
