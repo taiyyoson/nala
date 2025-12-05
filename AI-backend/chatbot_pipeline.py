@@ -142,9 +142,6 @@ def step4_verify_setup():
     cur.close()
     conn.close()
     
-    # print(f"Total records: {count}")
-    # print(f"Records with embeddings: {embedding_count}")
-    
     if count == 0:
         raise Exception("No records found in database!")
     if embedding_count == 0:

@@ -91,7 +91,6 @@ def setup_database():
         ON coaching_conversations (goal_type);
     """)
     
-    # === NEW: Full-text search indexes ===
     print("Creating full-text search indexes...")
     
     cur.execute("""

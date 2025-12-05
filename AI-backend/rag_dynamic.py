@@ -57,7 +57,7 @@ class UnifiedRAGChatbot:
         """
         Retrieve relevant coaching examples from vector database
         """
-        # TEST: Use pure vector search instead of hybrid
+        #  Use pure vector search instead of hybrid
         results = self.searcher.search_with_details(
             query, 
             limit=self.top_k,
@@ -139,7 +139,7 @@ Use these examples as guidance for your coaching style and responses. Mirror the
                 {
                     "type": "text",
                     "text": system_prompt,
-                    "cache_control": {"type": "ephemeral"}  # Cache this!
+                    "cache_control": {"type": "ephemeral"}  
                 }
             ],
             messages=messages
@@ -168,7 +168,7 @@ Use these examples as guidance for your coaching style and responses. Mirror the
                 {
                     "type": "text",
                     "text": system_prompt,
-                    "cache_control": {"type": "ephemeral"}  # Cache the system prompt!
+                    "cache_control": {"type": "ephemeral"} 
                 }
             ],
             messages=messages
@@ -193,7 +193,7 @@ Use these examples as guidance for your coaching style and responses. Mirror the
         if self.model_info['provider'] == 'openai':
             response = self.generate_with_openai(user_message, system_prompt)
         elif self.model_info['provider'] == 'anthropic':
-            response = self.generate_with_anthropic_streaming(user_message, system_prompt)  # Changed!
+            response = self.generate_with_anthropic_streaming(user_message, system_prompt)  
         
         # Update conversation history
         if use_history:
@@ -347,13 +347,10 @@ def interactive_chat():
                     print(f"Category: {source['category']}")
                     print(f"Participant: {source['participant_response'][:100]}...")
                     print(f"Coach: {source['coach_response'][:100]}...")
-                print("\n--- Response ---")
+                print("\n--- Response ---")           
             
-            # REMOVE OR COMMENT OUT THIS LINE - it's duplicating the streamed output:
-            # print(f"\nCoach [{model_name}]: {response}\n")
-            
-            # Instead, just add a newline after streaming and the timing info:
-            print()  # Blank line for spacing
+            # Used to keep newline
+            print()  
             
 
         except Exception as e:

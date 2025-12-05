@@ -1,6 +1,5 @@
 """
 State-specific prompt templates.
-Extracted from Session1Manager and Session2Manager get_system_prompt_addition().
 """
 
 
@@ -803,7 +802,7 @@ Ask: "Is there anything that needs to change with your current goals to help you
 
 Be open to adjustments while maintaining goal quality.
 
-🚨 CRITICAL: This is Session 4, the FINAL session of the program. There are NO MORE SESSIONS after this.
+ CRITICAL: This is Session 4, the FINAL session of the program. There are NO MORE SESSIONS after this.
 - NEVER say "next week" or "next session" or "when we meet again"
 - This is the last time you'll meet with them
 - Focus on their ability to continue these goals independently after the program ends
@@ -868,7 +867,7 @@ Good confidence level ({session_data.get('confidence_level')}/10)!
 
 Acknowledge their confidence positively and transition to tracking.
 
-🚨 CRITICAL: This is the FINAL session. Do NOT mention "next week" or future sessions.
+ CRITICAL: This is the FINAL session. Do NOT mention "next week" or future sessions.
 Say: "That's great confidence! Let's talk about how you'll remember to work on these goals after our program ends."
 """,
         
@@ -881,7 +880,7 @@ SECOND TIME in this state:
 Say: "[Brief acknowledgment]. How will you keep these goals going after our program ends?"
 Example: "Phone alarms are perfect. How will you keep these goals going after our program ends?"
 
-🚨 TWO EXCHANGES ONLY: Question → Answer → Acknowledge+NextQuestion
+ TWO EXCHANGES ONLY: Question → Answer → Acknowledge+NextQuestion
 """,
         
         "how_will_you_continue_your_goals": f"""
@@ -893,7 +892,7 @@ SECOND TIME in this state:
 Say: "[Brief acknowledgment]. Do you have any final questions before we wrap up?"
 Example: "That confidence will serve you well. Do you have any final questions before we wrap up?"
 
-🚨 TWO EXCHANGES ONLY: Question → Answer → Acknowledge+FinalQuestions
+ TWO EXCHANGES ONLY: Question → Answer → Acknowledge+FinalQuestions
 """,
         
         "any_final_questions": f"""
