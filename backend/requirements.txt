@@ -15,8 +15,8 @@ alembic==1.13.1
 
 # For future vector store integration
 # Using versions with pre-built wheels to avoid Rust compilation on Render
-chromadb==0.4.22
-sentence-transformers==2.3.1
+chromadb==0.4.15
+sentence-transformers==2.2.2
 
 # Development dependencies
 pytest==7.4.3
