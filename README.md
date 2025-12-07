@@ -19,7 +19,7 @@ Nala is an intelligent health coaching assistant designed to guide users through
 - [Project Structure](#project-structure)
 - [Core Components](#core-components)
 - [API Documentation](#api-documentation)
-- [Deployment](#deployment)s
+- [Deployment](#deployment)
 - [Testing](#testing)
 - [Contributing](#contributing)
 
