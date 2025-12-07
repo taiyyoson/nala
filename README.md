@@ -19,10 +19,9 @@ Nala is an intelligent health coaching assistant designed to guide users through
 - [Project Structure](#project-structure)
 - [Core Components](#core-components)
 - [API Documentation](#api-documentation)
-- [Deployment](#deployment)
+- [Deployment](#deployment)s
 - [Testing](#testing)
 - [Contributing](#contributing)
-- [License](#license)
 
 ---
 
@@ -279,11 +278,12 @@ python populate_vector_db.py
 
 ### Development Mode
 
-#### Option 1: Local Backend
+### Local Backend
 
 1. **Start backend:** `cd backend && python dev.py`
 2. **Start frontend:** `cd frontend && npm start`
 3. **Open in Expo Go:**
+   - Webapp: press i to set up IOS simulator via X-Code
    - iOS: Scan QR code with Camera app
    - Android: Scan QR code with Expo Go app
 
@@ -295,31 +295,6 @@ const USE_DEPLOYED = true; // Set to true
 ```
 
 Then run: `cd frontend && npm start`
-
-### Production Mode
-
-#### View Published Version on Expo
-
-The app is published on Expo for easy testing:
-
-```bash
-# Scan this QR code in Expo Go app:
-[QR Code would be generated after publishing]
-
-# Or use this link:
-exp://exp.host/@yourusername/frontend
-```
-
-#### iOS/Android Builds
-
-```bash
-# iOS build
-cd frontend
-eas build --platform ios
-
-# Android build
-eas build --platform android
-```
 
 ---
 
@@ -546,8 +521,6 @@ results = cursor.execute("""
 """, [query_embedding, query_embedding, query_embedding])
 ```
 
-📖 **See:** [backend/docs/E2E_FLOW_GUIDE.md](backend/docs/E2E_FLOW_GUIDE.md)
-
 ---
 
 ## API Documentation
@@ -709,9 +682,14 @@ services:
 #### Publish to Expo
 
 ```bash
-cd frontend
-expo login
-expo publish
+# Install EAS CLI
+npm install -g eas-cli
+
+eas login
+eas whoami
+
+eas deploy
+eas deploy --prod
 ```
 
 This creates a shareable link: `exp://exp.host/@username/frontend`
@@ -748,6 +726,7 @@ pytest tests/ -v
 - Database operations
 - RAG service integration
 - Authentication flows
+- Covered in Github Actions, CI/CD Pipeline
 
 ### Frontend Testing
 
@@ -756,95 +735,8 @@ cd frontend
 npm test
 ```
 
-**Manual Testing:**
-- Use Expo Go app to test on physical device
-- Test on iOS simulator: `npm run ios`
-- Test on Android emulator: `npm run android`
-
----
-
-## Known Issues & Troubleshooting
-
-### Issue: Onboarding Not Persisting
-
-**Symptom:** User completes onboarding but gets sent back after app refresh.
-
-**Cause:** Backend API call is commented out in `Consent.tsx`.
-
-**Fix:** Uncomment line 34 in `frontend/src/components/onboarding/Consent.tsx`:
-```typescript
-await ApiService.completeOnboarding(user.uid); // UNCOMMENT THIS
-```
-
----
-
-### Issue: Sessions Not Unlocking
-
-**Symptom:** Week 2+ sessions remain locked even after completing previous week.
-
-**Solution:**
-1. Check backend logs for errors
-2. Verify session progress in database:
-   ```bash
-   sqlite3 nala_conversations.db
-   SELECT * FROM session_progress;
-   ```
-3. Ensure `completed_at` and `unlocked_at` timestamps are set correctly
-
----
-
-### Issue: Chat Messages Not Sending
-
-**Symptom:** Messages appear stuck or don't get responses.
-
-**Troubleshooting:**
-1. Check backend is running: `curl http://127.0.0.1:8000/api/v1/health`
-2. Check API base URL in `ApiService.ts` matches your backend
-3. Look for CORS errors in browser console
-4. Verify OpenAI/Anthropic API keys are valid
-
----
-
-## Contributing
-
-We welcome contributions! Please follow these guidelines:
-
-1. **Fork the repository**
-2. **Create a feature branch:** `git checkout -b feature/amazing-feature`
-3. **Commit changes:** `git commit -m 'Add amazing feature'`
-4. **Push to branch:** `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
-
-### Code Style
-
-- **Frontend:** Follow React Native/TypeScript best practices
-- **Backend:** Follow PEP 8 Python style guide
-- **Commit messages:** Use conventional commits format
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## Support & Contact
 
 - **Email:** chatbot.nala@gmail.com
-- **Issues:** [GitHub Issues](https://github.com/yourusername/nala/issues)
-- **Documentation:** [docs/](docs/)
 
----
-
-## Acknowledgments
-
-- Built for CS490 Senior Project at University of San Francisco
-- RAG system inspired by modern LLM best practices
-- UI design follows Material Design and iOS Human Interface Guidelines
-- Coaching transcripts sourced from real wellness coaching sessions
-
----
-
-**Last Updated:** December 3, 2024
-**Version:** 1.0.0
