@@ -104,14 +104,13 @@ def load_csv_to_database(csv_path):
         )
         coach_enhanced.append(c_text)
     
-    # === CHANGED: Use enhanced texts instead of raw texts ===
+    # Load embedding with enhanced text 
     print("\nGenerating embeddings for participant responses...")
     participant_embeddings = get_embeddings_batch(participant_enhanced)
     
     print("\nGenerating embeddings for coach responses...")
     coach_embeddings = get_embeddings_batch(coach_enhanced)
     
-    # Rest stays the same
     print("\nPreparing data for database insertion...")
     data_to_insert = []
     for idx, row in df.iterrows():

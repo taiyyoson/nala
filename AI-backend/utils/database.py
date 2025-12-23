@@ -14,7 +14,6 @@ if _env_file.exists():
     load_dotenv(_env_file)
 
 # PostgreSQL connection URL in this format:
-# postgresql://user:password@host:port/database
 DATABASE_URL = os.getenv("CONVERSATION_DATABASE_URL")
 
 

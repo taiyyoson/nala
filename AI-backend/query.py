@@ -16,8 +16,8 @@ class VectorSearch:
     def __init__(self):
         openai.api_key = os.getenv("OPENAI_API_KEY")
         self.client = openai        
+
     def get_db_connection(self):
-    
         database_url = os.getenv('DATABASE_URL')
     
         if database_url:
@@ -73,7 +73,7 @@ class VectorSearch:
                 context_category, goal_type, similarity_score)
         """
         
-        # === NEW: Auto-detect context if not provided ===
+        # Auto detect context 
         if auto_detect_context and not category_filter:
             detected_context = self.detect_context(query)
             enhanced_query = f"Context: {detected_context} | Goal: {detected_context} | {query}"
@@ -88,7 +88,6 @@ class VectorSearch:
             input=enhanced_query
         ).data[0].embedding
         
-        # Rest stays the same...
         conn = self.get_db_connection()
         cur = conn.cursor()
         
