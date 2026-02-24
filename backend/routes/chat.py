@@ -15,12 +15,13 @@ from models.session_progress import SessionProgress
 from pydantic import BaseModel
 from services import AIService, ConversationService, DatabaseService
 from sqlalchemy.orm import Session
-from utils.database import load_session_from_db, save_session_to_db
 
 # Add AI-backend to path for session database utilities
 _ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
 if str(_ai_backend_path) not in sys.path:
     sys.path.insert(0, str(_ai_backend_path))
+
+from utils.database import load_session_from_db, save_session_to_db
 
 
 chat_router = APIRouter(prefix="/chat", tags=["chat"])
