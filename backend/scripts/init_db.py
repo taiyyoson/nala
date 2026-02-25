@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(backend_dir.parent))
+sys.path.insert(0, str(backend_dir))
 
 from config.database import DatabaseConfig
 from config.settings import settings
@@ -26,7 +26,7 @@ def init_conversation_database():
     print("=" * 80)
 
     # Database URL
-    database_url = settings.database_url
+    database_url = settings.conversation_database_url
     print(f"\nDatabase URL: {database_url}")
 
     # Initialize database connection
@@ -64,7 +64,7 @@ def reset_conversation_database():
         return False
 
     # Database URL
-    database_url = settings.database_url
+    database_url = settings.conversation_database_url
     print(f"\nDatabase URL: {database_url}")
 
     # Initialize database connection
