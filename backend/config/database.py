@@ -118,8 +118,10 @@ class DatabaseConfig:
             True if connection is working
         """
         try:
+            from sqlalchemy import text
+
             with self.session_scope() as session:
-                session.execute("SELECT 1")
+                session.execute(text("SELECT 1"))
             return True
         except Exception as e:
             print(f"Database health check failed: {e}")
