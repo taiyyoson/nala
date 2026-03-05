@@ -89,15 +89,29 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [sessionComplete, setSessionComplete] = useState(false);
   const [loadingCompletionStatus, setLoadingCompletionStatus] = useState(true);
 
-  const userId = getAuth().currentUser?.uid;
+  const auth = getAuth();
+  const userId = auth.currentUser?.uid;
   const hasInitialized = useRef(false);
+
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
+    const token = await currentUser.getIdToken();
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    };
+  };
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch completion status
   useEffect(() => {
     const fetchCompletionStatus = async () => {
       try {
-        const res = await fetch(`${API_BASE}/session/progress/${userId}`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${API_BASE}/session/progress/${userId}`, { headers });
         const data = await res.json();
 
         const matching = data.filter((s: any) => s.session_number === week);
@@ -149,9 +163,10 @@ export default function ChatScreen({ navigation, route }: Props) {
 
       setMessages([placeholder]);
 
+      const headers = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/chat/message`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           message,
           user_id: userId,
@@ -194,9 +209,10 @@ export default function ChatScreen({ navigation, route }: Props) {
     setIsLoading(true);
 
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/chat/message`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           message: text,
           user_id: userId,

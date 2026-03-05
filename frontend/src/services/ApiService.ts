@@ -1,5 +1,7 @@
 // src/services/ApiService.ts
 
+import { getAuth } from "firebase/auth";
+
 // Toggle between local and deployed backend
 const USE_DEPLOYED = true; // Set to false for local development
 const BASE_URL = USE_DEPLOYED
@@ -8,6 +10,18 @@ const BASE_URL = USE_DEPLOYED
 export const API_BASE = `${BASE_URL}/api/v1`;
 
 export class ApiService {
+
+  private static async getAuthHeaders(): Promise<Record<string, string>> {
+    const currentUser = getAuth().currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
+    const token = await currentUser.getIdToken();
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    };
+  }
 
   static async checkHealth() {
     try {
@@ -28,9 +42,10 @@ export class ApiService {
     conversationId?: string
   ) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE}/chat/message`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           message,
           user_id: userId,
@@ -51,8 +66,10 @@ export class ApiService {
   ---------------------------------------- */
   static async getSessionData(userId: string, sessionNumber: number) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${API_BASE}/session/data/${userId}/${sessionNumber}`
+        `${API_BASE}/session/data/${userId}/${sessionNumber}`,
+        { headers }
       );
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
@@ -64,7 +81,10 @@ export class ApiService {
 
   static async getLatestSession(userId: string) {
     try {
-      const response = await fetch(`${API_BASE}/session/latest/${userId}`);
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE}/session/latest/${userId}`, {
+        headers,
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -76,7 +96,10 @@ export class ApiService {
 
   static async getUserStatus(userId: string) {
     try {
-      const response = await fetch(`${API_BASE}/user/status/${userId}`);
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE}/user/status/${userId}`, {
+        headers,
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -87,11 +110,11 @@ export class ApiService {
 
   static async completeOnboarding(userId: string) {
     try {
+      const headers = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE}/user/onboarding`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
-          user_id: userId,
           onboarding_completed: true,
         }),
       });
@@ -106,12 +129,14 @@ export class ApiService {
     SESSION PROGRESS ENDPOINTS
 ---------------------------------------- */
 static async markSessionComplete(userId: string, sessionNumber: number) {
-  const url = `${API_BASE}/session/complete?user_id=${userId}&session_number=${sessionNumber}`;
+  const url = `${API_BASE}/session/complete?session_number=${sessionNumber}`;
   console.log("✅ Marking session complete:", url);
 
   try {
+    const headers = await this.getAuthHeaders();
     const response = await fetch(url, {
       method: "POST",
+      headers,
     });
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -127,7 +152,8 @@ static async getUserProgress(userId: string) {
   console.log("📊 Fetching user progress:", url);
 
   try {
-    const response = await fetch(url);
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(url, { headers });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } catch (error) {
