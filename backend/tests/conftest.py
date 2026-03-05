@@ -6,6 +6,8 @@ from config.database import init_database
 from config.settings import settings
 from fastapi.testclient import TestClient
 
+from tests.mock_ai_service import StatefulMockFactory
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_database():
@@ -59,3 +61,29 @@ def client():
 def sample_chat_request():
     """Sample chat request for testing"""
     return {"message": "Hello, I need help with my health", "user_id": "test_user_123"}
+
+
+# ---------------------------------------------------------------------------
+# E2E fixtures — stateful mock for full-flow tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def e2e_mock_factory():
+    """Create a StatefulMockFactory for E2E tests (function-scoped)."""
+    return StatefulMockFactory(messages_per_session=3)
+
+
+@pytest.fixture
+def e2e_client(e2e_mock_factory):
+    """
+    Test client wired to a stateful AI mock.
+
+    Use this fixture (instead of `client`) when you need session state
+    to progress through the state machine and reach end_session.
+    """
+    with patch(
+        "routes.chat.get_or_create_ai_service",
+        side_effect=e2e_mock_factory.get_or_create,
+    ):
+        yield TestClient(app)
