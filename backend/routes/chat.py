@@ -7,14 +7,19 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from adapters import RequestAdapter, ResponseAdapter
+from authentication.auth_service import verify_token
 from config.database import get_db
 from config.settings import settings
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from models.session_progress import SessionProgress
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from services import AIService, ConversationService, DatabaseService
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
+
+limiter = Limiter(key_func=get_remote_address)
 
 # Add AI-backend to path for session database utilities
 _ai_backend_path = Path(__file__).parent.parent.parent / "AI-backend"
@@ -149,7 +154,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., max_length=5000)
     conversation_id: Optional[str] = None
     user_id: Optional[str] = None
     session_number: Optional[int] = None
@@ -165,13 +170,21 @@ class ChatResponse(BaseModel):
 
 
 @chat_router.post("/message", response_model=ChatResponse)
-async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+async def send_message(
+    http_request: Request,
+    request: ChatRequest,
+    decoded_token: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
     try:
+        user_id = decoded_token["uid"]
+
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
 
         conv_id = await conv_service.get_or_create_conversation(
-            conversation_id=request.conversation_id, user_id=request.user_id
+            conversation_id=request.conversation_id, user_id=user_id
         )
 
         history = await conv_service.get_conversation_history(
@@ -181,7 +194,7 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
         ai_service = get_or_create_ai_service(
             conversation_id=conv_id,
             session_number=request.session_number,
-            user_id=request.user_id,
+            user_id=user_id,
         )
 
         print(
@@ -193,7 +206,7 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
         response, sources, model_name = await ai_service.generate_response(
             message=request.message,
             conversation_history=history,
-            user_id=request.user_id,
+            user_id=user_id,
         )
 
         # Check if session is complete
@@ -207,11 +220,11 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
                 session_complete = True
 
                 # Mark session complete in session_progress table
-                if request.user_id and request.session_number:
+                if user_id and request.session_number:
                     session_obj = (
                         db.query(SessionProgress)
                         .filter_by(
-                            user_id=request.user_id,
+                            user_id=user_id,
                             session_number=request.session_number,
                         )
                         .first()
@@ -221,7 +234,7 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
                         session_obj.mark_complete()
                     else:
                         session_obj = SessionProgress(
-                            user_id=request.user_id,
+                            user_id=user_id,
                             session_number=request.session_number,
                         )
                         session_obj.mark_complete()
@@ -232,7 +245,7 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
                     # Save session data to sessions table
                     _save_session_on_completion(
                         ai_service=ai_service,
-                        user_id=request.user_id,
+                        user_id=user_id,
                         session_number=request.session_number,
                         conversation_history=ai_service.chatbot.conversation_history,
                     )
@@ -265,13 +278,19 @@ async def send_message(request: ChatRequest, db: Session = Depends(get_db)):
 
         return ChatResponse(**formatted_response)
 
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @chat_router.get("/conversation/{conversation_id}")
-async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
+async def get_conversation(
+    conversation_id: str,
+    decoded_token: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
     try:
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
@@ -289,15 +308,19 @@ async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error retrieving conversation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @chat_router.get("/conversations")
 async def list_conversations(
-    user_id: str, limit: int = 50, offset: int = 0, db: Session = Depends(get_db)
+    limit: int = 50,
+    offset: int = 0,
+    decoded_token: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
 ):
     try:
+        user_id = decoded_token["uid"]
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
 
@@ -313,13 +336,19 @@ async def list_conversations(
             "offset": offset,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error listing conversations: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @chat_router.delete("/conversation/{conversation_id}")
-async def delete_conversation(conversation_id: str, db: Session = Depends(get_db)):
+async def delete_conversation(
+    conversation_id: str,
+    decoded_token: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
     try:
         db_service = DatabaseService(db)
         conv_service = ConversationService(db_service)
@@ -334,5 +363,5 @@ async def delete_conversation(conversation_id: str, db: Session = Depends(get_db
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error deleting conversation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")

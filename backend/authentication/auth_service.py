@@ -18,5 +18,5 @@ def verify_token(request: Request):
         return decoded_token  # contains uid, email, etc.
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         )

@@ -50,7 +50,7 @@ def test_firebase():
 
 
 @router.post("/verify")
-async def verify_token(request: Request):
+async def verify_token_endpoint(request: Request):
     try:
         data = await request.json()
         id_token = data.get("idToken")
