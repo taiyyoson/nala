@@ -1,77 +1,93 @@
-from enum import Enum
-from typing import Dict, Any, Optional, List
 import json
 import os
-from datetime import datetime
 import re
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from utils.database import load_session_from_db, save_session_to_db
+from utils.goal_detection import is_likely_goal
 
 # Utilities
-from utils.smart_evaluation import evaluate_smart_goal_with_llm, heuristic_smart_check, create_concise_goal
-from utils.unified_storage import save_unified_session, get_active_goals, extract_user_profile
-from utils.state_prompts import get_session4_prompt
-from utils.state_helpers import (
-    create_state_result,
-    check_affirmative,
-    check_negative,
-    extract_number,
-    check_wants_more,
-    check_done
+from utils.smart_evaluation import (
+    create_concise_goal,
+    evaluate_smart_goal_with_llm,
+    heuristic_smart_check,
 )
-from utils.goal_detection import is_likely_goal
-from utils.database import save_session_to_db, load_session_from_db
+from utils.state_helpers import (
+    check_affirmative,
+    check_done,
+    check_negative,
+    check_wants_more,
+    create_state_result,
+    extract_number,
+)
+from utils.state_prompts import get_session4_prompt
+from utils.unified_storage import (
+    extract_user_profile,
+    get_active_goals,
+    save_unified_session,
+)
+
 
 class Session4State(Enum):
     """States for Session 4 conversation flow"""
+
     GREETINGS = "greetings"
     REINFORCE_GOAL_FROM_LAST_SESSION = "reinforce_goal_from_last_session"
     CHECK_IN_GOALS = "check_in_goals"
-    
+
     # Path 1: Goals achieved
     WHAT_HAPPENED = "what_happened"
     WHAT_CAN_BE_DONE_TO_MAKE_IT_BETTER = "what_can_be_done_to_make_it_better"
-    
+
     # Path 2: Goals not achieved - Stress handling
     STRESS_LEVEL = "stress_level"
     STRESS_HIGH_WHAT_HAPPENED = "stress_high_what_happened"
     STRESS_HIGH_ANYTHING_WE_CAN_TALK_ABOUT = "stress_high_anything_we_can_talk_about"
     STRESS_LOW_WHAT_HAPPENED = "stress_low_what_happened"
-    
+
     # Focus selection
     WHATS_THE_FOCUS_TODAY = "whats_the_focus_today"
-    
+
     # Path A: Current goals (keeping existing)
-    CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE = "current_goals_anything_needing_to_change"
-    
+    CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE = (
+        "current_goals_anything_needing_to_change"
+    )
+
     # Path B: New goals
     NEW_GOALS_SMART_CHECK = "new_goals_smart_check"
     SMART_YES_PATH = "smart_yes_path"
     SMART_NO_PATH = "smart_no_path"
-    
+
     # Common states
     CONFIDENCE_CHECK = "confidence_check"
     LOW_CONFIDENCE_WHAT_SUCCESSES = "low_confidence_what_successes"
-    LOW_CONFIDENCE_HOW_CAN_WE_MAKE_IT_MORE_ACHIEVABLE = "low_confidence_how_can_we_make_it_more_achievable"
+    LOW_CONFIDENCE_HOW_CAN_WE_MAKE_IT_MORE_ACHIEVABLE = (
+        "low_confidence_how_can_we_make_it_more_achievable"
+    )
     HIGH_CONFIDENCE_PATH = "high_confidence_path"
-    
+
     # Tracking and closing
     HOW_WILL_YOU_REMEMBER_TO_DO_YOUR_GOAL = "how_will_you_remember_to_do_your_goal"
     ANY_FINAL_QUESTIONS = "any_final_questions"
+    CONFIRM_END_SESSION = "confirm_end_session"
     END_SESSION = "end_session"
 
 
 class Session4Manager:
     """Manages conversation flow for Session 4"""
-    
+
     def __init__(self, user_profile: Dict = None, llm_client=None, debug=True):
         self.debug = debug
         self.state = Session4State.GREETINGS
-        
+
         # Extract from unified profile
         self.uid = user_profile.get("uid") if user_profile else None
         user_name = user_profile.get("name") if user_profile else None
         if user_name:
             user_name = user_name.title()
-        
+
         # Get active goals from previous session
         previous_goals = []
         discovery_info = {}
@@ -79,15 +95,18 @@ class Session4Manager:
             # Get active goals
             all_goals = user_profile.get("goals", [])
             active_goals = get_active_goals(all_goals)
-            previous_goals = [{
-                "goal": g["goal"],
-                "confidence": g["confidence"],
-                "session_created": g.get("session_created", 3)
-            } for g in active_goals]
-            
+            previous_goals = [
+                {
+                    "goal": g["goal"],
+                    "confidence": g["confidence"],
+                    "session_created": g.get("session_created", 3),
+                }
+                for g in active_goals
+            ]
+
             # Get discovery info
             discovery_info = user_profile.get("discovery_questions", {})
-        
+
         self.session_data = {
             "uid": self.uid,
             "user_name": user_name,
@@ -117,192 +136,303 @@ class Session4Manager:
             "turn_count": 0,
             "last_coach_response": None,
             "questions_asked": set(),
-            "final_goodbye_given": False
+            "final_goodbye_given": False,
         }
         self.llm_client = llm_client
-        self._log_debug(f"Session 4 initialized with user: {user_name}, UID: {self.uid}")
+        self._log_debug(
+            f"Session 4 initialized with user: {user_name}, UID: {self.uid}"
+        )
         self._log_debug(f"Previous goals loaded: {len(previous_goals)}")
-    
+
     def _create_concise_goal(self, full_goal: str) -> str:
         """Create a concise version of the goal for storage"""
         return create_concise_goal(full_goal)
-    
+
     def _log_debug(self, message: str):
         if self.debug:
             print(f"[DEBUG] {message}", flush=True)
-    
+
     def _mark_question_asked(self, question_key: str):
         self.session_data["questions_asked"].add(question_key)
         self._log_debug(f"Marked question asked: {question_key}")
-    
+
     def _has_asked_question(self, question_key: str) -> bool:
         return question_key in self.session_data["questions_asked"]
-    
+
     def set_llm_client(self, llm_client):
         self.llm_client = llm_client
         self._log_debug("LLM client set")
-    
+
     def evaluate_smart_goal(self, goal: str) -> Dict[str, Any]:
         """Use LLM to evaluate if a goal is SMART"""
         self._log_debug(f"Evaluating SMART goal: '{goal}'")
-        
+
         if not self.llm_client:
             self._log_debug("No LLM client, using heuristic check")
             return heuristic_smart_check(goal)
-        
+
         try:
             result = evaluate_smart_goal_with_llm(goal, self.llm_client)
-            self._log_debug(f"SMART evaluation result: is_smart={result['is_smart']}, missing={result['missing_criteria']}")
+            self._log_debug(
+                f"SMART evaluation result: is_smart={result['is_smart']}, missing={result['missing_criteria']}"
+            )
             return result
         except Exception as e:
             self._log_debug(f"SMART evaluation error: {e}")
             return heuristic_smart_check(goal)
-    
+
     def get_state(self) -> Session4State:
         return self.state
-    
+
     def set_state(self, new_state: Session4State):
         old_state = self.state
         self.state = new_state
         self._log_debug(f"STATE TRANSITION: {old_state.value} -> {new_state.value}")
-    
-    def process_user_input(self, user_input: str, last_coach_response: str = None, 
-                          conversation_history: list = None) -> Dict[str, Any]:
+
+    def process_user_input(
+        self,
+        user_input: str,
+        last_coach_response: str = None,
+        conversation_history: list = None,
+    ) -> Dict[str, Any]:
         """Process user input and determine state transitions"""
         user_lower = user_input.lower().strip()
         self.session_data["turn_count"] += 1
-        
+
         self._log_debug(f"Processing input in state: {self.state.value}")
         self._log_debug(f"User input: {user_input[:100]}...")
-        
+
         if last_coach_response:
             self.session_data["last_coach_response"] = last_coach_response
-        
+
         result = create_state_result()
-        
+
         # If session ended, stay in END_SESSION
-        if self.state == Session4State.END_SESSION and self.session_data.get("final_goodbye_given"):
-            result["context"] = "Session already ended. Politely acknowledge but don't continue conversation."
+        if self.state == Session4State.END_SESSION and self.session_data.get(
+            "final_goodbye_given"
+        ):
+            result[
+                "context"
+            ] = "Session already ended. Politely acknowledge but don't continue conversation."
             result["trigger_rag"] = False
             return result
-        
+
         # GREETINGS
         if self.state == Session4State.GREETINGS:
             if user_input.strip() == "[START_SESSION]":
-                result["context"] = f"Welcome {self.session_data.get('user_name', 'them')} to Session 4. Keep it brief and warm."
+                result[
+                    "context"
+                ] = f"Welcome {self.session_data.get('user_name', 'them')} to Session 4. Keep it brief and warm."
                 return result
-            
+
             result["next_state"] = Session4State.REINFORCE_GOAL_FROM_LAST_SESSION
-            result["context"] = "Acknowledge briefly. Move to reinforcing goals from last session."
+            result[
+                "context"
+            ] = "Acknowledge briefly. Move to reinforcing goals from last session."
             self._mark_question_asked("greeting")
-        
+
         # REINFORCE GOAL FROM LAST SESSION
         elif self.state == Session4State.REINFORCE_GOAL_FROM_LAST_SESSION:
             # Check if they're already telling us they achieved goals
-            achievement_phrases = ["hit both", "achieved both", "did both", "completed both", 
-                                "yes", "yup", "yeah", "both", "all"]
+            achievement_phrases = [
+                "hit both",
+                "achieved both",
+                "did both",
+                "completed both",
+                "yes",
+                "yup",
+                "yeah",
+                "both",
+                "all",
+            ]
             if any(phrase in user_lower for phrase in achievement_phrases):
                 self.session_data["goals_achieved"] = True
                 result["next_state"] = Session4State.WHAT_HAPPENED
-                result["context"] = "Great! They achieved goals. Ask: 'That's fantastic! What happened that made it work so well for you?'"
+                result[
+                    "context"
+                ] = "Great! They achieved goals. Ask: 'That's fantastic! What happened that made it work so well for you?'"
             else:
                 result["next_state"] = Session4State.CHECK_IN_GOALS
-                result["context"] = "Acknowledge briefly. Ask: 'How did achieving those goals go this week?'"
+                result[
+                    "context"
+                ] = "Acknowledge briefly. Ask: 'How did achieving those goals go this week?'"
 
         # CHECK IN GOALS
         elif self.state == Session4State.CHECK_IN_GOALS:
             # First time in this state - ask the question
             if not self._has_asked_question("check_in_goals"):
                 self._mark_question_asked("check_in_goals")
-                result["context"] = "CRITICAL: Ask EXACTLY: 'How did it go with your goals this past week?'"
+                result[
+                    "context"
+                ] = "CRITICAL: Ask EXACTLY: 'How did it go with your goals this past week?'"
                 return result
-            
+
             # Count how many exchanges in this state
-            check_in_exchange_count = self.session_data.get('check_in_exchange_count', 0)
-            self.session_data['check_in_exchange_count'] = check_in_exchange_count + 1
-            
+            check_in_exchange_count = self.session_data.get(
+                "check_in_exchange_count", 0
+            )
+            self.session_data["check_in_exchange_count"] = check_in_exchange_count + 1
+
             # Detect if goals were achieved
-            positive_indicators = ["yes", "great", "good", "achieved", "completed", "did it", "success", 
-                                "both", "all", "accomplished", "hit", "met", "well", "worked", "better"]
-            negative_indicators = ["no", "not really", "didn't", "couldn't", "failed", "hard", 
-                                "difficult", "missed", "partially", "one", "only one"]
-            
+            positive_indicators = [
+                "yes",
+                "great",
+                "good",
+                "achieved",
+                "completed",
+                "did it",
+                "success",
+                "both",
+                "all",
+                "accomplished",
+                "hit",
+                "met",
+                "well",
+                "worked",
+                "better",
+            ]
+            negative_indicators = [
+                "no",
+                "not really",
+                "didn't",
+                "couldn't",
+                "failed",
+                "hard",
+                "difficult",
+                "missed",
+                "partially",
+                "one",
+                "only one",
+            ]
+
             # Check for explicit statements
-            explicit_yes = any(phrase in user_lower for phrase in ["hit both", "achieved both", "did both", "both goals", "all goals"])
-            explicit_no = any(phrase in user_lower for phrase in ["didn't hit", "missed", "only hit one", "couldn't do"])
-            
+            explicit_yes = any(
+                phrase in user_lower
+                for phrase in [
+                    "hit both",
+                    "achieved both",
+                    "did both",
+                    "both goals",
+                    "all goals",
+                ]
+            )
+            explicit_no = any(
+                phrase in user_lower
+                for phrase in ["didn't hit", "missed", "only hit one", "couldn't do"]
+            )
+
             has_positive = any(word in user_lower for word in positive_indicators)
             has_negative = any(word in user_lower for word in negative_indicators)
-            
+
             # Log what we detected
-            self._log_debug(f"Positive indicators: {has_positive}, Negative indicators: {has_negative}")
+            self._log_debug(
+                f"Positive indicators: {has_positive}, Negative indicators: {has_negative}"
+            )
             self._log_debug(f"Explicit yes: {explicit_yes}, Explicit no: {explicit_no}")
-            
+
             # After 1 exchange, if we have positive indicators, move on
             if check_in_exchange_count >= 1 and has_positive:
                 self.session_data["goals_achieved"] = True
                 result["next_state"] = Session4State.WHAT_HAPPENED
-                result["context"] = "Goals were achieved! Ask: 'What happened that made it work so well for you this week?'"
+                result[
+                    "context"
+                ] = "Goals were achieved! Ask: 'What happened that made it work so well for you this week?'"
             # If they explicitly said they hit goals
             elif explicit_yes or "hit both" in user_lower:
                 self.session_data["goals_achieved"] = True
                 result["next_state"] = Session4State.WHAT_HAPPENED
-                result["context"] = "Goals were achieved! Ask: 'What happened that made it work so well for you this week?'"
+                result[
+                    "context"
+                ] = "Goals were achieved! Ask: 'What happened that made it work so well for you this week?'"
             elif explicit_no:
                 self.session_data["goals_achieved"] = False
                 result["next_state"] = Session4State.STRESS_LEVEL
-                result["context"] = "Goals weren't achieved. Ask: 'On a scale of 1-10, what was your stress level this past week?'"
+                result[
+                    "context"
+                ] = "Goals weren't achieved. Ask: 'On a scale of 1-10, what was your stress level this past week?'"
             elif has_negative and not has_positive:
                 self.session_data["goals_achieved"] = False
                 result["next_state"] = Session4State.STRESS_LEVEL
-                result["context"] = "Goals weren't achieved. Ask: 'On a scale of 1-10, what was your stress level this past week?'"
+                result[
+                    "context"
+                ] = "Goals weren't achieved. Ask: 'On a scale of 1-10, what was your stress level this past week?'"
             elif check_in_exchange_count >= 2:
                 # Force transition after 2 exchanges
                 self.session_data["goals_achieved"] = True
                 result["next_state"] = Session4State.WHAT_HAPPENED
-                result["context"] = "Move forward. Ask: 'What helped you stay on track this week?'"
+                result[
+                    "context"
+                ] = "Move forward. Ask: 'What helped you stay on track this week?'"
             else:
                 # One brief follow-up only
-                result["context"] = "Acknowledge briefly. Ask one clarifying question about their goals."
+                result[
+                    "context"
+                ] = "Acknowledge briefly. Ask one clarifying question about their goals."
 
         # WHAT HAPPENED (goals achieved path)
         elif self.state == Session4State.WHAT_HAPPENED:
             self.session_data["what_happened"] = user_input
             result["next_state"] = Session4State.WHAT_CAN_BE_DONE_TO_MAKE_IT_BETTER
-            result["context"] = "Acknowledge their success. Ask what can be done to make things even better."
-                
+            result[
+                "context"
+            ] = "Acknowledge their success. Ask what can be done to make things even better."
 
         # WHAT CAN BE DONE TO MAKE IT BETTER
         elif self.state == Session4State.WHAT_CAN_BE_DONE_TO_MAKE_IT_BETTER:
             self.session_data["improvements_discussed"] = True
-            
+
             # Check if they're describing specific changes/adjustments
-            change_indicators = ["increase", "decrease", "more", "less", "up", "down", "adjust", 
-                                "change", "bump", "add", "different"]
+            change_indicators = [
+                "increase",
+                "decrease",
+                "more",
+                "less",
+                "up",
+                "down",
+                "adjust",
+                "change",
+                "bump",
+                "add",
+                "different",
+            ]
             has_change = any(word in user_lower for word in change_indicators)
-            
+
             # Check if they want to keep things the same
-            keep_indicators = ["keep", "same", "continue", "maintaining", "stay", "just keep"]
+            keep_indicators = [
+                "keep",
+                "same",
+                "continue",
+                "maintaining",
+                "stay",
+                "just keep",
+            ]
             has_keep = any(phrase in user_lower for phrase in keep_indicators)
-            
+
             if has_change and is_likely_goal(user_input):
                 # They're describing a specific change to their goal
                 self.session_data["path_chosen"] = "current"
                 self.session_data["changes_needed"]["has_changes"] = True
                 self.session_data["changes_needed"]["description"] = user_input
                 result["next_state"] = Session4State.CONFIDENCE_CHECK
-                result["context"] = "Acknowledge the change briefly. Ask: 'On a scale of 1-10, how confident are you about achieving this adjusted goal?'"
+                result[
+                    "context"
+                ] = "Acknowledge the change briefly. Ask: 'On a scale of 1-10, how confident are you about achieving this adjusted goal?'"
             elif has_keep:
                 # They want to keep current goals as-is
                 self.session_data["path_chosen"] = "current"
-                result["next_state"] = Session4State.CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE
-                result["context"] = "They want to continue current goals. Ask: 'Is there anything that needs to change with your current goals, or are you good with keeping them as they are?'"
+                result[
+                    "next_state"
+                ] = Session4State.CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE
+                result[
+                    "context"
+                ] = "They want to continue current goals. Ask: 'Is there anything that needs to change with your current goals, or are you good with keeping them as they are?'"
             else:
                 # Move to focus selection to clarify
                 result["next_state"] = Session4State.WHATS_THE_FOCUS_TODAY
-                result["context"] = "Acknowledged improvements. Ask: 'Would you like to continue working on these same goals, or would you prefer to set new goals for yourself?'"
-        
-        
+                result[
+                    "context"
+                ] = "Acknowledged improvements. Ask: 'Would you like to continue working on these same goals, or would you prefer to set new goals for yourself?'"
+
         # STRESS LEVEL (goals not achieved path)
         elif self.state == Session4State.STRESS_LEVEL:
             stress = extract_number(user_input)
@@ -310,105 +440,160 @@ class Session4Manager:
                 self.session_data["stress_level"] = stress
                 if stress >= 7:
                     result["next_state"] = Session4State.STRESS_HIGH_WHAT_HAPPENED
-                    result["context"] = f"High stress ({stress}/10). Ask what happened with empathy."
+                    result[
+                        "context"
+                    ] = f"High stress ({stress}/10). Ask what happened with empathy."
                 else:
                     result["next_state"] = Session4State.STRESS_LOW_WHAT_HAPPENED
-                    result["context"] = f"Lower stress ({stress}/10). Ask what happened with their goals."
+                    result[
+                        "context"
+                    ] = f"Lower stress ({stress}/10). Ask what happened with their goals."
                 self._mark_question_asked("stress_level")
             else:
-                result["context"] = "Didn't get valid stress level (1-10). Ask: 'On a scale of 1-10, what was your stress level this past week?'"
-        
+                result[
+                    "context"
+                ] = "Didn't get valid stress level (1-10). Ask: 'On a scale of 1-10, what was your stress level this past week?'"
+
         # STRESS HIGH - WHAT HAPPENED
         elif self.state == Session4State.STRESS_HIGH_WHAT_HAPPENED:
             self.session_data["what_happened"] = user_input
             result["next_state"] = Session4State.STRESS_HIGH_ANYTHING_WE_CAN_TALK_ABOUT
-            result["context"] = "Acknowledge their challenges. Ask if there's anything they'd like to discuss."
-        
+            result[
+                "context"
+            ] = "Acknowledge their challenges. Ask if there's anything they'd like to discuss."
+
         # STRESS HIGH - ANYTHING WE CAN TALK ABOUT
         elif self.state == Session4State.STRESS_HIGH_ANYTHING_WE_CAN_TALK_ABOUT:
             result["next_state"] = Session4State.WHATS_THE_FOCUS_TODAY
             result["context"] = "Provide support. Move to focus selection."
-        
+
         # STRESS LOW - WHAT HAPPENED
         elif self.state == Session4State.STRESS_LOW_WHAT_HAPPENED:
             self.session_data["what_happened"] = user_input
             result["next_state"] = Session4State.WHATS_THE_FOCUS_TODAY
             result["context"] = "Acknowledge what happened. Move to focus selection."
-        
-       # WHAT'S THE FOCUS TODAY
+
+        # WHAT'S THE FOCUS TODAY
         elif self.state == Session4State.WHATS_THE_FOCUS_TODAY:
             # First, check if we already chose a path and they're now providing a new goal
-            if self.session_data.get("path_chosen") == "new" and is_likely_goal(user_input):
+            if self.session_data.get("path_chosen") == "new" and is_likely_goal(
+                user_input
+            ):
                 self.session_data["current_goal"] = user_input
-                
+
                 # Evaluate if SMART
                 smart_result = self.evaluate_smart_goal(user_input)
                 self.session_data["goal_smart_analysis"] = smart_result
-                
+
                 if smart_result["is_smart"]:
                     result["next_state"] = Session4State.SMART_YES_PATH
                     result["context"] = "Goal is SMART. Acknowledge and move forward."
                 else:
                     result["next_state"] = Session4State.SMART_NO_PATH
-                    result["context"] = f"Goal is not SMART. Missing: {', '.join(smart_result['missing_criteria'])}. Help refine it."
+                    result[
+                        "context"
+                    ] = f"Goal is not SMART. Missing: {', '.join(smart_result['missing_criteria'])}. Help refine it."
                 return result
-            
+
             # Check if they've already discussed changes (coming from WHAT_CAN_BE_DONE_TO_MAKE_IT_BETTER)
             # and are now confirming details or providing confidence
-            came_from_improvements = self.session_data.get("improvements_discussed", False)
+            came_from_improvements = self.session_data.get(
+                "improvements_discussed", False
+            )
             confidence_num = extract_number(user_input)
             is_confidence = confidence_num and 0 <= confidence_num <= 10
-            
+
             # Check if they're confirming goal details (e.g., "2 days seems good")
-            confirming_indicators = ["good", "fine", "yes", "perfect", "right", "correct", "keep", "stay"]
+            confirming_indicators = [
+                "good",
+                "fine",
+                "yes",
+                "perfect",
+                "right",
+                "correct",
+                "keep",
+                "stay",
+            ]
             is_confirming = any(word in user_lower for word in confirming_indicators)
-            
+
             if came_from_improvements and is_confidence:
                 # They gave us confidence after discussing changes - treat as current goals path
                 self.session_data["path_chosen"] = "current"
                 self.session_data["confidence_level"] = confidence_num
                 self.session_data["changes_needed"]["has_changes"] = True
                 self._mark_question_asked("confidence_check")
-                
+
                 if confidence_num < 7:
                     result["next_state"] = Session4State.LOW_CONFIDENCE_WHAT_SUCCESSES
-                    result["context"] = f"Confidence noted ({confidence_num}/10). Explore successes to build confidence."
+                    result[
+                        "context"
+                    ] = f"Confidence noted ({confidence_num}/10). Explore successes to build confidence."
                 else:
                     result["next_state"] = Session4State.HIGH_CONFIDENCE_PATH
-                    result["context"] = f"High confidence ({confidence_num}/10)! Move forward to tracking."
+                    result[
+                        "context"
+                    ] = f"High confidence ({confidence_num}/10)! Move forward to tracking."
                 return result
-            
+
             if came_from_improvements and is_confirming:
                 # They're confirming goal details after discussing improvements
                 # Continue the conversation naturally, ask about confidence
-                result["context"] = "Acknowledge their confirmation. Ask: 'On a scale of 1-10, how confident are you feeling about sticking with these goals?'"
+                result[
+                    "context"
+                ] = "Acknowledge their confirmation. Ask: 'On a scale of 1-10, how confident are you feeling about sticking with these goals?'"
                 return result
-            
+
             # Detect if they want to keep current goals or create new ones
-            current_indicators = ["current", "same", "keep", "continue", "existing", "maintaining", "focus", "working"]
+            current_indicators = [
+                "current",
+                "same",
+                "keep",
+                "continue",
+                "existing",
+                "maintaining",
+                "focus",
+                "working",
+            ]
             new_indicators = ["new", "different", "something else"]
-            
+
             has_current = any(word in user_lower for word in current_indicators)
             has_new = any(word in user_lower for word in new_indicators)
-            
+
             # Check for phrases that indicate modifying current goals
-            modify_indicators = ["challenge", "more", "increase", "add", "adjust", "bump", "up", "raise"]
+            modify_indicators = [
+                "challenge",
+                "more",
+                "increase",
+                "add",
+                "adjust",
+                "bump",
+                "up",
+                "raise",
+            ]
             has_modify = any(word in user_lower for word in modify_indicators)
-            
+
             if has_current and not has_new:
                 self.session_data["path_chosen"] = "current"
                 # Don't ask about changes if they already described them in previous state
                 if self.session_data.get("changes_needed", {}).get("description"):
                     result["next_state"] = Session4State.CONFIDENCE_CHECK
-                    result["context"] = "Confirm the change briefly. Ask: 'On a scale of 1-10, how confident are you about achieving this adjusted goal?'"
+                    result[
+                        "context"
+                    ] = "Confirm the change briefly. Ask: 'On a scale of 1-10, how confident are you about achieving this adjusted goal?'"
                 else:
-                    result["next_state"] = Session4State.CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE
-                    result["context"] = "They chose current goals. Ask: 'Is there anything that needs to change with your current goals to help you be successful?'"
+                    result[
+                        "next_state"
+                    ] = Session4State.CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE
+                    result[
+                        "context"
+                    ] = "They chose current goals. Ask: 'Is there anything that needs to change with your current goals to help you be successful?'"
                 self._mark_question_asked("focus_selection")
             elif has_new and not has_current:
                 self.session_data["path_chosen"] = "new"
                 # Don't transition yet - wait for them to provide the goal
-                result["context"] = "They want new goals. Ask: 'What would you like to focus on?'"
+                result[
+                    "context"
+                ] = "They want new goals. Ask: 'What would you like to focus on?'"
                 self._mark_question_asked("focus_selection")
             elif has_modify or (has_current and has_new):
                 # They want to modify current goals - go to CONFIDENCE_CHECK after confirming
@@ -416,46 +601,80 @@ class Session4Manager:
                 self.session_data["changes_needed"]["has_changes"] = True
                 self.session_data["changes_needed"]["description"] = user_input
                 result["next_state"] = Session4State.CONFIDENCE_CHECK
-                result["context"] = "Acknowledge the adjustment (e.g., 'Adding one more day to 4 days a week sounds great'). Ask: 'On a scale of 1-10, how confident are you about achieving this adjusted goal?'"
+                result[
+                    "context"
+                ] = "Acknowledge the adjustment (e.g., 'Adding one more day to 4 days a week sounds great'). Ask: 'On a scale of 1-10, how confident are you about achieving this adjusted goal?'"
                 self._mark_question_asked("focus_selection")
             else:
                 # Ambiguous - clarify
-                result["context"] = "Not clear which path they want. Ask directly: 'Would you like to continue working on your current goals, or would you prefer to set completely new goals?'"
-    
+                result[
+                    "context"
+                ] = "Not clear which path they want. Ask directly: 'Would you like to continue working on your current goals, or would you prefer to set completely new goals?'"
+
         # CURRENT GOALS - ANYTHING NEEDING TO CHANGE
         elif self.state == Session4State.CURRENT_GOALS_ANYTHING_NEEDING_TO_CHANGE:
             # First time: ask the question
             if not self._has_asked_question("anything_to_change"):
                 self._mark_question_asked("anything_to_change")
-                result["context"] = "CRITICAL: Ask EXACTLY: 'Is there anything that needs to change with your current goals to help you be successful?'"
+                result[
+                    "context"
+                ] = "CRITICAL: Ask EXACTLY: 'Is there anything that needs to change with your current goals to help you be successful?'"
                 return result
-            
+
             # Count exchanges
-            change_discussion_count = self.session_data.get('change_discussion_count', 0)
-            self.session_data['change_discussion_count'] = change_discussion_count + 1
-            
+            change_discussion_count = self.session_data.get(
+                "change_discussion_count", 0
+            )
+            self.session_data["change_discussion_count"] = change_discussion_count + 1
+
             # Check if they've said no changes
-            no_change_indicators = ["no", "same", "keep", "good", "fine", "ready", "nothing", "as is", "habit", "confident"]
+            no_change_indicators = [
+                "no",
+                "same",
+                "keep",
+                "good",
+                "fine",
+                "ready",
+                "nothing",
+                "as is",
+                "habit",
+                "confident",
+            ]
             has_no_change = any(word in user_lower for word in no_change_indicators)
-            
+
             # Check for change indicators
-            change_indicators = ["yes", "change", "adjust", "modify", "increase", "decrease", "more", "less"]
+            change_indicators = [
+                "yes",
+                "change",
+                "adjust",
+                "modify",
+                "increase",
+                "decrease",
+                "more",
+                "less",
+            ]
             has_change = any(word in user_lower for word in change_indicators)
-            
+
             # Force transition immediately - don't ask any more questions
             self.session_data["changes_needed"]["has_changes"] = has_change
             result["next_state"] = Session4State.CONFIDENCE_CHECK
-            result["context"] = "CRITICAL: Acknowledge briefly (1 sentence max, NO questions). Immediately transition to confidence check. DO NOT ask about confidence here."
-        
+            result[
+                "context"
+            ] = "CRITICAL: Acknowledge briefly (1 sentence max, NO questions). Immediately transition to confidence check. DO NOT ask about confidence here."
+
         # NEW GOALS - SMART YES PATH
         elif self.state == Session4State.SMART_YES_PATH:
             # Add to new goals
             if self.session_data.get("current_goal"):
                 self.session_data["new_goals"].append(self.session_data["current_goal"])
-                self.session_data["current_goal"] = None  # Clear for next potential goal
-            
+                self.session_data[
+                    "current_goal"
+                ] = None  # Clear for next potential goal
+
             result["next_state"] = Session4State.CONFIDENCE_CHECK
-            result["context"] = "Goal accepted and is SMART. Acknowledge briefly. Move to confidence check."
+            result[
+                "context"
+            ] = "Goal accepted and is SMART. Acknowledge briefly. Move to confidence check."
 
         # NEW GOALS - SMART NO PATH
         elif self.state == Session4State.SMART_NO_PATH:
@@ -463,44 +682,61 @@ class Session4Manager:
             if is_likely_goal(user_input):
                 self.session_data["current_goal"] = user_input
                 self.session_data["smart_refinement_attempts"] += 1
-                
+
                 # Re-evaluate
                 smart_result = self.evaluate_smart_goal(user_input)
                 self.session_data["goal_smart_analysis"] = smart_result
-                
-                if smart_result["is_smart"] or self.session_data["smart_refinement_attempts"] >= 3:
+
+                if (
+                    smart_result["is_smart"]
+                    or self.session_data["smart_refinement_attempts"] >= 3
+                ):
                     # Accept after 3 attempts or if now SMART
                     self.session_data["new_goals"].append(user_input)
                     self.session_data["current_goal"] = None
                     result["next_state"] = Session4State.CONFIDENCE_CHECK
-                    result["context"] = "Goal refined and accepted. Move to confidence check."
+                    result[
+                        "context"
+                    ] = "Goal refined and accepted. Move to confidence check."
                 else:
-                    result["context"] = f"Still needs work. Missing: {', '.join(smart_result['missing_criteria'])}. Help refine with specific questions."
+                    result[
+                        "context"
+                    ] = f"Still needs work. Missing: {', '.join(smart_result['missing_criteria'])}. Help refine with specific questions."
             else:
-                result["context"] = "Encourage them to refine their goal. Ask specific questions about what's missing to make it SMART."
-        
+                result[
+                    "context"
+                ] = "Encourage them to refine their goal. Ask specific questions about what's missing to make it SMART."
+
         # CONFIDENCE CHECK
         elif self.state == Session4State.CONFIDENCE_CHECK:
             # First time: ask the confidence question
             if not self._has_asked_question("confidence_check"):
                 self._mark_question_asked("confidence_check")
-                result["context"] = "CRITICAL: Ask EXACTLY: 'On a scale of 1-10, how confident are you about achieving this goal?'"
+                result[
+                    "context"
+                ] = "CRITICAL: Ask EXACTLY: 'On a scale of 1-10, how confident are you about achieving this goal?'"
                 return result
-            
+
             # They answered - extract confidence
             confidence = extract_number(user_input)
             if confidence and 1 <= confidence <= 10:
                 self.session_data["confidence_level"] = confidence
                 if confidence < 7:
                     result["next_state"] = Session4State.LOW_CONFIDENCE_WHAT_SUCCESSES
-                    result["context"] = f"Low confidence ({confidence}/10). Explore successes."
+                    result[
+                        "context"
+                    ] = f"Low confidence ({confidence}/10). Explore successes."
                 else:
                     result["next_state"] = Session4State.HIGH_CONFIDENCE_PATH
-                    result["context"] = f"Good confidence ({confidence}/10). Acknowledge briefly and move forward to future planning."
+                    result[
+                        "context"
+                    ] = f"Good confidence ({confidence}/10). Acknowledge briefly and move forward to future planning."
             else:
                 # Didn't get valid number - ask again
-                result["context"] = "CRITICAL: Didn't get valid confidence (1-10). Ask EXACTLY: 'On a scale of 1-10, how confident are you about achieving this goal?'"
-        
+                result[
+                    "context"
+                ] = "CRITICAL: Didn't get valid confidence (1-10). Ask EXACTLY: 'On a scale of 1-10, how confident are you about achieving this goal?'"
+
         # LOW CONFIDENCE - WHAT SUCCESSES
         elif self.state == Session4State.LOW_CONFIDENCE_WHAT_SUCCESSES:
             # Check if they just gave us a confidence number (shouldn't happen but handle it)
@@ -512,148 +748,206 @@ class Session4Manager:
                     result["next_state"] = Session4State.HIGH_CONFIDENCE_PATH
                     result["context"] = "High confidence! Transition to tracking."
                     return result
-            
+
             # First time: ask about successes
             if not self._has_asked_question("what_successes"):
                 self._mark_question_asked("what_successes")
-                result["context"] = "Low confidence. Ask: 'What successes have you had so far, even small ones, that show you can do this?'"
+                result[
+                    "context"
+                ] = "Low confidence. Ask: 'What successes have you had so far, even small ones, that show you can do this?'"
                 return result
-            
+
             # Track how many exchanges we've had
-            success_discussion_count = self.session_data.get('success_discussion_count', 0)
-            self.session_data['success_discussion_count'] = success_discussion_count + 1
-            
+            success_discussion_count = self.session_data.get(
+                "success_discussion_count", 0
+            )
+            self.session_data["success_discussion_count"] = success_discussion_count + 1
+
             # After 1-2 exchanges, transition to making goal more achievable
             if success_discussion_count >= 1:
-                result["next_state"] = Session4State.LOW_CONFIDENCE_HOW_CAN_WE_MAKE_IT_MORE_ACHIEVABLE
-                result["context"] = "Acknowledged their successes and support. Ask: 'How can we adjust your goal to make it feel more achievable? Would scaling it back help build your confidence?'"
+                result[
+                    "next_state"
+                ] = Session4State.LOW_CONFIDENCE_HOW_CAN_WE_MAKE_IT_MORE_ACHIEVABLE
+                result[
+                    "context"
+                ] = "Acknowledged their successes and support. Ask: 'How can we adjust your goal to make it feel more achievable? Would scaling it back help build your confidence?'"
             else:
                 # One more brief follow-up about support
-                result["context"] = "Briefly acknowledge. Ask one more question about their support system or what's helped them succeed before."
-        
+                result[
+                    "context"
+                ] = "Briefly acknowledge. Ask one more question about their support system or what's helped them succeed before."
+
         # LOW CONFIDENCE - HOW TO MAKE MORE ACHIEVABLE
-        elif self.state == Session4State.LOW_CONFIDENCE_HOW_CAN_WE_MAKE_IT_MORE_ACHIEVABLE:
+        elif (
+            self.state
+            == Session4State.LOW_CONFIDENCE_HOW_CAN_WE_MAKE_IT_MORE_ACHIEVABLE
+        ):
             # Track how many exchanges
-            achievable_discussion_count = self.session_data.get('achievable_discussion_count', 0)
-            self.session_data['achievable_discussion_count'] = achievable_discussion_count + 1
-            
+            achievable_discussion_count = self.session_data.get(
+                "achievable_discussion_count", 0
+            )
+            self.session_data["achievable_discussion_count"] = (
+                achievable_discussion_count + 1
+            )
+
             # After 1-2 exchanges, move to future planning
             if achievable_discussion_count >= 1:
-                result["next_state"] = Session4State.HOW_WILL_YOU_REMEMBER_TO_DO_YOUR_GOAL
-                result["context"] = "Acknowledged adjustments. Move to future planning questions."
+                result[
+                    "next_state"
+                ] = Session4State.HOW_WILL_YOU_REMEMBER_TO_DO_YOUR_GOAL
+                result[
+                    "context"
+                ] = "Acknowledged adjustments. Move to future planning questions."
             else:
-                result["context"] = "Help them think through adjustments. Keep it brief - one more exchange max."
-        
+                result[
+                    "context"
+                ] = "Help them think through adjustments. Keep it brief - one more exchange max."
+
         # HIGH CONFIDENCE PATH
         elif self.state == Session4State.HIGH_CONFIDENCE_PATH:
             # This state immediately transitions without generating a response
             # Just set the next state and let HOW_WILL_YOU_REMEMBER ask the first question
             result["next_state"] = Session4State.HOW_WILL_YOU_REMEMBER_TO_DO_YOUR_GOAL
-            result["context"] = "Brief acknowledgment of confidence (1 sentence max, NO questions). Immediately transition."
+            result[
+                "context"
+            ] = "Brief acknowledgment of confidence (1 sentence max, NO questions). Immediately transition."
             # The actual question will be asked by HOW_WILL_YOU_REMEMBER state
 
         # HOW WILL YOU REMEMBER TO DO YOUR GOAL (with future planning)
         elif self.state == Session4State.HOW_WILL_YOU_REMEMBER_TO_DO_YOUR_GOAL:
             # Track which future planning question we're on
-            future_planning_stage = self.session_data.get('future_planning_stage', 0)
+            future_planning_stage = self.session_data.get("future_planning_stage", 0)
             self._log_debug(f"Future planning stage: {future_planning_stage}")
-            
+
             if future_planning_stage == 0:
                 # First question: How will you remember
                 if not self._has_asked_question("tracking_method"):
                     self._mark_question_asked("tracking_method")
                     self._log_debug("Asking tracking method question (stage 0)")
                     # Check if we just transitioned from HIGH_CONFIDENCE_PATH
-                    came_from_confidence = self.session_data.get("confidence_level") and self.session_data.get("confidence_level") >= 7
+                    came_from_confidence = (
+                        self.session_data.get("confidence_level")
+                        and self.session_data.get("confidence_level") >= 7
+                    )
                     if came_from_confidence and self.session_data["turn_count"] > 0:
-                        result["context"] = "CRITICAL: Acknowledge high confidence briefly (1 sentence). Then ask EXACTLY: 'How will you remember to work on these goals?'"
+                        result[
+                            "context"
+                        ] = "CRITICAL: Acknowledge high confidence briefly (1 sentence). Then ask EXACTLY: 'How will you remember to work on these goals?'"
                     else:
-                        result["context"] = "CRITICAL: Ask EXACTLY: 'How will you remember to work on these goals?'"
+                        result[
+                            "context"
+                        ] = "CRITICAL: Ask EXACTLY: 'How will you remember to work on these goals?'"
                     return result
                 else:
                     # They answered - save and move to next stage
                     self._log_debug("Saving tracking method, moving to stage 1")
                     self.session_data["tracking_method"] = user_input
-                    self.session_data['future_planning_stage'] = 1
-                    result["context"] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What skills have you learned during our sessions that will help you maintain your health in the future?'"
+                    self.session_data["future_planning_stage"] = 1
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What skills have you learned during our sessions that will help you maintain your health in the future?'"
                     return result
-            
+
             elif future_planning_stage == 1:
                 # Skills learned question
                 if not self._has_asked_question("skills_learned"):
                     self._mark_question_asked("skills_learned")
-                    result["context"] = "CRITICAL: Ask EXACTLY: 'What skills have you learned that will help you maintain your health in the future?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Ask EXACTLY: 'What skills have you learned that will help you maintain your health in the future?'"
                     return result
                 else:
                     # They answered - save and move to next stage
                     self.session_data["skills_learned"] = user_input
-                    self.session_data['future_planning_stage'] = 2
-                    result["context"] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What did you learn from this experience?'"
+                    self.session_data["future_planning_stage"] = 2
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What did you learn from this experience?'"
                     return result
-            
+
             elif future_planning_stage == 2:
                 # What did you learn question
                 if not self._has_asked_question("what_learned"):
                     self._mark_question_asked("what_learned")
-                    result["context"] = "CRITICAL: Ask EXACTLY: 'What did you learn from this experience?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Ask EXACTLY: 'What did you learn from this experience?'"
                     return result
                 else:
                     # They answered - save and move to next stage
                     self.session_data["what_learned"] = user_input
-                    self.session_data['future_planning_stage'] = 3
-                    result["context"] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'In six months, how would you like to see your health improved?'"
+                    self.session_data["future_planning_stage"] = 3
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'In six months, how would you like to see your health improved?'"
                     return result
-            
+
             elif future_planning_stage == 3:
                 # 6-month vision question
                 if not self._has_asked_question("six_month_vision"):
                     self._mark_question_asked("six_month_vision")
-                    result["context"] = "CRITICAL: Ask EXACTLY: 'In six months, how would you like to see your health improved?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Ask EXACTLY: 'In six months, how would you like to see your health improved?'"
                     return result
                 else:
                     # They answered - save and move to next stage
                     self.session_data["six_month_vision"] = user_input
-                    self.session_data['future_planning_stage'] = 4
-                    result["context"] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What steps will you take to get there?'"
+                    self.session_data["future_planning_stage"] = 4
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What steps will you take to get there?'"
                     return result
-            
+
             elif future_planning_stage == 4:
                 # Steps to get there question
                 if not self._has_asked_question("steps_to_vision"):
                     self._mark_question_asked("steps_to_vision")
-                    result["context"] = "CRITICAL: Ask EXACTLY: 'What steps will you take to get there?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Ask EXACTLY: 'What steps will you take to get there?'"
                     return result
                 else:
                     # They answered - save and move to next stage
                     self.session_data["steps_to_vision"] = user_input
-                    self.session_data['future_planning_stage'] = 5
-                    result["context"] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What goal would you like to set and focus on over the next 6 months?'"
+                    self.session_data["future_planning_stage"] = 5
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'What goal would you like to set and focus on over the next 6 months?'"
                     return result
-            
+
             elif future_planning_stage == 5:
                 # 6-month goal question
                 if not self._has_asked_question("six_month_goal"):
                     self._mark_question_asked("six_month_goal")
-                    result["context"] = "CRITICAL: Ask EXACTLY: 'What goal would you like to set and focus on over the next 6 months?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Ask EXACTLY: 'What goal would you like to set and focus on over the next 6 months?'"
                     return result
                 else:
                     # They answered - save and move to next stage
                     self.session_data["six_month_goal"] = user_input
-                    self.session_data['future_planning_stage'] = 6
-                    result["context"] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'Beyond 6 months, how will you incorporate SMART goal setting and problem-solving skills to improve your health and lifestyle?'"
+                    self.session_data["future_planning_stage"] = 6
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge in exactly 1 sentence. Then ask EXACTLY: 'Beyond 6 months, how will you incorporate SMART goal setting and problem-solving skills to improve your health and lifestyle?'"
                     return result
-            
+
             elif future_planning_stage == 6:
                 # Final long-term question
                 if not self._has_asked_question("long_term_smart_goals"):
                     self._mark_question_asked("long_term_smart_goals")
-                    result["context"] = "CRITICAL: Ask EXACTLY: 'Beyond 6 months, how will you incorporate SMART goal setting and problem-solving skills to improve your health and lifestyle?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Ask EXACTLY: 'Beyond 6 months, how will you incorporate SMART goal setting and problem-solving skills to improve your health and lifestyle?'"
                     return result
                 else:
                     # They answered - all future planning complete, move to final questions
                     self.session_data["long_term_smart_goals"] = user_input
                     result["next_state"] = Session4State.ANY_FINAL_QUESTIONS
-                    result["context"] = "CRITICAL: Acknowledge briefly (1-2 sentences). Then ask EXACTLY: 'Do you have any final questions before we wrap up?'"
+                    result[
+                        "context"
+                    ] = "CRITICAL: Acknowledge briefly (1-2 sentences). Then ask EXACTLY: 'Do you have any final questions before we wrap up?'"
                     return result
 
         # ANY FINAL QUESTIONS
@@ -661,75 +955,127 @@ class Session4Manager:
             # Check if we've asked the question yet
             if not self._has_asked_question("final_questions"):
                 self._mark_question_asked("final_questions")
-                result["context"] = "Ask: 'Do you have any final questions or anything else you'd like to discuss before we end?'"
+                result[
+                    "context"
+                ] = "Ask: 'Do you have any final questions or anything else you'd like to discuss before we end?'"
                 return result
-            
+
             # Check if the last coach response contained a question
             last_response = self.session_data.get("last_coach_response", "")
             has_question_in_last_response = "?" in last_response
-            
+
             # Check for goodbye/ending indicators
             goodbye_indicators = ["bye", "goodbye", "thank you", "thanks", "see you"]
             has_goodbye = any(word in user_lower for word in goodbye_indicators)
-            
+
             if has_question_in_last_response and not has_goodbye:
                 # Last response had a question - don't end yet, let them answer
-                result["context"] = "Continue the conversation naturally. Answer their response and provide closure when appropriate."
+                result[
+                    "context"
+                ] = "Continue the conversation naturally. Answer their response and provide closure when appropriate."
                 return result
-            
+
             if check_negative(user_input) or "no" in user_lower:
-                # They said no - give final goodbye and END
-                result["next_state"] = Session4State.END_SESSION
-                self.session_data["final_goodbye_given"] = True
-                result["context"] = "Give final farewell for the entire 4-session program. Warm, encouraging, brief (2-3 sentences). This is THE END."
+                # They said no - confirm before ending
+                result["next_state"] = Session4State.CONFIRM_END_SESSION
+                result[
+                    "context"
+                ] = "Before ending, ask the user: 'Is there anything else you'd like to talk about before we wrap up?' Be warm and genuine."
             elif has_goodbye:
-                # They're already saying goodbye
-                result["next_state"] = Session4State.END_SESSION
-                self.session_data["final_goodbye_given"] = True
-                result["context"] = "Brief goodbye only (e.g., 'Take care, Jade'). Maximum 1 sentence."
+                # They're already saying goodbye - confirm before ending
+                result["next_state"] = Session4State.CONFIRM_END_SESSION
+                result[
+                    "context"
+                ] = "Before ending, ask the user: 'Is there anything else you'd like to talk about before we wrap up?' Be warm and genuine."
             else:
                 # They have a question - answer it, then ask if there's anything else
-                result["context"] = "Answer their question thoughtfully, then ask: 'Is there anything else before we finish?'"
-        
+                result[
+                    "context"
+                ] = "Answer their question thoughtfully, then ask: 'Is there anything else before we finish?'"
+
+        elif self.state == Session4State.CONFIRM_END_SESSION:
+            # Check if user actually wants to end
+            user_done = any(
+                phrase in user_lower
+                for phrase in [
+                    "yes",
+                    "yeah",
+                    "yep",
+                    "sure",
+                    "no",
+                    "nope",
+                    "nah",
+                    "i'm good",
+                    "im good",
+                    "that's all",
+                    "thats all",
+                    "nothing else",
+                    "all set",
+                    "bye",
+                    "goodbye",
+                    "see you",
+                    "thanks",
+                    "thank you",
+                    "take care",
+                ]
+            )
+
+            if user_done:
+                result["next_state"] = Session4State.END_SESSION
+                self.session_data["final_goodbye_given"] = True
+                result[
+                    "context"
+                ] = "User confirmed they're done. Give warm final goodbye. Confirm next session is in 1 week."
+            else:
+                # User still has something to discuss - go back to active conversation
+                result["next_state"] = Session4State.ANY_FINAL_QUESTIONS
+                result[
+                    "context"
+                ] = f"User said: '{user_input}' - they're not done yet. Address what they said and continue the conversation naturally."
+            result["trigger_rag"] = True
+
         # END SESSION
         elif self.state == Session4State.END_SESSION:
             # Session is complete - no more meaningful responses
             result["trigger_rag"] = False
             if self.session_data.get("final_goodbye_given"):
                 # Already gave goodbye - just acknowledge very briefly if they say anything
-                result["context"] = "Session complete. Very brief acknowledgment only (e.g., 'Bye, Jade' or 'Take care'). Maximum 2 words."
+                result[
+                    "context"
+                ] = "Session complete. Very brief acknowledgment only (e.g., 'Bye, Jade' or 'Take care'). Maximum 2 words."
             else:
                 # First time entering END_SESSION - give final goodbye
                 self.session_data["final_goodbye_given"] = True
-                result["context"] = "Give the final farewell. This is the end of all 4 sessions. Warm, brief (2-3 sentences), and truly final."
-        
+                result[
+                    "context"
+                ] = "Give the final farewell. This is the end of all 4 sessions. Warm, brief (2-3 sentences), and truly final."
+
         if result["next_state"]:
             self._log_debug(f"Next state will be: {result['next_state'].value}")
-        
+
         return result
-    
+
     def get_system_prompt_addition(self) -> str:
         """Get state-specific system prompt additions"""
         return get_session4_prompt(
-            state_value=self.state.value,
-            session_data=self.session_data
+            state_value=self.state.value, session_data=self.session_data
         )
-    
+
     def get_session_summary(self) -> Dict[str, Any]:
         """Get summary of session data"""
         return {
             "current_state": self.state.value,
             "session_data": self.session_data,
-            "duration_turns": self.session_data["turn_count"]
+            "duration_turns": self.session_data["turn_count"],
         }
-    
+
     def save_session(self, filename: str = None, conversation_history: list = None):
         """Save session using unified storage format and database"""
         self._log_debug("Saving Session 4 with unified format")
-        
+
         # Build complete goals list
         all_goals = []
-        
+
         # Add previous goals with updated status
         for prev_goal in self.session_data.get("previous_goals", []):
             goal_entry = {
@@ -737,18 +1083,18 @@ class Session4Manager:
                 "confidence": prev_goal.get("confidence"),
                 "stress": self.session_data.get("stress_level"),
                 "session_created": prev_goal.get("session_created", 3),
-                "created_at": None
+                "created_at": None,
             }
-            
+
             # Determine status
             path = self.session_data.get("path_chosen")
             if path == "new":
                 goal_entry["status"] = "dropped"
             else:
                 goal_entry["status"] = "active"
-            
+
             all_goals.append(goal_entry)
-        
+
         # Add new goals from this session
         for new_goal in self.session_data.get("new_goals", []):
             goal_entry = {
@@ -757,13 +1103,13 @@ class Session4Manager:
                 "stress": self.session_data.get("stress_level"),
                 "session_created": 4,
                 "status": "active",
-                "created_at": self.session_data.get("session_start")
+                "created_at": self.session_data.get("session_start"),
             }
             all_goals.append(goal_entry)
-        
+
         # Preserve discovery info
         discovery = self.session_data.get("discovery_info", {})
-        
+
         # Prepare session metadata
         session_metadata = {
             "turn_count": self.session_data.get("turn_count"),
@@ -780,32 +1126,32 @@ class Session4Manager:
                 "six_month_vision": self.session_data.get("six_month_vision"),
                 "steps_to_vision": self.session_data.get("steps_to_vision"),
                 "six_month_goal": self.session_data.get("six_month_goal"),
-                "long_term_smart_goals": self.session_data.get("long_term_smart_goals")
-            }
+                "long_term_smart_goals": self.session_data.get("long_term_smart_goals"),
+            },
         }
-        
+
         # Build full data structure
         full_data = {
             "user_profile": {
                 "uid": self.uid,
                 "name": self.session_data.get("user_name"),
                 "goals": all_goals,
-                "discovery_questions": discovery
+                "discovery_questions": discovery,
             },
             "session_info": {
                 "session_number": 4,
                 "current_state": self.state.value,
-                "metadata": session_metadata
+                "metadata": session_metadata,
             },
-            "chat_history": conversation_history or []
+            "chat_history": conversation_history or [],
         }
-        
+
         # Save to database
         if save_session_to_db(self.uid, 4, full_data):
             self._log_debug(f"Session 4 saved to database for UID: {self.uid}")
         else:
             self._log_debug("Warning: Failed to save Session 4 to database")
-        
+
         # Also save to file
         filename = save_unified_session(
             uid=self.uid,
@@ -816,71 +1162,75 @@ class Session4Manager:
             goals=all_goals,
             session_metadata=session_metadata,
             conversation_history=conversation_history,
-            filename=filename
+            filename=filename,
         )
-        
+
         self._log_debug(f"Session 4 saved to {filename}")
         return filename
-    
-    def load_session(self, filename: str = None, uid: str = None, inject_history: bool = True):
+
+    def load_session(
+        self, filename: str = None, uid: str = None, inject_history: bool = True
+    ):
         """
         Load session data from database or file and optionally inject into conversation history
-        
+
         Args:
             filename: Path to JSON file (optional)
             uid: User ID for database lookup (optional)
             inject_history: If True, return chat history for injection into conversation
-        
+
         Returns:
             List of chat history messages if inject_history=True, else empty list
         """
         from utils.unified_storage import load_unified_session
-        
+
         data = None
-        
+
         # Try database first
         if uid:
             self._log_debug(f"Loading Session 4 from database for UID: {uid}")
             data = load_session_from_db(uid, 4)
-            
+
             if not data:
                 self._log_debug("No Session 4 found in database, trying file...")
-        
+
         # Fall back to file
         if not data and filename:
             self._log_debug(f"Loading Session 4 from file: {filename}")
             data = load_unified_session(filename)
-        
+
         if not data:
             self._log_debug("No session data found")
             return []
-        
+
         # Extract and restore data
         profile = data.get("user_profile", {})
         session_info = data.get("session_info", {})
-        
+
         self.state = Session4State(session_info.get("current_state", "greetings"))
         self.uid = profile.get("uid")
-        
+
         self.session_data["uid"] = self.uid
         self.session_data["user_name"] = profile.get("name")
         self.session_data["discovery_info"] = profile.get("discovery_questions", {})
-        
+
         # Restore goals
         all_goals = profile.get("goals", [])
         self.session_data["previous_goals"] = []
         self.session_data["new_goals"] = []
-        
+
         for goal in all_goals:
             if goal.get("session_created") in [1, 2, 3]:
-                self.session_data["previous_goals"].append({
-                    "goal": goal.get("goal"),
-                    "confidence": goal.get("confidence"),
-                    "session_created": goal.get("session_created")
-                })
+                self.session_data["previous_goals"].append(
+                    {
+                        "goal": goal.get("goal"),
+                        "confidence": goal.get("confidence"),
+                        "session_created": goal.get("session_created"),
+                    }
+                )
             elif goal.get("session_created") == 4:
                 self.session_data["new_goals"].append(goal.get("goal"))
-        
+
         # Restore metadata
         metadata = session_info.get("metadata", {})
         self.session_data["turn_count"] = metadata.get("turn_count", 0)
@@ -888,7 +1238,7 @@ class Session4Manager:
         self.session_data["goals_achieved"] = metadata.get("goals_achieved")
         self.session_data["path_chosen"] = metadata.get("path_chosen")
         self.session_data["tracking_method"] = metadata.get("tracking_method")
-        
+
         # Restore future planning data
         future_planning = metadata.get("future_planning", {})
         self.session_data["skills_learned"] = future_planning.get("skills_learned")
@@ -896,14 +1246,18 @@ class Session4Manager:
         self.session_data["six_month_vision"] = future_planning.get("six_month_vision")
         self.session_data["steps_to_vision"] = future_planning.get("steps_to_vision")
         self.session_data["six_month_goal"] = future_planning.get("six_month_goal")
-        self.session_data["long_term_smart_goals"] = future_planning.get("long_term_smart_goals")
-        
+        self.session_data["long_term_smart_goals"] = future_planning.get(
+            "long_term_smart_goals"
+        )
+
         self._log_debug("Session 4 loaded successfully")
-        
+
         # Return chat history for injection if requested
         if inject_history:
             chat_history = data.get("chat_history", [])
-            self._log_debug(f"Returning {len(chat_history)} chat history messages for injection")
+            self._log_debug(
+                f"Returning {len(chat_history)} chat history messages for injection"
+            )
             return chat_history
-        
+
         return []
