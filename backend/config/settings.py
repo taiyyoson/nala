@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    debug: bool = True
+    debug: bool = False
 
     # LLM settings
     default_llm_model: str = "claude-sonnet-4.5"
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # Database (Pydantic reads CONVERSATION_DATABASE_URL from .env automatically)
     conversation_database_url: str = os.getenv("CONVERSATION_DATABASE_URL", "")
     # CORS
-    cors_origins: List[str] = ["*"]
+    cors_origins: List[str] = ["http://localhost:8000", "http://localhost:19006"]
 
     # Logging
     log_level: str = "INFO"

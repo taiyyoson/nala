@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import AuthStack from './AuthStack';
@@ -8,7 +9,15 @@ import MainStack from './MainStack';
 import { TextSizeProvider } from '../contexts/TextSizeContext';
 
 function AppContent() {
-  const { loggedInUser, hasCompletedOnboarding } = useAuth();
+  const { loggedInUser, hasCompletedOnboarding, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -16,6 +25,14 @@ function AppContent() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default function AppNavigator() {
   return (
