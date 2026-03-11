@@ -64,6 +64,10 @@ backend/archive/
 .expo/
 .expo-shared/
 
+# AI models 
+.claude/ 
+CLAUDE.md
+
 # Docs
 backend/docs/
 
