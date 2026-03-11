@@ -233,9 +233,25 @@ export default function ChatOverviewScreen({ navigation }: Props) {
         {/* Encouragement Card */}
         <View style={styles.motivationCard}>
           <Text style={[styles.motivationText, { fontSize: fontScale - 2 }]}>
-            💪 Keep it up! Complete your next session.
+            Keep it up! Complete your next session.
           </Text>
         </View>
+
+        {/* View All Chats */}
+        <TouchableOpacity
+          style={styles.viewAllChatsButton}
+          onPress={() => navigation.navigate("Conversations")}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="View all past conversations"
+        >
+          <Text style={[styles.viewAllChatsText, { fontSize: fontScale - 2 }]}>
+            View All Conversations
+          </Text>
+          <Text style={[styles.viewAllChatsChevron, { fontSize: fontScale }]}>
+            ›
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -290,5 +306,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   motivationText: { color: "#4A4A4A", fontSize: 13, textAlign: "center" },
+  viewAllChatsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#E8F5E9",
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+  },
+  viewAllChatsText: { color: "#2E5D4B", fontWeight: "600" },
+  viewAllChatsChevron: { color: "#4A8B6F", fontWeight: "700" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

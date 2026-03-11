@@ -3,7 +3,7 @@
 import { getAuth } from "firebase/auth";
 
 // Toggle between local and deployed backend
-const USE_DEPLOYED = true; // Set to false for local development
+const USE_DEPLOYED = false; // Set to false for local development
 const BASE_URL = USE_DEPLOYED
   ? "https://nala-backend-serv.onrender.com"
   : "http://127.0.0.1:8000";
@@ -161,4 +161,31 @@ static async getUserProgress(userId: string) {
     return [];
   }
 }
+
+  /* ----------------------------------------
+     CONVERSATION ENDPOINTS
+  ---------------------------------------- */
+  static async getConversations() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE}/chat/conversations`, { headers });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  }
+
+  static async getConversation(conversationId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE}/chat/conversation/${conversationId}`, { headers });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  }
+
+  static async deleteConversation(conversationId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE}/chat/conversation/${conversationId}`, {
+      method: "DELETE",
+      headers,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  }
 }

@@ -14,7 +14,7 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 import { MainStackParamList } from "../navigation/MainStack";
-import { API_BASE } from "../services/ApiService";
+import { API_BASE, ApiService } from "../services/ApiService";
 import { getAuth } from "firebase/auth";
 import { useTextSize } from "../contexts/TextSizeContext";
 
@@ -74,7 +74,7 @@ function TypingIndicator() {
 }
 
 export default function ChatScreen({ navigation, route }: Props) {
-  const { sessionId, week } = route.params;
+  const { sessionId, week, conversationId: routeConversationId, readOnly } = route.params;
 
   // ⭐ TEXT SIZE
   const { size } = useTextSize();
@@ -85,7 +85,7 @@ export default function ChatScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
 
-  const [conversationId, setConversationId] = useState<string>("");
+  const [conversationId, setConversationId] = useState<string>(routeConversationId ?? "");
   const [sessionComplete, setSessionComplete] = useState(false);
   const [loadingCompletionStatus, setLoadingCompletionStatus] = useState(true);
 
@@ -106,8 +106,10 @@ export default function ChatScreen({ navigation, route }: Props) {
   };
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Fetch completion status
+  // Fetch completion status (skipped in read-only mode)
   useEffect(() => {
+    if (readOnly) return;
+
     const fetchCompletionStatus = async () => {
       try {
         const headers = await getAuthHeaders();
@@ -126,10 +128,37 @@ export default function ChatScreen({ navigation, route }: Props) {
     };
 
     fetchCompletionStatus();
-  }, [week]);
+  }, [week, readOnly]);
+
+  // Load existing conversation messages when in read-only mode
+  useEffect(() => {
+    if (!readOnly || !routeConversationId) return;
+
+    const loadConversation = async () => {
+      try {
+        const data = await ApiService.getConversation(routeConversationId);
+        const loaded: Message[] = (data.messages ?? []).map(
+          (m: any, idx: number) => ({
+            id: idx,
+            sender: m.role === "user" ? "user" : "nala",
+            text: m.content,
+            timestamp: new Date(m.created_at ?? Date.now()),
+          })
+        );
+        setMessages(loaded);
+      } catch (err) {
+        console.error("Failed to load conversation:", err);
+      } finally {
+        setLoadingCompletionStatus(false);
+      }
+    };
+
+    loadConversation();
+  }, [readOnly, routeConversationId]);
 
   // Initial greeting
   useEffect(() => {
+    if (readOnly) return; // no greeting in read-only mode
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
@@ -147,7 +176,7 @@ export default function ChatScreen({ navigation, route }: Props) {
       }
     };
     init();
-  }, [sessionComplete]);
+  }, [sessionComplete, readOnly]);
 
   const sendInitialGreeting = async (message = "[START_SESSION]") => {
     try {
@@ -264,6 +293,14 @@ export default function ChatScreen({ navigation, route }: Props) {
         <Text style={[styles.headerTitle, { fontSize: fontScale + 2 }]}>
           Week {week} Session
         </Text>
+
+        {readOnly && (
+          <View style={styles.readOnlyHeaderBadge}>
+            <Text style={[styles.readOnlyHeaderBadgeText, { fontSize: fontScale - 4 }]}>
+              Read Only
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* COMPLETION BANNER */}
@@ -330,10 +367,16 @@ export default function ChatScreen({ navigation, route }: Props) {
       </ScrollView>
 
       {/* INPUT AREA */}
-      {sessionComplete ? (
+      {readOnly ? (
+        <View style={styles.readOnlyContainer}>
+          <Text style={[styles.readOnlyText, { fontSize: fontScale }]}>
+            Viewing past conversation — read only
+          </Text>
+        </View>
+      ) : sessionComplete ? (
         <View style={styles.lockedContainer}>
           <Text style={[styles.lockedText, { fontSize: fontScale }]}>
-            🔒 Chat is locked for this completed session.
+            Chat is locked for this completed session.
           </Text>
         </View>
       ) : (
@@ -366,6 +409,24 @@ export default function ChatScreen({ navigation, route }: Props) {
 
 /* STYLES — unchanged except fontScale is added dynamically */
 const styles = StyleSheet.create({
+  readOnlyContainer: {
+    padding: 18,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderColor: "#C8E6C9",
+    backgroundColor: "#E8F5E9",
+  },
+  readOnlyText: { color: "#4A8B6F", fontStyle: "italic", fontWeight: "500" },
+  readOnlyHeaderBadge: {
+    position: "absolute",
+    right: 20,
+    top: Platform.OS === "ios" ? 60 : 36,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  readOnlyHeaderBadgeText: { color: "#FFF", fontWeight: "600" },
   lockedContainer: {
     padding: 20,
     alignItems: "center",
