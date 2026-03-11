@@ -5,6 +5,7 @@ pydantic-settings==2.6.0
 python-multipart==0.0.6
 slowapi==0.1.9
 psutil==5.9.6
+firebase-admin==6.2.0
 
 # For future Claude integration
 anthropic==0.40.0
