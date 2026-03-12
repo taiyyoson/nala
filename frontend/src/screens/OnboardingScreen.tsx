@@ -6,6 +6,8 @@ import HowItWorksSlide from "../components/onboarding/HowItWorksSlide";
 import DetailsSlide from "../components/onboarding/DetailsSlide";
 import ConsentSlide from "../components/onboarding/Consent";
 import { useAuth } from "../contexts/AuthContext";
+import { ApiService } from "../services/ApiService";
+import { getAuth } from "firebase/auth";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -35,6 +37,15 @@ export default function OnboardingScreen() {
     if (currentSlide < slides.length - 1) {
       goToSlide(currentSlide + 1);
     } else {
+      // Persist to backend so returning users skip onboarding
+      const uid = getAuth().currentUser?.uid;
+      if (uid) {
+        try {
+          await ApiService.completeOnboarding(uid);
+        } catch (e) {
+          console.error("Failed to persist onboarding:", e);
+        }
+      }
       setHasCompletedOnboarding(true);
     }
   };
