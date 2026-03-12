@@ -13,16 +13,12 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MainStackParamList } from "../navigation/MainStack";
 import { ApiService } from "../services/ApiService";
+import { useAuth } from "../contexts/AuthContext";
 import { useTextSize } from "../contexts/TextSizeContext";
+import { getAuth } from "firebase/auth";
 
-type ConversationsScreenNavigationProp = NativeStackNavigationProp<
-  MainStackParamList,
-  "Conversations"
->;
-
-type Props = {
-  navigation: ConversationsScreenNavigationProp;
-};
+type Nav = NativeStackNavigationProp<MainStackParamList, "Conversations">;
+type Props = { navigation: Nav };
 
 interface Conversation {
   id: string;
@@ -33,19 +29,21 @@ interface Conversation {
   updated_at: string;
 }
 
-// Groups conversations 1-4 matching the 4-session program
-const WEEKS = [1, 2, 3, 4] as const;
+interface SessionProgress {
+  session_number: number;
+  completed_at?: string | null;
+  unlocked_at?: string | null;
+}
 
-const WEEK_LABELS: Record<number, string> = {
-  1: "Week 1 — Getting to know you",
-  2: "Week 2 — Building habits",
-  3: "Week 3 — Overcoming challenges",
-  4: "Week 4 — Reviewing progress",
+const SESSION_TITLES: Record<number, string> = {
+  1: "Getting to know you",
+  2: "Building habits",
+  3: "Overcoming challenges",
+  4: "Reviewing progress",
 };
 
-function formatDate(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleDateString(undefined, {
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -53,260 +51,259 @@ function formatDate(isoString: string): string {
 }
 
 export default function ConversationsScreen({ navigation }: Props) {
+  const { logout } = useAuth();
   const { size } = useTextSize();
   const fontScale = size === "small" ? 14 : size === "medium" ? 16 : 20;
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [progress, setProgress] = useState<SessionProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // Track which week sections are expanded (all open by default)
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(
-    new Set(WEEKS)
-  );
 
-  const fetchConversations = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const data = await ApiService.getConversations();
-      setConversations(data.conversations ?? []);
+      const uid = getAuth().currentUser?.uid;
+      const [convData, progressData] = await Promise.all([
+        ApiService.getConversations(),
+        uid ? ApiService.getUserProgress(uid) : Promise.resolve([]),
+      ]);
+      setConversations(convData.conversations ?? []);
+      setProgress(progressData ?? []);
     } catch (err) {
-      console.error("Failed to fetch conversations:", err);
-      Alert.alert("Error", "Could not load your conversations. Please try again.");
+      console.error("Failed to load data:", err);
+      Alert.alert("Error", "Could not load your data. Pull to refresh.");
     }
   }, []);
 
   useEffect(() => {
-    fetchConversations().finally(() => setLoading(false));
-  }, [fetchConversations]);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  // Re-fetch when screen comes into focus (e.g. after completing a session)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchData();
+    });
+    return unsubscribe;
+  }, [navigation, fetchData]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchConversations();
+    await fetchData();
     setRefreshing(false);
-  }, [fetchConversations]);
+  }, [fetchData]);
 
-  const toggleWeek = useCallback((week: number) => {
-    setExpandedWeeks((prev) => {
-      const next = new Set(prev);
-      if (next.has(week)) {
-        next.delete(week);
-      } else {
-        next.add(week);
-      }
-      return next;
-    });
-  }, []);
+  // Compute journey status
+  const completedSessions = progress.filter((p) => p.completed_at).length;
+  const nextSession = completedSessions < 4 ? completedSessions + 1 : null;
+  const journeyComplete = completedSessions === 4;
 
-  const handleOpenConversation = useCallback(
-    (conversation: Conversation) => {
-      navigation.navigate("Chat", {
-        sessionId: conversation.session_number.toString(),
-        week: conversation.session_number,
-        sessionNumber: conversation.session_number,
-        conversationId: conversation.id,
-        readOnly: true,
-      });
-    },
-    [navigation]
-  );
-
-  const handleNewChat = useCallback(
-    (week: number) => {
-      navigation.navigate("Chat", {
-        sessionId: week.toString(),
-        week,
-        sessionNumber: week,
-      });
-    },
-    [navigation]
-  );
-
-  const handleDeleteConversation = useCallback(
-    (conversation: Conversation) => {
-      Alert.alert(
-        "Delete Conversation",
-        `Delete "${conversation.title ?? `Session ${conversation.session_number} Chat`}"? This cannot be undone.`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await ApiService.deleteConversation(conversation.id);
-                setConversations((prev) =>
-                  prev.filter((c) => c.id !== conversation.id)
-                );
-              } catch (err) {
-                console.error("Failed to delete conversation:", err);
-                Alert.alert("Error", "Could not delete the conversation.");
-              }
-            },
-          },
-        ]
-      );
-    },
-    []
-  );
-
-  const conversationsByWeek = useCallback(
-    (week: number): Conversation[] =>
+  // Get the most recent conversation per session (for viewing past chats)
+  const latestConversationBySession = useCallback(
+    (sessionNum: number): Conversation | undefined =>
       conversations
-        .filter((c) => c.session_number === week)
+        .filter((c) => c.session_number === sessionNum)
         .sort(
           (a, b) =>
             new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        ),
+        )[0],
     [conversations]
   );
 
-  // Each section header + its conversation cards are rendered as FlatList items
-  // so we get pull-to-refresh and scroll for free without nesting ScrollViews.
-  type ListItem =
-    | { kind: "header"; week: number }
-    | { kind: "conversation"; conversation: Conversation; week: number }
-    | { kind: "empty"; week: number }
-    | { kind: "newChat"; week: number };
+  const isSessionComplete = (sessionNum: number): boolean =>
+    !!progress.find((p) => p.session_number === sessionNum && p.completed_at);
 
-  const listData: ListItem[] = WEEKS.flatMap((week) => {
-    const items: ListItem[] = [{ kind: "header", week }];
-    if (expandedWeeks.has(week)) {
-      const weekConvos = conversationsByWeek(week);
-      if (weekConvos.length === 0) {
-        items.push({ kind: "empty", week });
-      } else {
-        weekConvos.forEach((c) =>
-          items.push({ kind: "conversation", conversation: c, week })
-        );
-      }
-      items.push({ kind: "newChat", week });
+  const handleContinueJourney = () => {
+    navigation.navigate("ChatOverview");
+  };
+
+  const handleViewSession = (sessionNum: number) => {
+    const conv = latestConversationBySession(sessionNum);
+    if (conv) {
+      navigation.navigate("Chat", {
+        sessionId: sessionNum.toString(),
+        week: sessionNum,
+        sessionNumber: sessionNum,
+        conversationId: conv.id,
+        readOnly: true,
+      });
     }
-    return items;
-  });
+  };
 
-  const renderItem = useCallback(
-    ({ item }: { item: ListItem }) => {
-      if (item.kind === "header") {
-        const isExpanded = expandedWeeks.has(item.week);
-        const count = conversationsByWeek(item.week).length;
-        return (
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleWeek(item.week)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`${WEEK_LABELS[item.week]}, ${count} conversation${count !== 1 ? "s" : ""}, ${isExpanded ? "expanded" : "collapsed"}`}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <View style={styles.weekDot} />
-              <Text style={[styles.sectionHeaderText, { fontSize: fontScale }]}>
-                {WEEK_LABELS[item.week]}
-              </Text>
-            </View>
-            <View style={styles.sectionHeaderRight}>
-              {count > 0 && (
-                <View style={styles.countBadge}>
-                  <Text style={[styles.countBadgeText, { fontSize: fontScale - 4 }]}>
-                    {count}
-                  </Text>
-                </View>
-              )}
-              <Text style={[styles.chevron, { fontSize: fontScale }]}>
-                {isExpanded ? "∧" : "∨"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        );
-      }
+  const handleDeleteConversation = (conv: Conversation) => {
+    Alert.alert(
+      "Delete Conversation",
+      `Delete this Week ${conv.session_number} chat? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await ApiService.deleteConversation(conv.id);
+              setConversations((prev) => prev.filter((c) => c.id !== conv.id));
+            } catch {
+              Alert.alert("Error", "Could not delete the conversation.");
+            }
+          },
+        },
+      ]
+    );
+  };
 
-      if (item.kind === "empty") {
-        return (
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, { fontSize: fontScale - 2 }]}>
-              No conversations yet
-            </Text>
-          </View>
-        );
-      }
+  // Build list data: journey card + past session entries
+  type ListItem =
+    | { kind: "journey" }
+    | { kind: "sectionHeader" }
+    | { kind: "session"; sessionNumber: number; conversation: Conversation }
+    | { kind: "empty" };
 
-      if (item.kind === "newChat") {
-        return (
-          <TouchableOpacity
-            style={styles.newChatButton}
-            onPress={() => handleNewChat(item.week)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Start new Week ${item.week} chat`}
-          >
-            <Text style={[styles.newChatButtonText, { fontSize: fontScale - 2 }]}>
-              + New Chat
-            </Text>
-          </TouchableOpacity>
-        );
-      }
+  const listData: ListItem[] = [{ kind: "journey" }];
 
-      // kind === "conversation"
-      const { conversation } = item;
-      const title = conversation.title ?? `Session ${conversation.session_number} Chat`;
-      const dateLabel = formatDate(conversation.updated_at);
-      const msgCount = conversation.message_count;
-
-      return (
-        <TouchableOpacity
-          style={styles.conversationCard}
-          onPress={() => handleOpenConversation(conversation)}
-          onLongPress={() => handleDeleteConversation(conversation)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={`${title}, ${dateLabel}, ${msgCount} message${msgCount !== 1 ? "s" : ""}. Long press to delete.`}
-        >
-          <View style={styles.conversationCardInner}>
-            <View style={styles.conversationCardBody}>
-              <Text
-                style={[styles.conversationTitle, { fontSize: fontScale }]}
-                numberOfLines={1}
-              >
-                {title}
-              </Text>
-              <Text style={[styles.conversationMeta, { fontSize: fontScale - 4 }]}>
-                {dateLabel} · {msgCount} message{msgCount !== 1 ? "s" : ""}
-              </Text>
-            </View>
-            <Text style={[styles.conversationChevron, { fontSize: fontScale }]}>
-              ›
-            </Text>
-          </View>
-          <View style={styles.readOnlyBadge}>
-            <Text style={[styles.readOnlyBadgeText, { fontSize: fontScale - 5 }]}>
-              Read only
-            </Text>
-          </View>
-        </TouchableOpacity>
-      );
-    },
-    [
-      expandedWeeks,
-      fontScale,
-      toggleWeek,
-      conversationsByWeek,
-      handleOpenConversation,
-      handleDeleteConversation,
-      handleNewChat,
-    ]
+  // Add past sessions section if any conversations exist
+  const sessionsWithChats = [1, 2, 3, 4].filter(
+    (n) => latestConversationBySession(n) !== undefined
   );
 
-  const keyExtractor = useCallback((item: ListItem, index: number) => {
-    if (item.kind === "header") return `header-${item.week}`;
-    if (item.kind === "empty") return `empty-${item.week}`;
-    if (item.kind === "newChat") return `newChat-${item.week}`;
-    return `conv-${item.conversation.id}`;
-  }, []);
+  if (sessionsWithChats.length > 0) {
+    listData.push({ kind: "sectionHeader" });
+    sessionsWithChats.forEach((n) => {
+      const conv = latestConversationBySession(n)!;
+      listData.push({ kind: "session", sessionNumber: n, conversation: conv });
+    });
+  } else if (!loading) {
+    listData.push({ kind: "sectionHeader" });
+    listData.push({ kind: "empty" });
+  }
+
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if (item.kind === "journey") {
+      return (
+        <View style={styles.journeyCard}>
+          <Text style={[styles.journeyTitle, { fontSize: fontScale + 4 }]}>
+            Your Wellness Journey
+          </Text>
+          <Text style={[styles.journeySubtitle, { fontSize: fontScale - 2 }]}>
+            {journeyComplete
+              ? "All 4 sessions complete!"
+              : `${completedSessions} of 4 sessions complete`}
+          </Text>
+
+          {/* Progress dots */}
+          <View style={styles.progressDots}>
+            {[1, 2, 3, 4].map((n) => (
+              <View
+                key={n}
+                style={[
+                  styles.progressDot,
+                  isSessionComplete(n)
+                    ? styles.progressDotComplete
+                    : n === nextSession
+                      ? styles.progressDotActive
+                      : styles.progressDotPending,
+                ]}
+              >
+                <Text style={styles.progressDotText}>{n}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Progress bar */}
+          <View style={styles.progressBarBg}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${(completedSessions / 4) * 100}%` },
+              ]}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinueJourney}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.continueButtonText, { fontSize: fontScale }]}>
+              {completedSessions === 0
+                ? "Start Your Journey"
+                : journeyComplete
+                  ? "View Sessions"
+                  : "Continue"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (item.kind === "sectionHeader") {
+      return (
+        <Text style={[styles.sectionTitle, { fontSize: fontScale }]}>
+          Past Sessions
+        </Text>
+      );
+    }
+
+    if (item.kind === "empty") {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyText, { fontSize: fontScale - 2 }]}>
+            No past sessions yet. Start your journey above!
+          </Text>
+        </View>
+      );
+    }
+
+    // kind === "session"
+    const { sessionNumber, conversation } = item;
+    const completed = isSessionComplete(sessionNumber);
+    return (
+      <TouchableOpacity
+        style={styles.sessionCard}
+        onPress={() => handleViewSession(sessionNumber)}
+        onLongPress={() => handleDeleteConversation(conversation)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.sessionCardLeft}>
+          <View
+            style={[
+              styles.weekBadge,
+              { backgroundColor: completed ? "#4A8B6F" : "#BF5F83" },
+            ]}
+          >
+            <Text style={[styles.weekBadgeText, { fontSize: fontScale - 4 }]}>
+              Week {sessionNumber}
+            </Text>
+          </View>
+          <View style={styles.sessionCardBody}>
+            <Text
+              style={[styles.sessionCardTitle, { fontSize: fontScale }]}
+              numberOfLines={1}
+            >
+              {SESSION_TITLES[sessionNumber]}
+            </Text>
+            <Text
+              style={[styles.sessionCardMeta, { fontSize: fontScale - 4 }]}
+            >
+              {formatDate(conversation.updated_at)} ·{" "}
+              {conversation.message_count} message
+              {conversation.message_count !== 1 ? "s" : ""}
+            </Text>
+          </View>
+        </View>
+        <Text style={[styles.sessionChevron, { fontSize: fontScale + 2 }]}>
+          ›
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#4A8B6F" />
         <Text style={[styles.loadingText, { fontSize: fontScale - 2 }]}>
-          Loading conversations...
+          Loading...
         </Text>
       </View>
     );
@@ -318,35 +315,33 @@ export default function ConversationsScreen({ navigation }: Props) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.headerIconButton}
-          onPress={() => navigation.navigate("ChatOverview")}
-          accessibilityRole="button"
-          accessibilityLabel="Go to overview"
+          onPress={logout}
+          accessibilityLabel="Log out"
         >
-          <Text style={[styles.headerIcon, { fontSize: fontScale + 6 }]}>←</Text>
+          <Text style={styles.headerIcon}>←</Text>
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { fontSize: fontScale + 4 }]}>
-            Your Conversations
+            Nala
           </Text>
           <Text style={[styles.headerSubtitle, { fontSize: fontScale - 4 }]}>
-            {conversations.length} total
+            Your wellness coach
           </Text>
         </View>
 
         <TouchableOpacity
           style={styles.headerIconButton}
           onPress={() => navigation.navigate("Settings")}
-          accessibilityRole="button"
           accessibilityLabel="Open settings"
         >
-          <Text style={[styles.headerIcon, { fontSize: fontScale + 2 }]}>⚙</Text>
+          <Text style={styles.headerIcon}>⚙</Text>
         </TouchableOpacity>
       </View>
 
       <FlatList
         data={listData}
-        keyExtractor={keyExtractor}
+        keyExtractor={(_, i) => i.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -365,7 +360,12 @@ export default function ConversationsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F9F7" },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
   loadingText: { color: "#555" },
 
   // Header
@@ -383,96 +383,115 @@ const styles = StyleSheet.create({
   headerCenter: { alignItems: "center", flex: 1 },
   headerTitle: { color: "#FFF", fontWeight: "700" },
   headerSubtitle: { color: "rgba(255,255,255,0.75)", marginTop: 2 },
-  headerIconButton: { padding: 8, borderRadius: 20, minWidth: 40, alignItems: "center" },
-  headerIcon: { color: "#FFF", fontWeight: "600" },
+  headerIconButton: {
+    padding: 8,
+    borderRadius: 20,
+    minWidth: 40,
+    alignItems: "center",
+  },
+  headerIcon: { color: "#FFF", fontSize: 22, fontWeight: "600" },
 
-  // List
-  listContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 60 },
+  listContent: { padding: 20, paddingBottom: 60 },
 
-  // Section header (week row)
-  sectionHeader: {
+  // Journey card
+  journeyCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#E8F5E9",
+  },
+  journeyTitle: { color: "#1A3D2E", fontWeight: "700", marginBottom: 4 },
+  journeySubtitle: { color: "#6B8F7E", marginBottom: 16 },
+
+  progressDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 16,
+    marginBottom: 12,
+  },
+  progressDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressDotComplete: { backgroundColor: "#4A8B6F" },
+  progressDotActive: {
+    backgroundColor: "#FFF",
+    borderWidth: 2,
+    borderColor: "#4A8B6F",
+  },
+  progressDotPending: { backgroundColor: "#E0E0E0" },
+  progressDotText: { color: "#FFF", fontWeight: "700", fontSize: 14 },
+
+  progressBarBg: {
+    height: 6,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 3,
+    marginBottom: 20,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#4A8B6F",
+    borderRadius: 3,
+  },
+
+  continueButton: {
+    backgroundColor: "#4A8B6F",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  continueButtonText: { color: "#FFF", fontWeight: "700" },
+
+  // Section
+  sectionTitle: {
+    color: "#2E5D4B",
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  // Session card
+  sessionCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 14,
+    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#E8F5E9",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 6,
-  },
-  sectionHeaderLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
-  sectionHeaderRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  weekDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#4A8B6F",
-    marginRight: 10,
-  },
-  sectionHeaderText: { color: "#2E5D4B", fontWeight: "600" },
-  chevron: { color: "#4A8B6F", fontWeight: "700" },
-  countBadge: {
-    backgroundColor: "#4A8B6F",
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  countBadgeText: { color: "#FFF", fontWeight: "600" },
-
-  // Conversation card
-  conversationCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 14,
-    marginBottom: 8,
-    marginLeft: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
     borderLeftWidth: 3,
     borderLeftColor: "#4A8B6F",
   },
-  conversationCardInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  conversationCardBody: { flex: 1, marginRight: 8 },
-  conversationTitle: { color: "#1A3D2E", fontWeight: "600", marginBottom: 4 },
-  conversationMeta: { color: "#6B8F7E" },
-  conversationChevron: { color: "#4A8B6F", fontWeight: "700" },
-  readOnlyBadge: {
-    marginTop: 8,
-    alignSelf: "flex-start",
-    backgroundColor: "#E8F5E9",
-    borderRadius: 8,
+  sessionCardLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
+  weekBadge: {
+    borderRadius: 10,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
+    marginRight: 12,
   },
-  readOnlyBadgeText: { color: "#4A8B6F", fontWeight: "500" },
+  weekBadgeText: { color: "#FFF", fontWeight: "600" },
+  sessionCardBody: { flex: 1 },
+  sessionCardTitle: { color: "#1A3D2E", fontWeight: "600", marginBottom: 2 },
+  sessionCardMeta: { color: "#6B8F7E" },
+  sessionChevron: { color: "#4A8B6F", fontWeight: "700" },
 
-  // Empty state
-  emptyState: {
-    marginLeft: 12,
-    marginBottom: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  emptyStateText: { color: "#9BBCB0", fontStyle: "italic" },
-
-  // New chat button
-  newChatButton: {
-    marginLeft: 12,
-    marginBottom: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#BF5F83",
-    borderStyle: "dashed",
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  newChatButtonText: { color: "#BF5F83", fontWeight: "600" },
+  // Empty
+  emptyState: { paddingVertical: 24, alignItems: "center" },
+  emptyText: { color: "#9BBCB0", fontStyle: "italic", textAlign: "center" },
 });
