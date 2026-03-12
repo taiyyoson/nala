@@ -15,7 +15,7 @@ import { AuthStackParamList } from "../navigation/AuthStack";
 import { useAuth } from "../contexts/AuthContext";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../config/firebaseConfig";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ApiService } from "../services/ApiService";
 
 type SignUpScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, "SignUp">;
@@ -62,7 +62,13 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
         displayName: user.displayName ?? "",
       });
 
-      await AsyncStorage.setItem("hasCompletedOnboarding", "false");
+      // Create user row in backend DB (onboarding_completed: false)
+      try {
+        await ApiService.getUserStatus(user.uid);
+      } catch (e) {
+        console.error("Failed to init user in backend:", e);
+      }
+
       setHasCompletedOnboarding(false);
 
       navigation.replace("Onboarding");

@@ -255,7 +255,7 @@ export default function ChatScreen({ navigation, route }: Props) {
       if (data.conversation_id) setConversationId(data.conversation_id);
       if (data.session_complete) {
         setSessionComplete(true);
-        setTimeout(() => navigation.replace("ChatOverview"), 1800);
+        setTimeout(() => navigation.navigate("ChatOverview"), 1800);
       }
 
       setMessages((prev) =>

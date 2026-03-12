@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,25 +10,13 @@ import {
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MainStackParamList } from "../navigation/MainStack";
-import { useAuth } from "../contexts/AuthContext";
 import { getAuth } from "firebase/auth";
 import { ApiService } from "../services/ApiService";
-import {
-  // Lock, // 🔒 session locking UI disabled
-  CheckCircle2,
-  Calendar,
-  MessageCircleQuestionMark,
-} from "lucide-react-native";
+import { CheckCircle2, Calendar, MessageCircleQuestionMark } from "lucide-react-native";
 import { useTextSize } from "../contexts/TextSizeContext";
 
-type ChatOverviewScreenNavigationProp = NativeStackNavigationProp<
-  MainStackParamList,
-  "ChatOverview"
->;
-
-type Props = {
-  navigation: ChatOverviewScreenNavigationProp;
-};
+type Nav = NativeStackNavigationProp<MainStackParamList, "ChatOverview">;
+type Props = { navigation: Nav };
 
 interface SessionProgress {
   session_number: number;
@@ -36,74 +24,98 @@ interface SessionProgress {
   unlocked_at?: string | null;
 }
 
+interface Conversation {
+  id: string;
+  session_number: number;
+  updated_at: string;
+}
+
+const SESSIONS = [
+  { id: 1, title: "Getting to know you" },
+  { id: 2, title: "Building habits" },
+  { id: 3, title: "Overcoming challenges" },
+  { id: 4, title: "Reviewing progress" },
+];
+
 export default function ChatOverviewScreen({ navigation }: Props) {
-  const { logout } = useAuth();
-  const [progress, setProgress] = useState<SessionProgress[]>([]);
-  const [loading, setLoading] = useState(true);
   const { size } = useTextSize();
   const fontScale = size === "small" ? 14 : size === "medium" ? 16 : 20;
 
-  const sessions = [
-    { id: 1, title: "Getting to know you" },
-    { id: 2, title: "Building habits" },
-    { id: 3, title: "Overcoming challenges" },
-    { id: 4, title: "Reviewing progress" },
-  ];
+  const [progress, setProgress] = useState<SessionProgress[]>([]);
+  const [conversationMap, setConversationMap] = useState<Record<number, string>>({});
+  const [loading, setLoading] = useState(true);
 
-  // Fetch real progress from backend
-  useEffect(() => {
-    const fetchProgress = async () => {
-      try {
-        const user = getAuth().currentUser;
-        if (!user) throw new Error("User not logged in");
+  const fetchData = useCallback(async () => {
+    try {
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) throw new Error("Not logged in");
 
-        console.log("📊 Fetching session progress for:", user.uid);
+      const [progressData, convData] = await Promise.all([
+        ApiService.getUserProgress(uid),
+        ApiService.getConversations(),
+      ]);
 
-        const data = await ApiService.getUserProgress(user.uid);
-        console.log("🔎 Raw progress data:", JSON.stringify(data, null, 2));
+      setProgress(progressData ?? []);
 
-        setProgress(data);
-      } catch (error) {
-        console.error("❌ Failed to fetch progress:", error);
-        Alert.alert("Error", "Couldn't load your session progress.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProgress();
+      // Map: session_number → most recent conversation ID
+      const convs: Conversation[] = convData.conversations ?? [];
+      const map: Record<number, string> = {};
+      convs.forEach((c) => {
+        if (
+          !map[c.session_number] ||
+          new Date(c.updated_at) >
+            new Date(
+              convs.find((x) => x.id === map[c.session_number])?.updated_at ?? 0
+            )
+        ) {
+          map[c.session_number] = c.id;
+        }
+      });
+      setConversationMap(map);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      Alert.alert("Error", "Couldn't load your session progress.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // -------------------------------
-  // 🔒 SESSION LOCKING (DISABLED)
-  // -------------------------------
-  // We turned off timer + locking for testing/demoing so users can move session-to-session
-  // even if backend progress fails to load (e.g., Render cold start).
-  //
-  // const isSessionUnlocked = (sessionNumber: number): boolean => {
-  //   if (sessionNumber === 1) return true;
-  //   const current = progress.find((p) => p.session_number === sessionNumber);
-  //   if (current?.unlocked_at) return new Date() >= new Date(current.unlocked_at);
-  //   const prev = progress.find((p) => p.session_number === sessionNumber - 1);
-  //   return !!prev?.completed_at;
-  // };
-  //
-  // const getUnlockCountdown = (sessionNumber: number): string | null => {
-  //   return "Locked";
-  // };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  // COMPLETION ONLY
-  const isSessionComplete = (sessionNumber: number): boolean => {
-    return !!progress.find(
-      (p) => p.session_number === sessionNumber && p.completed_at
-    );
-  };
+  // Re-fetch when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchData();
+    });
+    return unsubscribe;
+  }, [navigation, fetchData]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error("Logout failed:", err);
+  const isSessionComplete = (num: number): boolean =>
+    !!progress.find((p) => p.session_number === num && p.completed_at);
+
+  const handleSessionPress = (sessionId: number) => {
+    const completed = isSessionComplete(sessionId);
+    const convId = conversationMap[sessionId];
+
+    if (completed && convId) {
+      // View past chat read-only
+      navigation.navigate("Chat", {
+        sessionId: sessionId.toString(),
+        week: sessionId,
+        sessionNumber: sessionId,
+        conversationId: convId,
+        readOnly: true,
+      });
+    } else {
+      // Start or continue this session
+      navigation.navigate("Chat", {
+        sessionId: sessionId.toString(),
+        week: sessionId,
+        sessionNumber: sessionId,
+        conversationId: convId,
+      });
     }
   };
 
@@ -123,7 +135,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={handleLogout}
+          onPress={() => navigation.navigate("Conversations")}
           style={styles.headerIconButton}
           activeOpacity={0.7}
         >
@@ -147,16 +159,14 @@ export default function ChatOverviewScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Scrollable Sessions */}
+      {/* Sessions */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {sessions.map((session) => {
-          // const unlocked = isSessionUnlocked(session.id); // 🔒 disabled
+        {SESSIONS.map((session) => {
           const completed = isSessionComplete(session.id);
-
-          // 🔓 TEMP: treat all sessions as unlocked
+          const hasConversation = !!conversationMap[session.id];
           const cardColor = completed ? "#4A8B6F" : "#BF5F83";
 
           return (
@@ -164,13 +174,7 @@ export default function ChatOverviewScreen({ navigation }: Props) {
               key={session.id}
               style={[styles.sessionCard, { backgroundColor: cardColor }]}
               activeOpacity={0.9}
-              onPress={() =>
-                navigation.navigate("Chat", {
-                  sessionId: session.id.toString(),
-                  week: session.id,
-                  sessionNumber: session.id,
-                })
-              }
+              onPress={() => handleSessionPress(session.id)}
             >
               {/* Top-right icon */}
               <View style={styles.iconContainer}>
@@ -181,18 +185,10 @@ export default function ChatOverviewScreen({ navigation }: Props) {
                 )}
               </View>
 
-              {/* Week Badge */}
-              <View
-                style={[
-                  styles.weekBadge,
-                  { backgroundColor: "rgba(255,255,255,0.3)" },
-                ]}
-              >
+              {/* Week badge */}
+              <View style={styles.weekBadge}>
                 <Text
-                  style={[
-                    styles.weekBadgeText,
-                    { color: "#FFF", fontSize: fontScale - 2 },
-                  ]}
+                  style={[styles.weekBadgeText, { fontSize: fontScale - 2 }]}
                 >
                   Week {session.id}
                 </Text>
@@ -202,62 +198,44 @@ export default function ChatOverviewScreen({ navigation }: Props) {
               <Text
                 style={[
                   styles.sessionDescription,
-                  {
-                    color: "#FFF",
-                    fontSize: fontScale,
-                    fontWeight: "500",
-                  },
+                  { fontSize: fontScale, fontWeight: "500" },
                 ]}
               >
                 {completed ? "Completed" : session.title}
               </Text>
 
               {/* Footer */}
-              {!completed && (
+              {completed && hasConversation ? (
+                <View style={styles.sessionFooter}>
+                  <Text style={[styles.sessionFooterText, { fontSize: fontScale - 4 }]}>
+                    Tap to view chat
+                  </Text>
+                </View>
+              ) : !completed ? (
                 <View style={styles.sessionFooter}>
                   <Calendar size={14} color="rgba(255,255,255,0.8)" />
-                  <Text
-                    style={[
-                      styles.sessionFooterText,
-                      { fontSize: fontScale - 4 },
-                    ]}
-                  >
+                  <Text style={[styles.sessionFooterText, { fontSize: fontScale - 4 }]}>
                     10-min check-in
                   </Text>
                 </View>
-              )}
+              ) : null}
             </TouchableOpacity>
           );
         })}
 
-        {/* Encouragement Card */}
+        {/* Encouragement */}
         <View style={styles.motivationCard}>
           <Text style={[styles.motivationText, { fontSize: fontScale - 2 }]}>
-            Keep it up! Complete your next session.
+            {progress.filter((p) => p.completed_at).length === 4
+              ? "Amazing work! You've completed all sessions."
+              : "Keep it up! Complete your next session."}
           </Text>
         </View>
-
-        {/* View All Chats */}
-        <TouchableOpacity
-          style={styles.viewAllChatsButton}
-          onPress={() => navigation.navigate("Conversations")}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="View all past conversations"
-        >
-          <Text style={[styles.viewAllChatsText, { fontSize: fontScale - 2 }]}>
-            View All Conversations
-          </Text>
-          <Text style={[styles.viewAllChatsChevron, { fontSize: fontScale }]}>
-            ›
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
-// Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F9F7" },
   header: {
@@ -294,9 +272,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginBottom: 8,
+    backgroundColor: "rgba(255,255,255,0.3)",
   },
-  weekBadgeText: { fontSize: 12, fontWeight: "500" },
-  sessionDescription: { marginBottom: 8 },
+  weekBadgeText: { color: "#FFF", fontWeight: "500" },
+  sessionDescription: { color: "#FFF", marginBottom: 8 },
   sessionFooter: { flexDirection: "row", alignItems: "center", gap: 6 },
   sessionFooterText: { color: "rgba(255,255,255,0.8)", fontSize: 12 },
   motivationCard: {
@@ -306,19 +285,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   motivationText: { color: "#4A4A4A", fontSize: 13, textAlign: "center" },
-  viewAllChatsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#E8F5E9",
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#C8E6C9",
-  },
-  viewAllChatsText: { color: "#2E5D4B", fontWeight: "600" },
-  viewAllChatsChevron: { color: "#4A8B6F", fontWeight: "700" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

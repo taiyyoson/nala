@@ -1,8 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import ConversationsScreen from '../screens/ConversationsScreen';
 import ChatOverviewScreen from '../screens/ChatOverviewScreen';
 import ChatScreen from '../screens/ChatScreen';
-import ConversationsScreen from '../screens/ConversationsScreen';
 import { SettingsPage } from "../screens/Settings";
 
 export type MainStackParamList = {

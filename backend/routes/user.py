@@ -68,7 +68,10 @@ def get_user_status(
         user = db.query(User).filter(User.id == auth_user_id).first()
 
         if not user:
-            return {"onboarding_completed": False}
+            # User authenticated via Firebase but no DB row yet — create one
+            user = User(id=auth_user_id, onboarding_completed=False)
+            db.add(user)
+            db.commit()
 
         return {
             "user_id": user.id,
