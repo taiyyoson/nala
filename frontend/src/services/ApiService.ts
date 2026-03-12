@@ -3,7 +3,7 @@
 import { getAuth } from "firebase/auth";
 
 // Toggle between local and deployed backend
-const USE_DEPLOYED = false; // Set to false for local development
+const USE_DEPLOYED = true; // Set to false for local development
 const BASE_URL = USE_DEPLOYED
   ? "https://nala-backend-serv.onrender.com"
   : "http://127.0.0.1:8000";
