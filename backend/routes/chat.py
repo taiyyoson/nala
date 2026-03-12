@@ -172,8 +172,8 @@ class ChatResponse(BaseModel):
 @chat_router.post("/message", response_model=ChatResponse)
 @limiter.limit("20/minute")
 async def send_message(
-    http_request: Request,
-    request: ChatRequest,
+    request: Request,
+    chat_request: ChatRequest,
     decoded_token: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
@@ -184,7 +184,7 @@ async def send_message(
         conv_service = ConversationService(db_service)
 
         conv_id = await conv_service.get_or_create_conversation(
-            conversation_id=request.conversation_id, user_id=user_id
+            conversation_id=chat_request.conversation_id, user_id=user_id
         )
 
         history = await conv_service.get_conversation_history(
@@ -193,18 +193,18 @@ async def send_message(
 
         ai_service = get_or_create_ai_service(
             conversation_id=conv_id,
-            session_number=request.session_number,
+            session_number=chat_request.session_number,
             user_id=user_id,
         )
 
         print(
-            f"🔍 DEBUG: session_number={request.session_number}, history_length={len(history)}"
+            f"🔍 DEBUG: session_number={chat_request.session_number}, history_length={len(history)}"
         )
         print(f"🔍 DEBUG: ai_service.session_number={ai_service.session_number}")
         print(f"🔍 DEBUG: chatbot type={type(ai_service.chatbot).__name__}")
 
         response, sources, model_name = await ai_service.generate_response(
-            message=request.message,
+            message=chat_request.message,
             conversation_history=history,
             user_id=user_id,
         )
@@ -220,12 +220,12 @@ async def send_message(
                 session_complete = True
 
                 # Mark session complete in session_progress table
-                if user_id and request.session_number:
+                if user_id and chat_request.session_number:
                     session_obj = (
                         db.query(SessionProgress)
                         .filter_by(
                             user_id=user_id,
-                            session_number=request.session_number,
+                            session_number=chat_request.session_number,
                         )
                         .first()
                     )
@@ -235,7 +235,7 @@ async def send_message(
                     else:
                         session_obj = SessionProgress(
                             user_id=user_id,
-                            session_number=request.session_number,
+                            session_number=chat_request.session_number,
                         )
                         session_obj.mark_complete()
                         db.add(session_obj)
@@ -246,7 +246,7 @@ async def send_message(
                     _save_session_on_completion(
                         ai_service=ai_service,
                         user_id=user_id,
-                        session_number=request.session_number,
+                        session_number=chat_request.session_number,
                         conversation_history=ai_service.chatbot.conversation_history,
                     )
 
@@ -254,7 +254,7 @@ async def send_message(
         await conv_service.add_message(
             conversation_id=conv_id,
             role="user",
-            content=request.message,
+            content=chat_request.message,
         )
 
         # Save assistant response
