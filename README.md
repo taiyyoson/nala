@@ -2,6 +2,11 @@
 
 A 4-week AI-powered health coaching chatbot built with React Native, FastAPI, and RAG (Retrieval-Augmented Generation). Nala is based on real interactions from the Examen Tu Salud program, using coaching transcripts to provide personalized, evidence-based wellness support powered by Claude Sonnet 4.5.
 
+Link: https://nala-chatbot.expo.app/
+(backend currently down to save money)
+
+<img width="203" height="396" alt="Screenshot 2025-12-04 at 6 38 49 PM" src="https://github.com/user-attachments/assets/185d0e5e-f448-4733-abd7-c771104877b5" />
+
 ## Tech Stack
 
 | Layer | Technology |
