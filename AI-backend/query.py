@@ -10,6 +10,12 @@ _env_file = _root_dir / ".env"
 if _env_file.exists():
     load_dotenv(_env_file)
 
+# Sessions that share a pool of RAG examples during search
+SESSION_SEARCH_GROUPS = {
+    2: [2, 3],
+    3: [2, 3],
+}
+
 class VectorSearch:
     """Vector search module for coaching conversations database"""
     
@@ -245,9 +251,13 @@ class VectorSearch:
             for r in results
         ]
     
-    def search_with_details(self, query, limit=3, min_similarity=0.4):
+    def search_with_details(self, query, limit=3, min_similarity=0.4, session_number=None):
         """
         Pure vector search (faster than hybrid) with detailed results
+
+        Args:
+            session_number (int): Optional session (1-4) to restrict results to;
+                sessions in SESSION_SEARCH_GROUPS search their whole group
         """
         
         query_embedding = self.client.Embedding.create(
@@ -267,11 +277,20 @@ class VectorSearch:
                 1 - (participant_embedding <=> %s::vector) as similarity
             FROM coaching_conversations
             WHERE 1 - (participant_embedding <=> %s::vector) >= %s
+        """
+        params = [query_embedding, query_embedding, min_similarity]
+
+        if session_number is not None:
+            sessions = SESSION_SEARCH_GROUPS.get(session_number, [session_number])
+            sql += " AND session_number = ANY(%s)"
+            params.append(sessions)
+
+        sql += """
             ORDER BY participant_embedding <=> %s::vector
             LIMIT %s
         """
-        
-        params = [query_embedding, query_embedding, min_similarity, query_embedding, limit]
+        params.extend([query_embedding, limit])
+
         cur.execute(sql, params)
         results = cur.fetchall()
         

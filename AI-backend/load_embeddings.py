@@ -1,5 +1,5 @@
 import pandas as pd
-from openai import OpenAI
+import openai
 import psycopg2
 from psycopg2.extras import execute_values
 import os
@@ -10,7 +10,7 @@ from time import sleep
 load_dotenv()
 
 # Initialize OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def prepare_text_for_embedding(participant_response, coach_response, context_category, goal_type):
     """
@@ -59,7 +59,7 @@ def get_embeddings_batch(texts, batch_size=100):
         # print(f"Processing embeddings {i+1}-{min(i+batch_size, total)} of {total}...")
         
         try:
-            response = client.embeddings.create(
+            response = openai.Embedding.create(
                 model="text-embedding-3-small",
                 input=batch
             )
@@ -122,6 +122,7 @@ def load_csv_to_database(csv_path):
             int(row['confidence_level']) if row['confidence_level'] else None,
             row['keywords'],
             row['source_file'],
+            int(row['session_number']) if row['session_number'] != '' else None,
             participant_embeddings[idx],
             coach_embeddings[idx]
         ))
@@ -133,7 +134,7 @@ def load_csv_to_database(csv_path):
     execute_values(cur, """
         INSERT INTO coaching_conversations 
         (participant_response, coach_response, context_category, goal_type, 
-         confidence_level, keywords, source_file, participant_embedding, coach_embedding)
+         confidence_level, keywords, source_file, session_number, participant_embedding, coach_embedding)
         VALUES %s
     """, data_to_insert)
     
