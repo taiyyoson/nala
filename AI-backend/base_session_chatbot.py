@@ -17,19 +17,21 @@ class BaseSessionRAGChatbot(UnifiedRAGChatbot, ABC):
     
     def __init__(self, model='claude-sonnet-4.5', top_k=3, 
                  recent_messages=6, relevant_history_count=4, 
-                 validate_constraints=True):
+                 validate_constraints=True, session_number=None):
         """
         Initialize base session chatbot.
-        
+
         Args:
             model: LLM model to use
             top_k: Number of RAG examples to retrieve
             recent_messages: Number of recent messages to include in context
             relevant_history_count: Number of relevant older messages to include
             validate_constraints: Whether to validate response constraints
+            session_number: Session (1-4) used to filter RAG examples
         """
         super().__init__(model=model, top_k=top_k)
-        
+
+        self.session_number = session_number
         self.recent_messages = recent_messages
         self.relevant_history_count = relevant_history_count
         self.validate_constraints = validate_constraints
@@ -320,7 +322,7 @@ Instead of promising check-ins, encourage:
         rag_context = ""
         
         if session_result["trigger_rag"]:
-            retrieved_examples = self.retrieve(user_message)
+            retrieved_examples = self.retrieve(user_message, session_number=self.session_number)
             rag_context = self.build_context(retrieved_examples)
         
         # Build system prompt with RAG + session context

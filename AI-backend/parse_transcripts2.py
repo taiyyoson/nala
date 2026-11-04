@@ -415,6 +415,15 @@ def extract_keywords(text):
     
     return ' '.join(keywords[:8])  # Top 8 keywords
 
+def parse_session_number(filename):
+    """
+    Extract session number from filenames like:
+    Edited EXAMEN044_HCS1 - Erika Zuniga Sandoval.txt  ->  1
+    Edited HCS2 - Jazmin Jauregui(1).txt               ->  2
+    """
+    match = re.search(r'HCS(\d+)', filename, re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
 def process_single_file(file_path):
     """
     Process one transcript file
@@ -424,7 +433,8 @@ def process_single_file(file_path):
             content = f.read()
         
         conversations = parse_plain_text_transcript(content)
-        
+        session_number = parse_session_number(file_path.name)
+
         # Add metadata to each conversation
         for conv in conversations:
             goal_type, context, confidence = categorize_response(
@@ -437,6 +447,7 @@ def process_single_file(file_path):
             conv['confidence_level'] = confidence
             conv['keywords'] = extract_keywords(conv['participant_response'])
             conv['source_file'] = file_path.name
+            conv['session_number'] = session_number
         
         return conversations
     
@@ -484,7 +495,7 @@ def process_all_files(folder_path='.'):
     
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['participant_response', 'coach_response', 'context_category', 
-                     'goal_type', 'confidence_level', 'keywords', 'source_file']
+                     'goal_type', 'confidence_level', 'keywords', 'source_file', 'session_number']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         
         writer.writeheader()
@@ -496,7 +507,8 @@ def process_all_files(folder_path='.'):
                 'goal_type': conv['goal_type'],
                 'confidence_level': conv['confidence_level'],
                 'keywords': conv['keywords'],
-                'source_file': conv['source_file']
+                'source_file': conv['source_file'],
+                'session_number': conv['session_number']
             })
     
     # print(f"\n✅ Successfully created {output_file}")

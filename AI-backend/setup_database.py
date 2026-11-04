@@ -64,6 +64,7 @@ def setup_database():
             confidence_level INTEGER,
             keywords TEXT,
             source_file TEXT,
+            session_number INTEGER,
             participant_embedding vector(1536),
             coach_embedding vector(1536),
             created_at TIMESTAMP DEFAULT NOW()
@@ -71,15 +72,10 @@ def setup_database():
     """)
     
     print("Creating indexes...")
-    
-    # Vector search index
-    cur.execute("""
-        CREATE INDEX IF NOT EXISTS participant_embedding_idx 
-        ON coaching_conversations 
-        USING ivfflat (participant_embedding vector_cosine_ops)
-        WITH (lists = 100);
-    """)
-    
+
+    # No vector index: at this table size an exact scan is fast, and an ivfflat
+    # index built on an empty table misses most of the closest matches
+
     # Category indexes
     cur.execute("""
         CREATE INDEX IF NOT EXISTS context_category_idx 
@@ -90,7 +86,12 @@ def setup_database():
         CREATE INDEX IF NOT EXISTS goal_type_idx 
         ON coaching_conversations (goal_type);
     """)
-    
+
+    cur.execute("""
+        CREATE INDEX IF NOT EXISTS session_number_idx
+        ON coaching_conversations (session_number);
+    """)
+
     print("Creating full-text search indexes...")
     
     cur.execute("""

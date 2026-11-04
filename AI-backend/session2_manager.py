@@ -28,7 +28,8 @@ class Session2RAGChatbot(BaseSessionRAGChatbot):
             top_k=top_k,
             recent_messages=recent_messages,
             relevant_history_count=relevant_history_count,
-            validate_constraints=validate_constraints
+            validate_constraints=validate_constraints,
+            session_number=2
         )
         
         # Session 2 specific setup

@@ -53,16 +53,26 @@ class UnifiedRAGChatbot:
         elif self.model_info['provider'] == 'anthropic':
             self.anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     
-    def retrieve(self, query, min_similarity=0.4):
+    def retrieve(self, query, min_similarity=0.4, session_number=None):
         """
-        Retrieve relevant coaching examples from vector database
+        Retrieve relevant coaching examples from vector database.
+        If session_number is given, search that session's transcripts first
+        and fall back to all sessions when nothing matches.
         """
         #  Use pure vector search instead of hybrid
         results = self.searcher.search_with_details(
-            query, 
+            query,
             limit=self.top_k,
-            min_similarity=min_similarity
+            min_similarity=min_similarity,
+            session_number=session_number
         )
+
+        if not results and session_number is not None:
+            results = self.searcher.search_with_details(
+                query,
+                limit=self.top_k,
+                min_similarity=min_similarity
+            )
         return results
     
     def build_context(self, retrieved_examples):
